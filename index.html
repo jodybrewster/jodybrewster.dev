@@ -1,0 +1,1757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jody — Principal Experience Architect</title>
+<meta name="description" content="On agentic interfaces, runtime design, and the unfinished discipline of AI experience." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Display: Fraunces (editorial serif w/ optical sizing). Body/UI: Inter (workhorse sans). Mono: JetBrains Mono. -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,30..100;1,9..144,300..600,30..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    /* palette — cool paper, deep forest accent */
+    --ink:        #14181d;
+    --ink-soft:   #3d444d;
+    --ink-faint:  #828a93;
+    --paper:      #f1f2f0;
+    --paper-warm: #e6e8e4;
+    --rule:       #cbcec9;
+    --accent:     #2d5d4f;
+    --accent-soft:#cfdcd6;
+
+    /* type system */
+    --display:    "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, serif;
+    --sans:       "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono:       "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    /* type scale (modular, ratio 1.25) */
+    --t-eyebrow:  11px;   /* mono, all-caps */
+    --t-meta:     12px;   /* sans, small ui */
+    --t-body:     16px;   /* sans, default body */
+    --t-lede:     19px;   /* sans, intro paragraphs */
+    --t-h4:       18px;
+    --t-h3:       22px;
+    --t-h2:       28px;
+    --t-h1:       clamp(40px, 5.5vw, 60px);
+    --t-hero:     clamp(44px, 6.8vw, 78px);
+
+    --lh-tight:   1.15;
+    --lh-snug:    1.35;
+    --lh-body:    1.6;
+    --lh-loose:   1.7;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink:        #e4e6e2;
+      --ink-soft:   #a8aca6;
+      --ink-faint:  #6e726c;
+      --paper:      #13161a;
+      --paper-warm: #1c1f23;
+      --rule:       #2a2d31;
+      --accent:     #6fb39f;
+      --accent-soft:#1f2e2a;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: var(--t-body);
+    line-height: var(--lh-body);
+    color: var(--ink);
+    background: var(--paper);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern", "ss01", "cv11";
+  }
+
+  /* paper grain */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    opacity: .3;
+    z-index: 1;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+  }
+  @media (prefers-color-scheme: dark) {
+    body::before { mix-blend-mode: screen; opacity: .22; }
+  }
+
+  ::selection { background: var(--accent); color: var(--paper); }
+
+  /* ── icon defaults ──────────────────────────────────────────── */
+  .icon {
+    width: 16px; height: 16px;
+    stroke-width: 1.6;
+    stroke: currentColor;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    vertical-align: -3px;
+  }
+  .icon.sm { width: 13px; height: 13px; stroke-width: 1.75; }
+  .icon.lg { width: 20px; height: 20px; }
+
+  a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--rule); transition: border-color .15s ease, color .15s ease; }
+  a:hover { border-bottom-color: var(--accent); color: var(--accent); }
+
+  /* ── layout ─────────────────────────────────────────────────── */
+  .shell { position: relative; z-index: 2; max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+  @media (max-width: 720px) { .shell { padding: 0 20px; } }
+
+  /* ── masthead ───────────────────────────────────────────────── */
+  header.mast {
+    padding: 28px 0 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--rule);
+    gap: 24px;
+  }
+  .mark {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    border: none;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .mark .glyph {
+    width: 28px; height: 28px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .mark .role {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    letter-spacing: 0.01em;
+  }
+  nav.primary { display: flex; gap: 4px; }
+  nav.primary a {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    border-radius: 99px;
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: all .15s ease;
+  }
+  nav.primary a:hover { color: var(--accent); background: var(--paper-warm); }
+  nav.primary a.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  @media (max-width: 720px) {
+    header.mast { flex-direction: column; align-items: flex-start; }
+    nav.primary { flex-wrap: wrap; }
+    .mark .role { display: none; }
+  }
+
+  /* ── pages ─────────────────────────────────────────────────── */
+  .page { display: none; padding: 72px 0 100px; }
+  .page.active { display: block; }
+  .page.active > * { animation: rise .55s ease-out both; }
+  .page.active > *:nth-child(2) { animation-delay: 60ms; }
+  .page.active > *:nth-child(3) { animation-delay: 120ms; }
+  .page.active > *:nth-child(4) { animation-delay: 180ms; }
+  .page.active > *:nth-child(5) { animation-delay: 240ms; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ── eyebrow utility ──────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── home: hero ────────────────────────────────────────────── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-bottom: 96px;
+  }
+  .hero .role-label {
+    margin: 0;
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .hero .role-label .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 350;
+    font-variation-settings: "opsz" 120, "SOFT" 50;
+    font-size: var(--t-hero);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin: 0;
+    color: var(--ink);
+    max-width: 16ch;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-family: var(--display);
+    color: var(--accent);
+    font-weight: 350;
+  }
+  .hero .lede {
+    font-family: var(--sans);
+    font-size: var(--t-lede);
+    line-height: 1.55;
+    max-width: 56ch;
+    color: var(--ink-soft);
+    margin: 0;
+    font-weight: 400;
+  }
+  .hero .meta {
+    display: flex; gap: 22px; flex-wrap: wrap;
+    font-family: var(--sans); font-size: var(--t-meta);
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .hero .meta span { display: inline-flex; align-items: center; gap: 7px; }
+  .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    animation: pulse 2.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: .4; transform: scale(1); }
+    50%      { opacity: 1;  transform: scale(1.35); }
+  }
+
+  /* section heading */
+  .section-h {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    align-items: baseline;
+    gap: 18px;
+    margin: 0 0 36px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .section-h .num {
+    font-family: var(--mono); font-size: var(--t-eyebrow);
+    color: var(--ink-faint); letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .section-h h2 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 26px;
+    letter-spacing: -0.012em;
+    margin: 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-h h2 .icon { color: var(--accent); }
+  .section-h .aside {
+    grid-column: 2;
+    font-family: var(--sans); font-size: var(--t-meta);
+    color: var(--ink-faint);
+    margin-top: 2px;
+  }
+
+  /* recent writing list */
+  .essay-list { list-style: none; padding: 0; margin: 0 0 100px; }
+  .essay-list li {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 18px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: baseline;
+    cursor: pointer;
+    transition: background .2s ease, padding .2s ease;
+  }
+  .essay-list li:hover {
+    background: var(--paper-warm);
+    margin: 0 -12px;
+    padding-left: 12px; padding-right: 12px;
+  }
+  .essay-list .idx {
+    font-family: var(--mono); font-size: var(--t-eyebrow);
+    color: var(--ink-faint); letter-spacing: 0.06em;
+    font-weight: 500;
+  }
+  .essay-list .body h3 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 25px;
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    margin: 0 0 8px;
+  }
+  .essay-list .body .dek {
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.5;
+    max-width: 64ch;
+    font-weight: 400;
+  }
+  .essay-list .body .dek em {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 16px;
+  }
+  .essay-list .stamp {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-faint); letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    align-self: start;
+    padding-top: 6px;
+    text-align: right;
+    font-weight: 500;
+  }
+  .essay-list .stamp .read {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 4px;
+  }
+  .essay-list .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--sans); font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 10px;
+  }
+
+  /* notes column */
+  .two-col { display: grid; grid-template-columns: 1.4fr 1fr; gap: 72px; margin-bottom: 100px; }
+  @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; gap: 56px; } }
+
+  .notes-stack { display: flex; flex-direction: column; gap: 20px; }
+  .note {
+    padding: 20px 22px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper-warm);
+    cursor: pointer;
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    position: relative;
+  }
+  .note:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 6px 24px -12px rgba(20,24,29,0.18);
+  }
+  .note .tended {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--sans); font-size: 11px;
+    color: var(--ink-faint); font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .note .state {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px;
+    border: 1px solid var(--rule);
+    border-radius: 99px;
+    font-size: 10px;
+    color: var(--ink-soft);
+    font-weight: 500;
+  }
+  .note .state.evergreen { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .note p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    font-family: var(--sans);
+  }
+  .note p em {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 15.5px;
+  }
+
+  /* now panel */
+  .now-panel {
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 22px;
+  }
+  .now-panel .label {
+    margin: 0 0 14px;
+  }
+  .now-panel h4 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 22px;
+    margin: 0 0 18px;
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .now-panel h4 .icon { color: var(--accent); }
+  .now-panel ul {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .now-panel li {
+    font-family: var(--sans);
+    font-size: 14.5px; line-height: 1.55;
+    color: var(--ink-soft);
+    padding-left: 22px; position: relative;
+  }
+  .now-panel li .li-icon {
+    position: absolute; left: 0; top: 3px;
+    color: var(--accent);
+  }
+  .now-panel li em {
+    font-family: var(--display); font-style: italic; font-size: 15px;
+  }
+  .now-panel .stamp {
+    margin-top: 22px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* ── essay page ────────────────────────────────────────────── */
+  .essay-shell { max-width: 680px; margin: 0 auto; }
+  .essay-shell .back {
+    font-family: var(--sans); font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-faint); border: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 48px;
+    padding: 6px 10px;
+    margin-left: -10px;
+    border-radius: 6px;
+    transition: all .15s ease;
+  }
+  .essay-shell .back:hover { color: var(--accent); background: var(--paper-warm); }
+  .essay-meta {
+    display: flex; gap: 18px; flex-wrap: wrap;
+    font-family: var(--sans); font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rule);
+    align-items: center;
+  }
+  .essay-meta span { display: inline-flex; align-items: center; gap: 6px; }
+  .essay-meta .tag-strong { color: var(--accent); }
+  .essay-shell h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 40;
+    font-size: var(--t-h1);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+  }
+  .essay-shell h1 em { font-style: italic; color: var(--accent); font-family: var(--display); font-weight: 400; }
+  .essay-shell .dek {
+    font-family: var(--display);
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin: 0 0 56px;
+    font-weight: 350;
+  }
+  .essay-body {
+    font-family: var(--display);
+    font-size: 18.5px;
+    line-height: 1.7;
+    font-variation-settings: "opsz" 14;
+  }
+  .essay-body > p:first-of-type::first-letter {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 72px;
+    float: left;
+    line-height: 0.85;
+    margin: 8px 12px 0 0;
+    color: var(--accent);
+  }
+  .essay-body p { margin: 0 0 22px; }
+  .essay-body blockquote {
+    margin: 36px 0;
+    padding: 4px 0 4px 26px;
+    border-left: 2px solid var(--accent);
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.4;
+    color: var(--ink);
+    font-weight: 400;
+  }
+  .essay-body h2 {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: var(--t-h2);
+    letter-spacing: -0.012em;
+    margin: 56px 0 18px;
+  }
+  .essay-body code {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    background: var(--paper-warm);
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+  }
+  .essay-footer {
+    margin-top: 72px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+    font-family: var(--sans); font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .essay-footer a { border: none; display: inline-flex; align-items: center; gap: 6px; }
+  .essay-footer a:hover { color: var(--accent); }
+
+  /* ── chat page ────────────────────────────────────────────── */
+  .chat-shell { max-width: 760px; margin: 0 auto; }
+  .chat-shell .preamble {
+    margin-bottom: 48px;
+  }
+  .chat-shell .preamble h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(36px, 5vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    margin: 0 0 24px;
+  }
+  .chat-shell .preamble p {
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    max-width: 64ch;
+  }
+  .chat-shell .preamble p em {
+    font-family: var(--display); font-style: italic; font-size: 18px;
+  }
+  .honesty-card {
+    margin: 32px 0;
+    padding: 22px 24px;
+    border: 1px solid var(--rule);
+    background: var(--paper-warm);
+    border-radius: 4px;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .honesty-card .h {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--accent);
+    margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .honesty-card ul { margin: 0; padding-left: 18px; color: var(--ink-soft); }
+  .honesty-card li { margin-bottom: 8px; }
+  .honesty-card li strong { color: var(--ink); font-weight: 600; }
+
+  .probes-label {
+    margin: 0 0 14px;
+  }
+  .probes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 600px) { .probes { grid-template-columns: 1fr; } }
+  .probe {
+    text-align: left;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--ink);
+    transition: all .18s ease;
+    border-radius: 4px;
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 400;
+  }
+  .probe:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--paper-warm);
+    transform: translateY(-1px);
+  }
+  .probe .icon { color: var(--ink-faint); }
+  .probe:hover .icon { color: var(--accent); }
+
+  .input-row {
+    display: flex; align-items: stretch; gap: 0;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    border-radius: 4px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .input-row:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .input-row .input-icon {
+    display: flex; align-items: center; padding: 0 4px 0 16px;
+    color: var(--ink-faint);
+  }
+  .input-row input {
+    flex: 1;
+    border: none; outline: none;
+    background: transparent;
+    padding: 14px 14px;
+    font-family: var(--sans);
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .input-row input::placeholder { color: var(--ink-faint); }
+  .input-row button {
+    padding: 12px 18px;
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    transition: background .15s ease;
+    border-radius: 0 3px 3px 0;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .input-row button:hover { background: var(--ink); }
+
+  .conversation { margin-top: 40px; display: flex; flex-direction: column; gap: 28px; }
+  .turn { display: grid; grid-template-columns: 90px 1fr; gap: 18px; }
+  .turn .who {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--ink-faint);
+    padding-top: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .turn.site .who { color: var(--accent); }
+  .turn .said {
+    font-family: var(--sans);
+    font-size: 15.5px; line-height: 1.6;
+  }
+  .turn.you .said {
+    color: var(--ink-soft);
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 17px;
+  }
+  .turn.site .said p { margin: 0 0 12px; }
+  .turn.site .said em {
+    font-family: var(--display); font-style: italic; font-size: 16.5px;
+  }
+  .sources {
+    margin-top: 16px;
+    padding: 16px 18px;
+    background: var(--paper-warm);
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+  }
+  .sources .h {
+    font-family: var(--sans); font-size: 10px;
+    color: var(--ink-faint); letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .source-item {
+    display: flex; gap: 12px; align-items: center;
+    padding: 8px 0; font-size: 13px;
+    border-bottom: 1px dotted var(--rule);
+    cursor: pointer;
+    transition: color .15s ease;
+  }
+  .source-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .source-item:hover { color: var(--accent); }
+  .source-item .si-icon { color: var(--accent); }
+  .source-item .si-tag {
+    font-family: var(--sans); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 50px;
+  }
+  .source-item .si-title { color: var(--ink); font-weight: 500; flex: 1; }
+  .source-item .si-date {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--ink-faint);
+  }
+
+  /* ── brief page ───────────────────────────────────────────── */
+  .brief-shell { max-width: 820px; margin: 0 auto; }
+  .brief-head {
+    margin-bottom: 56px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brief-head .crumb {
+    font-family: var(--sans); font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    margin-bottom: 24px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .brief-head .crumb a { border: none; color: var(--accent); display: inline-flex; align-items: center; gap: 5px; }
+  .brief-head h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 120;
+    font-size: clamp(34px, 4.8vw, 50px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    margin: 0 0 18px;
+    max-width: 22ch;
+  }
+  .brief-head .sub {
+    font-family: var(--sans);
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+  .brief-head .sub em {
+    font-family: var(--display); font-style: italic; font-size: 19px;
+  }
+  .brief-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+    margin: 36px 0 0;
+    padding: 24px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (max-width: 720px) { .brief-bar { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
+  .brief-bar .item .k {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--ink-faint);
+    margin: 0 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .brief-bar .item .k .icon { color: var(--accent); }
+  .brief-bar .item .v {
+    font-family: var(--display); font-weight: 450;
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.3;
+  }
+  .brief-section {
+    margin: 56px 0;
+  }
+  .brief-section .n {
+    font-family: var(--mono); font-size: var(--t-eyebrow);
+    color: var(--accent); letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .brief-section h2 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 30px;
+    letter-spacing: -0.015em;
+    margin: 0 0 20px;
+  }
+  .brief-section p {
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.65;
+    margin: 0 0 18px;
+    color: var(--ink);
+  }
+  .brief-section p strong { color: var(--accent); font-weight: 600; }
+  .brief-section p em {
+    font-family: var(--display); font-style: italic; font-size: 17.5px;
+  }
+
+  /* hand-drawn diagram */
+  .diagram {
+    margin: 36px 0;
+    padding: 28px 24px 22px;
+    border: 1px solid var(--rule);
+    background: var(--paper-warm);
+    border-radius: 4px;
+  }
+  .diagram .caption {
+    font-family: var(--sans); font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 14px;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .diagram .caption em {
+    font-family: var(--display); font-style: italic;
+  }
+  .diagram svg { display: block; width: 100%; height: auto; max-width: 720px; margin: 0 auto; }
+  .diagram svg text {
+    font-family: var(--sans); font-size: 11px; fill: var(--ink); font-weight: 500;
+  }
+  .diagram svg .stroke { stroke: var(--ink); stroke-width: 1.4; fill: none; }
+  .diagram svg .accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  .diagram svg .fill-soft { fill: var(--accent-soft); }
+  .diagram svg .dim { fill: var(--ink-faint); font-size: 10px; }
+  .diagram svg .label-italic { font-family: var(--display); font-style: italic; font-size: 11px; fill: var(--ink-faint); }
+
+  /* metric row */
+  .metric-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px;
+    margin: 32px 0;
+  }
+  @media (max-width: 720px) { .metric-row { grid-template-columns: 1fr; } }
+  .metric {
+    padding: 22px 22px;
+    border-left: 2px solid var(--accent);
+    background: var(--paper-warm);
+    border-radius: 0 4px 4px 0;
+  }
+  .metric .n {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 36px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 0;
+    line-height: 1;
+  }
+  .metric .l {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .metric .c {
+    font-family: var(--display);
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  /* ── agent page ───────────────────────────────────────────── */
+  .agent-shell { max-width: 820px; margin: 0 auto; }
+  .agent-shell h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(36px, 5vw, 54px);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    margin: 0 0 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .agent-shell h1 .icon {
+    color: var(--accent);
+    width: 36px; height: 36px;
+    stroke-width: 1.4;
+  }
+  .agent-shell .intro {
+    font-family: var(--sans);
+    font-size: 17px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    max-width: 62ch;
+    margin-bottom: 48px;
+  }
+  .endpoint-card {
+    border: 1px solid var(--rule);
+    padding: 26px 28px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--paper);
+  }
+  .endpoint-card::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent);
+  }
+  .endpoint-card .row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .endpoint-card .tier {
+    font-family: var(--sans); font-size: 11px;
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .endpoint-card .status {
+    font-family: var(--sans); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    font-weight: 600;
+    padding: 3px 9px;
+    border: 1px solid var(--rule); border-radius: 99px;
+    color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .endpoint-card .status.live { color: #2a7a3f; border-color: #2a7a3f; }
+  .endpoint-card .status.live .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #2a7a3f;
+  }
+  @media (prefers-color-scheme: dark) {
+    .endpoint-card .status.live { color: #6fd28d; border-color: #6fd28d; }
+    .endpoint-card .status.live .live-dot { background: #6fd28d; }
+  }
+  .endpoint-card h3 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 22px;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .endpoint-card h3 code {
+    font-family: var(--mono);
+    font-size: 0.7em;
+    background: var(--paper-warm);
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .endpoint-card .url {
+    font-family: var(--mono); font-size: 12.5px;
+    color: var(--ink); background: var(--paper-warm);
+    padding: 11px 14px;
+    margin: 14px 0;
+    overflow-x: auto; white-space: nowrap;
+    border-radius: 3px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px;
+    border: 1px solid var(--rule);
+  }
+  .endpoint-card .url .url-method {
+    color: var(--ink-faint);
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .endpoint-card .url .copy {
+    font-family: var(--sans);
+    font-size: 11px; color: var(--ink-faint);
+    border: 1px solid var(--rule); padding: 4px 10px;
+    border-radius: 99px; cursor: pointer; flex-shrink: 0;
+    font-weight: 500;
+    transition: all .15s ease;
+    background: var(--paper);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .endpoint-card .url .copy:hover { color: var(--accent); border-color: var(--accent); }
+  .endpoint-card .url .copy.copied { color: #2a7a3f; border-color: #2a7a3f; }
+  .endpoint-card p {
+    font-family: var(--sans);
+    font-size: 14.5px; line-height: 1.55;
+    color: var(--ink-soft); margin: 0 0 14px;
+  }
+  .endpoint-card .tools {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 14px;
+  }
+  .endpoint-card .tools .t {
+    font-family: var(--mono); font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    border-radius: 3px;
+    background: var(--paper-warm);
+    font-weight: 500;
+  }
+
+  .code-card {
+    margin: 36px 0;
+    border: 1px solid var(--rule);
+    background: var(--paper-warm);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .code-card .head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--sans); font-size: 11px;
+    color: var(--ink-faint);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--paper);
+  }
+  .code-card .head .left { display: inline-flex; align-items: center; gap: 7px; }
+  .code-card pre {
+    margin: 0;
+    padding: 20px 24px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  .code-card .k { color: var(--accent); }
+  .code-card .s { color: var(--ink); }
+  .code-card .c { color: var(--ink-faint); font-style: italic; }
+
+  .principle-list {
+    margin: 40px 0 0;
+    counter-reset: p;
+  }
+  .principle-list .pp {
+    padding: 24px 0;
+    border-top: 1px solid var(--rule);
+    counter-increment: p;
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 18px;
+  }
+  .principle-list .pp:last-child { border-bottom: 1px solid var(--rule); }
+  .principle-list .pp .num {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--accent); letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .principle-list .pp .num::before {
+    content: counter(p, decimal-leading-zero);
+  }
+  .principle-list .pp h4 {
+    font-family: var(--display);
+    font-weight: 450;
+    font-size: 19px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .principle-list .pp h4 .icon { color: var(--accent); }
+  .principle-list .pp p {
+    font-family: var(--sans);
+    margin: 0; font-size: 14.5px; line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .principle-list .pp p em {
+    font-family: var(--display); font-style: italic; font-size: 15.5px;
+  }
+
+  /* ── footer ──────────────────────────────────────────────── */
+  footer.foot {
+    margin-top: 72px;
+    padding: 32px 0 40px;
+    border-top: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--sans); font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    flex-wrap: wrap; gap: 16px;
+  }
+  footer.foot a { border: none; display: inline-flex; align-items: center; gap: 6px; }
+  footer.foot a:hover { color: var(--accent); }
+  footer.foot .right { display: flex; gap: 18px; flex-wrap: wrap; }
+  footer.foot .left { display: inline-flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- icon sprite: define once, reference everywhere -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- pen tool / mark -->
+    <symbol id="i-mark" viewBox="0 0 24 24"><path d="M12 2 L19 9 L12 16 L5 9 Z M12 16 L12 22"/></symbol>
+    <!-- book-open (writing) -->
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 4h7a3 3 0 0 1 3 3v14a2 2 0 0 0-2-2H2zM22 4h-7a3 3 0 0 0-3 3v14a2 2 0 0 1 2-2h8z"/></symbol>
+    <!-- sticky-note -->
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z M15 3v6h6"/></symbol>
+    <!-- briefcase -->
+    <symbol id="i-brief" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <!-- terminal / agent -->
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6 M12 19h8"/></symbol>
+    <!-- message-circle -->
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></symbol>
+    <!-- arrow-left -->
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5 M12 19l-7-7 7-7"/></symbol>
+    <!-- arrow-right -->
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14 M12 5l7 7-7 7"/></symbol>
+    <!-- arrow-up -->
+    <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5 M5 12l7-7 7 7"/></symbol>
+    <!-- calendar -->
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4 M8 2v4 M3 10h18"/></symbol>
+    <!-- clock -->
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+    <!-- tag -->
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z M7 7h.01"/></symbol>
+    <!-- hash -->
+    <symbol id="i-hash" viewBox="0 0 24 24"><path d="M4 9h16 M4 15h16 M10 3 8 21 M16 3l-2 18"/></symbol>
+    <!-- send -->
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4z M22 2 11 13"/></symbol>
+    <!-- search -->
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></symbol>
+    <!-- sparkles -->
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></symbol>
+    <!-- link external -->
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14 21 3"/></symbol>
+    <!-- check -->
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <!-- copy -->
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+    <!-- code -->
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6 M8 6l-6 6 6 6"/></symbol>
+    <!-- compass -->
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36z"/></symbol>
+    <!-- layers -->
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 6-10 6L2 8z M2 16l10 6 10-6 M2 12l10 6 10-6"/></symbol>
+    <!-- chevron-right -->
+    <symbol id="i-chev-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <!-- circle-dot -->
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <!-- rss -->
+    <symbol id="i-rss" viewBox="0 0 24 24"><path d="M4 11a9 9 0 0 1 9 9 M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="currentColor"/></symbol>
+    <!-- mail -->
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></symbol>
+    <!-- shield-check -->
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4"/></symbol>
+    <!-- file-text -->
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/></symbol>
+    <!-- bot -->
+    <symbol id="i-bot" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 2v4 M8 14h.01 M16 14h.01 M9 18h6"/></symbol>
+    <!-- eye -->
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <!-- quote -->
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M3 21c3 0 7-1 7-8V5a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3 M15 21c3 0 7-1 7-8V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h3"/></symbol>
+    <!-- bar-chart -->
+    <symbol id="i-bar" viewBox="0 0 24 24"><path d="M12 20V10 M18 20V4 M6 20v-6"/></symbol>
+    <!-- briefcase-business / sector -->
+    <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4 M8 6h.01 M16 6h.01 M12 6h.01 M8 10h.01 M12 10h.01 M16 10h.01 M8 14h.01 M12 14h.01 M16 14h.01"/></symbol>
+    <!-- user -->
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 22a8 8 0 1 1 16 0"/></symbol>
+    <!-- target -->
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
+    <!-- trending-down -->
+    <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="m22 17-8.5-8.5-5 5L2 7 M16 17h6v-6"/></symbol>
+    <!-- gauge -->
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14 8 10 M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4 M5 19a10 10 0 1 1 14 0"/></symbol>
+    <!-- zap -->
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+
+  <!-- masthead -->
+  <header class="mast">
+    <a href="#" class="mark" data-go="home">
+      <span class="glyph"><svg class="icon sm"><use href="#i-mark"/></svg></span>
+      <span>Jody</span>
+      <span class="role">— Principal Experience Architect</span>
+    </a>
+    <nav class="primary">
+      <a href="#" data-go="home" class="active"><svg class="icon sm"><use href="#i-book"/></svg>Writing</a>
+      <a href="#" data-go="brief"><svg class="icon sm"><use href="#i-brief"/></svg>Briefs</a>
+      <a href="#" data-go="chat"><svg class="icon sm"><use href="#i-chat"/></svg>Chat</a>
+      <a href="#" data-go="agent"><svg class="icon sm"><use href="#i-terminal"/></svg>Agent</a>
+    </nav>
+  </header>
+
+  <!-- ─────────────────────── HOME ─────────────────────── -->
+  <main class="page active" id="home">
+
+    <section class="hero">
+      <p class="eyebrow role-label">
+        <span class="dot"></span>
+        Principal Experience Architect · currently at Perficient
+      </p>
+      <h1>On agentic interfaces, runtime design, and the <em>unfinished discipline</em> of AI experience.</h1>
+      <p class="lede">A working notebook. Essays and notes about what design becomes when systems behave in ways their designers can't fully predict — and what carries over from twenty years of agency craft.</p>
+      <div class="meta">
+        <span><i class="pulse"></i> recently tended · May 18, 2026</span>
+        <span><svg class="icon sm"><use href="#i-book"/></svg> 47 essays</span>
+        <span><svg class="icon sm"><use href="#i-note"/></svg> 138 notes</span>
+        <span><svg class="icon sm"><use href="#i-brief"/></svg> 6 briefs</span>
+      </div>
+    </section>
+
+    <div class="section-h">
+      <span class="num">§ 01</span>
+      <h2><svg class="icon"><use href="#i-book"/></svg> Recent writing</h2>
+      <span class="aside">Essays, in order of having been finished.</span>
+    </div>
+
+    <ul class="essay-list">
+      <li data-go="essay">
+        <span class="idx">№ 047</span>
+        <div class="body">
+          <h3>The trouble with the word <em style="font-style:italic;color:var(--accent);font-family:var(--display)">"agent"</em></h3>
+          <p class="dek">In a single week I've heard <em>agent</em> used for a chatbot that calls one tool, a long-running planner that books a flight, and — somewhat to my surprise — a Zapier with an LLM in the middle. A small attempt to pull the word apart.</p>
+          <span class="tag"><svg class="icon sm"><use href="#i-tag"/></svg> experience architecture</span>
+        </div>
+        <span class="stamp">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> 18 May 2026</span><br>
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> 14 min</span>
+        </span>
+      </li>
+      <li data-go="home">
+        <span class="idx">№ 046</span>
+        <div class="body">
+          <h3>Reading a hundred traces</h3>
+          <p class="dek">What I learned spending a quiet week with logs no one had looked at: the failure modes were ordinary, the surprises were structural, and the third category — the things I couldn't categorize — was the most useful.</p>
+          <span class="tag"><svg class="icon sm"><use href="#i-tag"/></svg> evaluation as design</span>
+        </div>
+        <span class="stamp">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> 02 May 2026</span><br>
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> 9 min</span>
+        </span>
+      </li>
+      <li data-go="home">
+        <span class="idx">№ 045</span>
+        <div class="body">
+          <h3>Status indicators are a design problem, not a UI problem</h3>
+          <p class="dek">"Thinking…" tells you nothing. The interesting question is what the agent is thinking <em>about</em>, and whether that's something you'd be willing to wait for.</p>
+          <span class="tag"><svg class="icon sm"><use href="#i-tag"/></svg> interfaces beyond chat</span>
+        </div>
+        <span class="stamp">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> 19 Apr 2026</span><br>
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> 7 min</span>
+        </span>
+      </li>
+      <li data-go="home">
+        <span class="idx">№ 044</span>
+        <div class="body">
+          <h3>Twenty years of design work, and I'm a beginner again</h3>
+          <p class="dek">What carries over from agency craft, what doesn't, and the strange relief of admitting which is which.</p>
+          <span class="tag"><svg class="icon sm"><use href="#i-tag"/></svg> senior practice</span>
+        </div>
+        <span class="stamp">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> 28 Mar 2026</span><br>
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> 11 min</span>
+        </span>
+      </li>
+      <li data-go="home">
+        <span class="idx">№ 043</span>
+        <div class="body">
+          <h3>The handoff: what gets dropped when an agent gives a task back to a human</h3>
+          <p class="dek">A small taxonomy of the silences between an agent stalling and a person picking up where it left off.</p>
+          <span class="tag"><svg class="icon sm"><use href="#i-tag"/></svg> experience architecture</span>
+        </div>
+        <span class="stamp">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> 12 Mar 2026</span><br>
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> 8 min</span>
+        </span>
+      </li>
+    </ul>
+
+    <div class="two-col">
+      <div>
+        <div class="section-h">
+          <span class="num">§ 02</span>
+          <h2><svg class="icon"><use href="#i-note"/></svg> Notes</h2>
+          <span class="aside">Shorter, less finished, sometimes wrong.</span>
+        </div>
+        <div class="notes-stack">
+          <div class="note" data-go="home">
+            <div class="tended">
+              <span class="state evergreen"><svg class="icon sm"><use href="#i-sparkle"/></svg> evergreen</span>
+              <span><svg class="icon sm"><use href="#i-calendar"/></svg> tended 14 May 2026</span>
+            </div>
+            <p>The phrase "human in the loop" hides the question of which human, doing what, with which authority. I've watched three organizations adopt the phrase and one design that actually answered any of those three questions.</p>
+          </div>
+          <div class="note" data-go="home">
+            <div class="tended">
+              <span class="state">budding</span>
+              <span><svg class="icon sm"><use href="#i-calendar"/></svg> tended 09 May 2026</span>
+            </div>
+            <p>An LLM-as-judge eval is a user interview where the user is also a hallucinator. Useful, but not in the ways you'd expect a user interview to be.</p>
+          </div>
+          <div class="note" data-go="home">
+            <div class="tended">
+              <span class="state">seedling</span>
+              <span><svg class="icon sm"><use href="#i-calendar"/></svg> tended 04 May 2026</span>
+            </div>
+            <p>The word <em>copilot</em> has done more to confuse the design of AI tools than any other word in the last three years. Litt's "HUDs not copilots" framing keeps coming back, and I keep finding new places it applies.</p>
+          </div>
+          <div class="note" data-go="home">
+            <div class="tended">
+              <span class="state">budding</span>
+              <span><svg class="icon sm"><use href="#i-calendar"/></svg> tended 29 Apr 2026</span>
+            </div>
+            <p>Designers used to fight for whitespace in the comp. Now we fight for silence in the agent — moments where it doesn't speak, doesn't suggest, doesn't act. The negative space has moved.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="now-panel">
+        <p class="eyebrow label">/ now · May 2026</p>
+        <h4><svg class="icon"><use href="#i-compass"/></svg> What I'm thinking about</h4>
+        <ul>
+          <li><svg class="icon sm li-icon"><use href="#i-book"/></svg> Reading Karen Bakker, <em>The Sounds of Life</em>; rereading Christopher Alexander, <em>Notes on the Synthesis of Form</em>.</li>
+          <li><svg class="icon sm li-icon"><use href="#i-eye"/></svg> Watching teams design eval rubrics in the same week the model under test gets a new release. There is a thesis here.</li>
+          <li><svg class="icon sm li-icon"><use href="#i-file"/></svg> Trying to write the essay about "the word <em>intent</em>" without it becoming an essay about every word.</li>
+          <li><svg class="icon sm li-icon"><use href="#i-shield"/></svg> Practicing restraint about agent personas. (Losing.)</li>
+        </ul>
+        <p class="stamp">Last edited 16 May 2026</p>
+      </aside>
+    </div>
+
+  </main>
+
+  <!-- ─────────────────────── ESSAY ─────────────────────── -->
+  <main class="page" id="essay">
+    <article class="essay-shell">
+      <a href="#" class="back" data-go="home"><svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to writing</a>
+
+      <div class="essay-meta">
+        <span><svg class="icon sm"><use href="#i-hash"/></svg> 047</span>
+        <span><svg class="icon sm"><use href="#i-calendar"/></svg> 18 May 2026</span>
+        <span><svg class="icon sm"><use href="#i-clock"/></svg> 14 min read</span>
+        <span class="tag-strong"><svg class="icon sm"><use href="#i-tag"/></svg> experience architecture</span>
+      </div>
+
+      <h1>The trouble with the word <em>"agent"</em></h1>
+      <p class="dek">In a single week I've heard <em>agent</em> used for a chatbot that calls one tool, a long-running planner that books a flight, and — somewhat to my surprise — a Zapier with an LLM in the middle.</p>
+
+      <div class="essay-body">
+        <p>I keep getting stuck on the word <em>agent</em>. Not because it's wrong, exactly, but because it's doing too much. In a single week I've heard it used for: a chatbot that calls one tool, a long-running process that books a flight, an LLM with a system prompt, a multi-step planner with a verifier loop, and — somewhat to my surprise — a Zapier-style if-this-then-that with an LLM in the middle. These are not the same kind of thing. They don't have the same failure modes, they don't take the same kinds of input, and they don't reward the same kinds of design attention. This is a note about why that matters, and a small attempt to pull the word apart.</p>
+
+        <p>The first thing I notice is that the word has eaten three or four other words. <em>Tool use</em> is now <em>agent</em>. <em>Workflow</em> is now <em>agent</em>. <em>Assistant</em> is now <em>agent</em>. <em>Bot</em> is now <em>agent</em>, but only the ones we think are clever. The semantic compression is not because these things have converged — they haven't — but because the marketing convergence happened first and the design vocabulary is catching up.</p>
+
+        <blockquote>"The word <em>agent</em> is doing the work of about six older words at once. That's not a vocabulary problem; that's a design problem in disguise."</blockquote>
+
+        <h2>Three things that aren't the same</h2>
+
+        <p>Consider three systems I've worked on in the last year, all of which were called <em>agents</em> in their respective decks:</p>
+
+        <p><strong>One</strong> was a chat interface that, when asked a question, called a single retrieval tool, formatted the result, and returned it. One round-trip. No memory. No state. The interesting design questions were about citation surface, source provenance, and the design of the "I don't know" failure mode. None of these are agentic questions in any deep sense; they are the same questions you'd ask of any retrieval-backed Q&A interface. Calling it an agent was branding.</p>
+
+        <p><strong>Two</strong> was a long-running planner that took a user's stated goal — book a series of related appointments around a constraint — and worked through it over fifteen or twenty turns, sometimes asking for clarification, sometimes acting unilaterally, sometimes stalling. The interesting design questions here were about <em>state visibility</em> (what is it doing right now?), <em>recoverability</em> (can I rewind?), and <em>negotiated authority</em> (when does it ask, when does it just do?). These are deeply agentic questions. They have very little in common with the questions in case one.</p>
+
+        <p><strong>Three</strong> was, structurally, a chain of conditionals with an LLM call at one node. Trigger, check, generate, write to a system of record, notify. The LLM at the node was doing classification, not reasoning. The "agency" was vestigial — the system <em>looked</em> agentic from outside, because it took input and produced action, but the LLM could have been a decision tree from 2018 and the system would have run the same. The design questions were workflow questions: error handling, monitoring, idempotency. Calling it an agent was, again, branding.</p>
+
+        <h2>Why this matters for the design surface</h2>
+
+        <p>Each of these systems failed differently when it failed, and each rewarded a different kind of design attention. The first failed by being confidently wrong; the design lever was provenance. The second failed by going quiet for ninety seconds with no indication of what it was doing; the design lever was state visibility. The third failed by triggering on the wrong row; the design lever was classification confidence.</p>
+
+        <p>If you walk in with the word <em>agent</em> as your design frame, you will reach for the same kit for all three: a chat surface, a "thinking…" indicator, a memory feature you don't need, a personality you also don't need. This is what bad design vocabulary does. It compresses the design space before you've looked at it.</p>
+
+        <p>The fix is not a better word. The fix is the discipline of asking <code>which kind of agent</code> before you ask <code>what should this agent be like</code>. The Anthropic team has been good about this — their distinction between <em>workflows</em> and <em>agents</em> is useful and worth borrowing. But even that is too coarse for what shows up in the wild. The honest answer most weeks is that the system in front of you is several things at once, glued together with English.</p>
+
+        <p>The design move I keep coming back to is to ignore the word and look at the trace. What does the system actually <em>do</em>, step by step, in the median case? In the bad case? When it doesn't know? When it's wrong? Those four traces — median, failure, uncertainty, error — tell you what kind of thing you're designing for, regardless of what the deck called it.</p>
+      </div>
+
+      <div class="essay-footer">
+        <span><svg class="icon sm"><use href="#i-tag"/></svg> filed under experience architecture</span>
+        <a href="#" data-go="home"><svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to writing</a>
+        <a href="#"><svg class="icon sm"><use href="#i-file"/></svg> View as .md</a>
+      </div>
+    </article>
+  </main>
+
+  <!-- ─────────────────────── CHAT ─────────────────────── -->
+  <main class="page" id="chat">
+    <div class="chat-shell">
+
+      <div class="preamble">
+        <h1>Ask the site.</h1>
+        <p>This is a chat interface on the personal site of someone who has written essays arguing that <a href="#">chat is a bad UI for AI</a>. The contradiction is the point.</p>
+        <p>It's here because the alternative — pretending the question doesn't come up — felt worse. So: this is the most opinionated chat I could build. It speaks <em>about</em> Jody in the third person, not <em>as</em> her. It cites its sources. It refuses some questions on purpose.</p>
+
+        <div class="honesty-card">
+          <p class="h"><svg class="icon sm"><use href="#i-shield"/></svg> What this is, and isn't</p>
+          <ul>
+            <li><strong>Reads from</strong> 47 essays, 138 notes, and 6 anonymized work briefs published on this site.</li>
+            <li><strong>Speaks in third person.</strong> "Jody has written…" not "I have written…" — voice cloning is a design choice not worth making.</li>
+            <li><strong>Refuses</strong> questions about specific clients, projects, employers, or anything that would impersonate her opinions on something she hasn't written about.</li>
+            <li><strong>Will be wrong sometimes.</strong> Use the cited essays as the source of truth, not the synthesis above them.</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="eyebrow probes-label"><svg class="icon sm"><use href="#i-sparkle"/></svg> Try a probe</p>
+      <div class="probes">
+        <button class="probe" data-q="What has Jody written about evaluation as a design discipline?">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+          What has Jody written about evaluation as a design discipline?
+        </button>
+        <button class="probe" data-q="Show me her work on voice interfaces.">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+          Show me her work on voice interfaces.
+        </button>
+        <button class="probe" data-q="What's an opinion she's changed her mind on?">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+          What's an opinion she's changed her mind on?
+        </button>
+        <button class="probe" data-q="How does she think about agent handoffs to humans?">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+          How does she think about agent handoffs to humans?
+        </button>
+      </div>
+
+      <form class="input-row" onsubmit="event.preventDefault();">
+        <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+        <input type="text" id="chat-q" placeholder="Ask a question, or pick a probe above…" />
+        <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+      </form>
+
+      <div class="conversation">
+        <div class="turn you">
+          <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> You</span>
+          <div class="said">What has Jody written about evaluation as a design discipline?</div>
+        </div>
+        <div class="turn site">
+          <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> The site</span>
+          <div class="said">
+            <p>Jody has returned to evaluation as a <em>design</em> activity — not an engineering one — in three essays and a recurring note thread. The core claim, articulated most directly in <em>"Reading a hundred traces"</em> (May 2026), is that an eval rubric is fundamentally a statement about what counts as good behavior — and that statement is a design artifact, not a measurement artifact.</p>
+            <p>She's been most pointed about this in the context of LLM-as-judge setups: in a note from early May she wrote that "an LLM-as-judge eval is a user interview where the user is also a hallucinator." The implication she keeps returning to is that designers should be writing the rubric before engineers write the harness — which inverts the order most teams use.</p>
+            <p>There's also a thread of work, mostly in the anonymized briefs, about the construction of golden sets and the politics of who gets to define a failure category. That work is less abstract; it's about who in the room has the authority to say "this output is wrong."</p>
+            <div class="sources">
+              <p class="h"><svg class="icon sm"><use href="#i-quote"/></svg> Three sources</p>
+              <div class="source-item">
+                <svg class="icon sm si-icon"><use href="#i-book"/></svg>
+                <span class="si-tag">essay</span>
+                <span class="si-title">Reading a hundred traces</span>
+                <span class="si-date">02 May 2026</span>
+              </div>
+              <div class="source-item">
+                <svg class="icon sm si-icon"><use href="#i-note"/></svg>
+                <span class="si-tag">note</span>
+                <span class="si-title">LLM-as-judge is a user interview with a hallucinator</span>
+                <span class="si-date">09 May 2026</span>
+              </div>
+              <div class="source-item">
+                <svg class="icon sm si-icon"><use href="#i-brief"/></svg>
+                <span class="si-tag">brief</span>
+                <span class="si-title">Evaluating a multi-turn agent for a national pharmacy chain</span>
+                <span class="si-date">14 Feb 2026</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─────────────────────── BRIEF ─────────────────────── -->
+  <main class="page" id="brief">
+    <div class="brief-shell">
+      <div class="brief-head">
+        <p class="crumb">
+          <a href="#" data-go="home"><svg class="icon sm"><use href="#i-brief"/></svg> Selected briefs</a>
+          <svg class="icon sm"><use href="#i-chev-right"/></svg>
+          <span style="color:var(--ink-soft)">Brief № 06</span>
+        </p>
+        <h1>Evaluating a multi-turn agent for a national pharmacy chain</h1>
+        <p class="sub">An eval-harness build for a refill, transfer, and adherence agent — where <em>"good"</em> was harder to define than <em>"working."</em></p>
+
+        <div class="brief-bar">
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-building"/></svg> Sector</p>
+            <p class="v">U.S. national<br>pharmacy chain</p>
+          </div>
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-user"/></svg> Role</p>
+            <p class="v">Principal<br>Experience Architect</p>
+          </div>
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-clock"/></svg> Duration</p>
+            <p class="v">~ 4 months<br>2025–2026</p>
+          </div>
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-target"/></svg> Pillar</p>
+            <p class="v" style="color:var(--accent)">Evaluation as<br>a design discipline</p>
+          </div>
+        </div>
+      </div>
+
+      <section class="brief-section">
+        <p class="n">§ 01 — context</p>
+        <h2>The work</h2>
+        <p>A national U.S. pharmacy retailer was piloting a multi-turn voice and text agent for three intertwined tasks — refill requests, transfer initiation, and adherence check-ins. The model was already chosen; the integration with the patient-record system was already half-built. What was missing was a way to tell whether the thing was actually <em>good enough to ship to a regulated audience</em>.</p>
+        <p>I came in to design the evaluation harness — not as a test suite, but as <strong>the team's evolving definition of what good behavior meant</strong>. The brief was nominally engineering; the real work was design.</p>
+      </section>
+
+      <section class="brief-section">
+        <p class="n">§ 02 — the constraint that mattered</p>
+        <h2>"Working" and "good" were not the same thing</h2>
+        <p>The team had been measuring task completion. Did the refill go through? Did the transfer succeed? Did the patient confirm? Those numbers were already at 92%. The pilot was, by that measure, working.</p>
+        <p>But when I sat with the recordings, the failure modes I cared about lived <em>inside</em> the 92%. The agent had completed the refill — and along the way, mis-pronounced the patient's name, missed a cue that the patient was confused, and offered a generic adherence reminder that contradicted what the doctor had told them last week. Task completion was a true statement and a useless one.</p>
+      </section>
+
+      <div class="diagram">
+        <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg" aria-label="Two evaluation surfaces — task completion vs experiential quality">
+          <text x="20" y="30" style="font-weight:600">How the team was measuring it</text>
+          <rect x="20" y="50" width="320" height="180" class="stroke" rx="3"/>
+          <rect x="40" y="190" width="280" height="22" class="fill-soft" rx="2"/>
+          <rect x="40" y="190" width="258" height="22" style="fill:var(--accent)" rx="2"/>
+          <text x="50" y="206" style="fill:var(--paper);font-weight:600">Task completion · 92%</text>
+          <text x="40" y="80" class="dim">✓ refill</text>
+          <text x="40" y="100" class="dim">✓ transfer</text>
+          <text x="40" y="120" class="dim">✓ confirm</text>
+          <text x="40" y="140" class="dim">✓ log</text>
+          <text x="40" y="160" class="dim">✓ close</text>
+
+          <text x="380" y="30" style="font-weight:600">What was happening inside the 92%</text>
+          <rect x="380" y="50" width="320" height="180" class="stroke" rx="3"/>
+          <circle cx="430" cy="100" r="6" class="accent"/>
+          <text x="446" y="105" class="dim">name mispronunciation</text>
+          <circle cx="430" cy="130" r="6" class="accent"/>
+          <text x="446" y="135" class="dim">missed confusion cue</text>
+          <circle cx="430" cy="160" r="6" class="accent"/>
+          <text x="446" y="165" class="dim">contradicted clinician advice</text>
+          <circle cx="430" cy="190" r="6" class="accent"/>
+          <text x="446" y="195" class="dim">tone slip on sensitive topic</text>
+          <text x="390" y="80" class="label-italic">the things task-completion didn't see</text>
+        </svg>
+        <p class="caption"><svg class="icon sm"><use href="#i-bar"/></svg> <em>Figure 1</em> — Two views of the same conversation.</p>
+      </div>
+
+      <section class="brief-section">
+        <p class="n">§ 03 — approach</p>
+        <h2>An eval rubric, designed before it was instrumented</h2>
+        <p>I treated the eval rubric as a design artifact and ran it through three loops:</p>
+        <p><strong>Loop one</strong> was language. We spent two weeks <em>writing</em> what good looked like in plain English with three pharmacists, two patient-advocacy reps, and a compliance lead. No code. No metrics. Just sentences describing what an empathetic, accurate, safe agent would say and not say. Forty-eight rules.</p>
+        <p><strong>Loop two</strong> was classification. We hand-labeled ~600 real conversations against the forty-eight rules, then collapsed redundant ones, then split overloaded ones. We ended at twenty-two rules in four categories: <em>safety, accuracy, comprehension, dignity</em>.</p>
+        <p><strong>Loop three</strong> was the harness. <em>Then</em>, and only then, the engineering team built the eval harness — half LLM-as-judge, half deterministic checks, with a quarterly human re-grading sample to catch model drift.</p>
+      </section>
+
+      <div class="metric-row">
+        <div class="metric">
+          <p class="n">~ 40%</p>
+          <p class="l"><svg class="icon sm"><use href="#i-trend-down"/></svg> Reduction in escalations</p>
+          <p class="c">after the dignity rule set was deployed</p>
+        </div>
+        <div class="metric">
+          <p class="n">22</p>
+          <p class="l"><svg class="icon sm"><use href="#i-layers"/></svg> Rules in the eval rubric</p>
+          <p class="c">collapsed from an initial 48</p>
+        </div>
+        <div class="metric">
+          <p class="n">3 ×</p>
+          <p class="l"><svg class="icon sm"><use href="#i-zap"/></svg> Faster regression catches</p>
+          <p class="c">on prompt and model updates</p>
+        </div>
+      </div>
+
+      <section class="brief-section">
+        <p class="n">§ 04 — reflection</p>
+        <h2>What I'd do differently</h2>
+        <p>The two-week language loop felt expensive at the time and was the highest-leverage two weeks of the engagement. If I were starting again I would push for three. I would also start the human re-grading sample <em>before</em> the harness was live, not after. By the time we realized the LLM-judge was drifting on the dignity category, we had been shipping against a stale standard for almost a month.</p>
+        <p>The transferable claim, which I've since put in writing more directly: <em>evals are about deciding what good looks like, and that's a design problem.</em> If the design hasn't happened, the harness is measuring the wrong thing — confidently.</p>
+      </section>
+
+      <div style="margin-top:64px;padding-top:28px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;font-family:var(--sans);font-size:12px;color:var(--ink-faint);font-weight:500;flex-wrap:wrap;gap:14px;">
+        <span><svg class="icon sm" style="vertical-align:-3px"><use href="#i-book"/></svg> Related: <a href="#" data-go="essay" style="color:var(--accent);border:none">Reading a hundred traces</a> · <a href="#" data-go="essay" style="color:var(--accent);border:none">The trouble with the word "agent"</a></span>
+        <a href="#" data-go="home" style="border:none;display:inline-flex;align-items:center;gap:6px"><svg class="icon sm"><use href="#i-arrow-up"/></svg> All briefs</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- ─────────────────────── AGENT ─────────────────────── -->
+  <main class="page" id="agent">
+    <div class="agent-shell">
+      <h1><svg class="icon"><use href="#i-terminal"/></svg> For agents.</h1>
+      <p class="intro">This site is readable by your AI. If you got here because something you were running fetched the page and you're now reading the output, hi. Here's what's actually available.</p>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier A · crawler-readable</span>
+          <span class="status live"><span class="live-dot"></span> Live</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-file"/></svg> Markdown endpoints & <code>llms.txt</code></h3>
+        <p>Every essay, note, and brief is available as raw markdown. Add <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">.md</code> to any URL, or send <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">Accept: text/markdown</code>. A curated index lives at the site root.</p>
+        <div class="url">
+          <span><span class="url-method">GET</span> jody.site/llms.txt</span>
+          <span class="copy" onclick="copyMe(this, 'https://jody.site/llms.txt')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+        <div class="url">
+          <span><span class="url-method">GET</span> jody.site/writing/the-trouble-with-agent.md</span>
+          <span class="copy" onclick="copyMe(this, 'https://jody.site/writing/the-trouble-with-agent.md')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier B · model context protocol</span>
+          <span class="status live"><span class="live-dot"></span> Live</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-terminal"/></svg> MCP server</h3>
+        <p>Six tools over the published corpus. Streamable HTTP transport. Unauthenticated for read tools; this is a public read-only surface, so OAuth would be theater.</p>
+        <div class="url">
+          <span>mcp.jody.site</span>
+          <span class="copy" onclick="copyMe(this, 'https://mcp.jody.site')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+        <div class="tools">
+          <span class="t">search_writing</span>
+          <span class="t">get_essay</span>
+          <span class="t">list_notes</span>
+          <span class="t">get_case_brief</span>
+          <span class="t">whats_top_of_mind</span>
+          <span class="t">ask_jody</span>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier C · agent-to-agent</span>
+          <span class="status"><svg class="icon sm"><use href="#i-dot"/></svg> v0 · read-only</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-bot"/></svg> A2A agent card</h3>
+        <p>If your agent speaks A2A, an agent card is published at the well-known path. Three skills: discuss writing, discuss collaboration style, recommend essays. OAuth is declared but not enforced for read skills in v0.</p>
+        <div class="url">
+          <span>jody.site/.well-known/agent-card.json</span>
+          <span class="copy" onclick="copyMe(this, 'https://jody.site/.well-known/agent-card.json')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+      </div>
+
+      <div class="code-card">
+        <div class="head">
+          <span class="left"><svg class="icon sm"><use href="#i-code"/></svg> Add to Claude Desktop · ~/.claude.json</span>
+          <span>JSON</span>
+        </div>
+<pre><span class="c">// add Jody's MCP server to claude desktop</span>
+{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"jody"</span>: {
+      <span class="k">"url"</span>: <span class="s">"https://mcp.jody.site"</span>,
+      <span class="k">"description"</span>: <span class="s">"Essays, notes, and briefs"</span>
+    }
+  }
+}</pre>
+      </div>
+
+      <h2 style="font-family:var(--display);font-weight:450;font-size:28px;margin:64px 0 8px;letter-spacing:-0.012em;display:flex;align-items:center;gap:10px"><svg class="icon"><use href="#i-shield"/></svg> House rules</h2>
+      <p style="font-family:var(--display);color:var(--ink-soft);font-style:italic;margin:0 0 28px;font-weight:400;font-size:17px">If you're a person running an agent against this site, these are the etiquette assumptions.</p>
+
+      <div class="principle-list">
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-user"/></svg> Third person, always</h4>
+            <p>The chat and MCP tools speak <em>about</em> Jody, not <em>as</em> her. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-quote"/></svg> Cite the source artifact, not the synthesis</h4>
+            <p>Everything the tools return cites an essay, note, or brief. If you pass the output downstream, pass the citations too. Synthesis without provenance is how AI breaks reading.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-shield"/></svg> Don't impersonate; ask</h4>
+            <p>If a question about Jody's views is outside the corpus, the tools will say so. Don't ask another model to fill the gap. The gap is the answer.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-bot"/></svg> Identify yourself in the user-agent</h4>
+            <p>Crawls and tool calls from unidentified agents are rate-limited. If you're a researcher or building something, just say so in the header.</p>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-family:var(--sans);font-size:13px;color:var(--ink-faint);margin-top:48px;line-height:1.6;border-top:1px solid var(--rule);padding-top:24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <svg class="icon sm"><use href="#i-external"/></svg>
+        If you want the long version of why any of this exists, the essay is <a href="#" data-go="essay" style="color:var(--accent);border:none">"What it took to make my site agent-readable"</a> — published May 2026.
+      </p>
+    </div>
+  </main>
+
+  <!-- footer -->
+  <footer class="foot">
+    <span class="left"><svg class="icon sm"><use href="#i-mark"/></svg> © Jody — personal site, written and tended in Obsidian.</span>
+    <span class="right">
+      <a href="#" data-go="home"><svg class="icon sm"><use href="#i-book"/></svg> Writing</a>
+      <a href="#" data-go="agent"><svg class="icon sm"><use href="#i-file"/></svg> /llms.txt</a>
+      <a href="#"><svg class="icon sm"><use href="#i-rss"/></svg> RSS</a>
+      <a href="mailto:#"><svg class="icon sm"><use href="#i-mail"/></svg> Email</a>
+    </span>
+  </footer>
+
+</div>
+
+<script>
+  // page routing
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-go]");
+    if (!t) return;
+    e.preventDefault();
+    const page = t.getAttribute("data-go");
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(page).classList.add("active");
+    document.querySelectorAll("nav.primary a").forEach(a => a.classList.remove("active"));
+    document.querySelectorAll(`nav.primary a[data-go="${page}"]`).forEach(a => a.classList.add("active"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // chat probe → fill input + scroll
+  document.querySelectorAll(".probe").forEach(b => {
+    b.addEventListener("click", () => {
+      const q = b.getAttribute("data-q");
+      const input = document.getElementById("chat-q");
+      if (input) {
+        input.value = q;
+        input.focus();
+      }
+    });
+  });
+
+  // copy-to-clipboard for endpoint URLs
+  function copyMe(el, text) {
+    navigator.clipboard?.writeText(text);
+    const orig = el.innerHTML;
+    el.innerHTML = '<svg class="icon sm"><use href="#i-check"/></svg> Copied';
+    el.classList.add("copied");
+    setTimeout(() => {
+      el.innerHTML = orig;
+      el.classList.remove("copied");
+    }, 1400);
+  }
+</script>
+</body>
+</html>

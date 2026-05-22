@@ -1,0 +1,35 @@
+{
+  "name": "jodybrewster-dev",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "postbuild": "pagefind --site dist",
+    "preview": "astro preview",
+    "astro": "astro",
+    "sync": "tsx scripts/sync-vault.ts",
+    "embed": "tsx scripts/embed.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "@astrojs/mdx": "^4.0.0",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.0.0",
+    "@astrojs/vercel": "^8.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
+    "@upstash/vector": "^1.2.3",
+    "astro": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "remark-wiki-link": "^2.0.0"
+  },
+  "devDependencies": {
+    "@pagefind/default-ui": "^1.3.0",
+    "pagefind": "^1.3.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,75 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  date: string;
+  isoDate?: string;
+  readTime: string;
+  tags: string | string[];
+  pillar?: string;
+  number?: string;
+}
+
+const { title, description, date, isoDate, readTime, tags, pillar, number } = Astro.props;
+const tagList = Array.isArray(tags) ? tags : [tags];
+const primaryTag = tagList[0] ?? '';
+
+const markdownHref = `${Astro.url.pathname.replace(/\/$/, '')}.md`;
+
+const jsonLd: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  author: { '@type': 'Person', name: 'Jody Brewster', url: 'https://jodybrewster.dev/about' },
+  publisher: { '@type': 'Person', name: 'Jody Brewster' },
+  datePublished: isoDate ?? date,
+  url: `https://jodybrewster.dev${Astro.url.pathname}`,
+  keywords: tagList,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': `https://jodybrewster.dev${Astro.url.pathname}` },
+};
+---
+<Base title={title} description={description} markdownHref={markdownHref} jsonLd={jsonLd}>
+  <main class="page active" style="padding: 72px 0 100px;">
+    <article class="essay-shell">
+      <a href="/writing" class="back">
+        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to writing
+      </a>
+
+      <div class="essay-meta">
+        {number && (
+          <span><svg class="icon sm"><use href="#i-hash"/></svg> {number}</span>
+        )}
+        <span><svg class="icon sm"><use href="#i-calendar"/></svg> {date}</span>
+        <span><svg class="icon sm"><use href="#i-clock"/></svg> {readTime}</span>
+        {primaryTag && (
+          <span class="tag-strong">
+            <svg class="icon sm"><use href="#i-tag"/></svg> {primaryTag}
+          </span>
+        )}
+      </div>
+
+      <h1 set:html={title} />
+
+      {description && <p class="dek">{description}</p>}
+
+      <div class="essay-body">
+        <slot />
+      </div>
+
+      <div class="essay-footer">
+        <span>
+          <svg class="icon sm"><use href="#i-tag"/></svg> filed under {primaryTag}
+        </span>
+        <a href="/writing">
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to writing
+        </a>
+        <a href={`${Astro.url.pathname}.md`}>
+          <svg class="icon sm"><use href="#i-file"/></svg> View as .md
+        </a>
+      </div>
+    </article>
+  </main>
+</Base>

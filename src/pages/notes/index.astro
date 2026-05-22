@@ -1,0 +1,36 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import NoteCard from '../../components/NoteCard.astro';
+
+const notes = (await getCollection('notes', n => n.data.publish))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+---
+<Base title="Notes — Jody Brewster" description="Shorter, less finished, sometimes wrong. Notes from a garden of ideas about AI, design, and practice.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <div class="section-h" style="margin-top:0;">
+      <h2><svg class="icon"><use href="#i-note"/></svg> Notes</h2>
+      <span class="aside">Shorter, less finished, sometimes wrong. {notes.length} published.</span>
+    </div>
+
+    <div class="notes-stack" style="max-width:660px;">
+      {notes.map((note) => {
+        const excerpt = (note.body ?? '').split('\n').find(l => l.trim() && !l.startsWith('#')) ?? '';
+        return (
+          <NoteCard
+            title={note.data.title}
+            date={formatDate(note.data.date)}
+            status={note.data.status}
+            slug={note.id}
+            tags={note.data.tags}
+            body={excerpt.slice(0, 240)}
+          />
+        );
+      })}
+    </div>
+  </main>
+</Base>

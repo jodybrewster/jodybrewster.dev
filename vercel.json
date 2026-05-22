@@ -1,0 +1,23 @@
+{
+  "framework": "astro",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "rewrites": [
+    {
+      "source": "/writing/:slug",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/writing/:slug.md"
+    },
+    {
+      "source": "/notes/:slug",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/notes/:slug.md"
+    },
+    {
+      "source": "/work/:slug",
+      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "destination": "/work/:slug.md"
+    }
+  ]
+}

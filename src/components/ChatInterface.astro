@@ -1,0 +1,186 @@
+---
+const probes = [
+  'What has Jody written about evaluation as a design discipline?',
+  'Show me his work on voice interfaces.',
+  "What's an opinion he's changed his mind on?",
+  'How does he think about agent handoffs to humans?',
+];
+
+const iconForType: Record<string, string> = {
+  writing: 'i-book',
+  notes: 'i-note',
+  work: 'i-brief',
+};
+---
+<p class="eyebrow probes-label"><svg class="icon sm"><use href="#i-sparkle"/></svg> Try a probe</p>
+<div class="probes" id="probes">
+  {probes.map(q => (
+    <button class="probe" type="button" data-q={q}>
+      <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+      {q}
+    </button>
+  ))}
+</div>
+
+<form class="input-row" id="chat-form">
+  <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+  <input type="text" id="chat-q" autocomplete="off" placeholder="Ask a question, or pick a probe above…" />
+  <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+</form>
+
+<div class="conversation" id="conversation"></div>
+
+<template id="tpl-you">
+  <div class="turn you">
+    <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> You</span>
+    <div class="said"></div>
+  </div>
+</template>
+
+<template id="tpl-site">
+  <div class="turn site">
+    <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> The site</span>
+    <div class="said"><div class="answer"></div></div>
+  </div>
+</template>
+
+<script is:inline define:vars={{ iconForType }}>
+  (function () {
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-q');
+    const conv = document.getElementById('conversation');
+    const probes = document.getElementById('probes');
+    const tplYou = document.getElementById('tpl-you');
+    const tplSite = document.getElementById('tpl-site');
+
+    function append(template) {
+      const node = template.content.firstElementChild.cloneNode(true);
+      conv.appendChild(node);
+      return node;
+    }
+
+    function paragraphize(text) {
+      // Split on blank lines; render each paragraph as a <p>, preserving
+      // italic markers for *text* and _text_ since the model is told to use
+      // them sparingly.
+      const paras = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+      return paras.map(p => {
+        const html = p
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/_([^_]+)_/g, '<em>$1</em>')
+          .replace(/\n/g, '<br>');
+        return `<p>${html}</p>`;
+      }).join('');
+    }
+
+    function renderSources(sources) {
+      if (!sources || sources.length === 0) return '';
+      const count = sources.length;
+      const label = count === 1 ? 'One source' : count === 2 ? 'Two sources' : count === 3 ? 'Three sources' : `${count} sources`;
+      const items = sources.map(s => {
+        const icon = iconForType[s.type] || 'i-file';
+        const href = `${s.url}.md`;
+        return `<a class="source-item" href="${href}">
+          <svg class="icon sm si-icon"><use href="#${icon}"/></svg>
+          <span class="si-tag">${s.type}</span>
+          <span class="si-title">${s.title}</span>
+          <span class="si-date">${s.date || ''}</span>
+        </a>`;
+      }).join('');
+      return `<div class="sources">
+        <p class="h"><svg class="icon sm"><use href="#i-quote"/></svg> ${label}</p>
+        ${items}
+      </div>`;
+    }
+
+    async function ask(query) {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+
+      const youTurn = append(tplYou);
+      youTurn.querySelector('.said').textContent = trimmed;
+
+      const siteTurn = append(tplSite);
+      const answerEl = siteTurn.querySelector('.answer');
+      const saidEl = siteTurn.querySelector('.said');
+      answerEl.textContent = '…';
+
+      input.value = '';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: trimmed }),
+        });
+
+        if (!res.ok) {
+          if (res.status === 429 || res.status === 403) {
+            // Surface the server's message verbatim — distinguishes "1-min cooldown"
+            // from "daily cap hit, come back tomorrow".
+            try { answerEl.textContent = (await res.text()) || 'Rate limit hit.'; }
+            catch { answerEl.textContent = 'Rate limit hit.'; }
+          } else if (res.status === 503) {
+            answerEl.textContent = 'Upstream service is busy — try again in a moment.';
+          } else {
+            answerEl.textContent = `Error: ${res.status}.`;
+          }
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let text = '';
+        let sources = null;
+        let started = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx;
+          while ((idx = buffer.indexOf('\n\n')) >= 0) {
+            const chunk = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 2);
+            if (!chunk.startsWith('data: ')) continue;
+            let event;
+            try { event = JSON.parse(chunk.slice(6)); } catch { continue; }
+            if (event.text) {
+              if (!started) { answerEl.innerHTML = ''; started = true; }
+              text += event.text;
+              answerEl.innerHTML = paragraphize(text);
+            }
+            if (event.sources) sources = event.sources;
+            if (event.error) {
+              answerEl.textContent = event.error;
+              return;
+            }
+          }
+        }
+
+        if (sources) {
+          saidEl.insertAdjacentHTML('beforeend', renderSources(sources));
+        }
+        saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        answerEl.textContent = 'Network error. Try again.';
+      }
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      ask(input.value);
+    });
+
+    probes.addEventListener('click', (e) => {
+      const btn = e.target.closest('.probe');
+      if (!btn) return;
+      ask(btn.dataset.q);
+    });
+  })();
+</script>

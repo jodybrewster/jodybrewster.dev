@@ -1,0 +1,137 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="For agents — Jody Brewster"
+  description="The three-tier agent-readable surface for jodybrewster.dev: markdown endpoints and llms.txt, an MCP server, and an A2A agent card — plus house rules for agents working against the corpus."
+>
+  <main class="page active" id="agent">
+    <div class="agent-shell">
+      <h1><svg class="icon"><use href="#i-terminal"/></svg> For agents.</h1>
+      <p class="intro">This site is readable by your AI. If you got here because something you were running fetched the page and you're now reading the output, hi. Here's what's actually available.</p>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier A · crawler-readable</span>
+          <span class="status live"><span class="live-dot"></span> Live</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-file"/></svg> Markdown endpoints & <code>llms.txt</code></h3>
+        <p>Every essay, note, and brief is available as raw markdown. Add <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">.md</code> to any URL, or send <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">Accept: text/markdown</code>. A curated index lives at the site root.</p>
+        <div class="url">
+          <span><span class="url-method">GET</span> jodybrewster.dev/llms.txt</span>
+          <span class="copy" data-copy="https://jodybrewster.dev/llms.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+        <div class="url">
+          <span><span class="url-method">GET</span> jodybrewster.dev/llms-full.txt</span>
+          <span class="copy" data-copy="https://jodybrewster.dev/llms-full.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+        <div class="url">
+          <span><span class="url-method">GET</span> jodybrewster.dev/writing/runtime-is-the-new-design-surface.md</span>
+          <span class="copy" data-copy="https://jodybrewster.dev/writing/runtime-is-the-new-design-surface.md"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier B · model context protocol</span>
+          <span class="status live"><span class="live-dot"></span> Live</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-terminal"/></svg> MCP server</h3>
+        <p>Six tools over the published corpus. Streamable HTTP transport. Unauthenticated for read tools; this is a public read-only surface, so OAuth would be theater.</p>
+        <div class="url">
+          <span><span class="url-method">POST</span> jodybrewster.dev/api/mcp</span>
+          <span class="copy" data-copy="https://jodybrewster.dev/api/mcp"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+        <div class="tools">
+          <span class="t">search_writing</span>
+          <span class="t">get_essay</span>
+          <span class="t">list_notes</span>
+          <span class="t">get_case_brief</span>
+          <span class="t">whats_top_of_mind</span>
+          <span class="t">ask_jody</span>
+        </div>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="row">
+          <span class="tier"><svg class="icon sm"><use href="#i-layers"/></svg> Tier C · agent-to-agent</span>
+          <span class="status"><svg class="icon sm"><use href="#i-dot"/></svg> v0 · read-only</span>
+        </div>
+        <h3><svg class="icon"><use href="#i-bot"/></svg> A2A agent card</h3>
+        <p>If your agent speaks A2A, an agent card is published at the well-known path. Three skills: discuss writing, discuss collaboration style, recommend essays. OAuth is declared but not enforced for read skills in v0.</p>
+        <div class="url">
+          <span><span class="url-method">GET</span> jodybrewster.dev/.well-known/agent-card.json</span>
+          <span class="copy" data-copy="https://jodybrewster.dev/.well-known/agent-card.json"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+        </div>
+      </div>
+
+      <div class="code-card">
+        <div class="head">
+          <span class="left"><svg class="icon sm"><use href="#i-code"/></svg> Add to Claude Desktop · ~/.claude.json</span>
+          <span>JSON</span>
+        </div>
+<pre><span class="c">// add Jody's MCP server to claude desktop</span>
+{`{`}
+  <span class="k">"mcpServers"</span>: {`{`}
+    <span class="k">"jody"</span>: {`{`}
+      <span class="k">"url"</span>: <span class="s">"https://jodybrewster.dev/api/mcp"</span>,
+      <span class="k">"description"</span>: <span class="s">"Essays, notes, and briefs"</span>
+    {`}`}
+  {`}`}
+{`}`}</pre>
+      </div>
+
+      <h2 style="font-family:var(--display);font-weight:450;font-size:28px;margin:64px 0 8px;letter-spacing:-0.012em;display:flex;align-items:center;gap:10px"><svg class="icon"><use href="#i-shield"/></svg> House rules</h2>
+      <p style="font-family:var(--display);color:var(--ink-soft);font-style:italic;margin:0 0 28px;font-weight:400;font-size:17px">If you're a person running an agent against this site, these are the etiquette assumptions.</p>
+
+      <div class="principle-list">
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-user"/></svg> Third person, always</h4>
+            <p>The chat and MCP tools speak <em>about</em> Jody, not <em>as</em> him. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-quote"/></svg> Cite the source artifact, not the synthesis</h4>
+            <p>Everything the tools return cites an essay, note, or brief. If you pass the output downstream, pass the citations too. Synthesis without provenance is how AI breaks reading.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-shield"/></svg> Don't impersonate; ask</h4>
+            <p>If a question about Jody's views is outside the corpus, the tools will say so. Don't ask another model to fill the gap. The gap is the answer.</p>
+          </div>
+        </div>
+        <div class="pp">
+          <span class="num"></span>
+          <div>
+            <h4><svg class="icon sm"><use href="#i-bot"/></svg> Identify yourself in the user-agent</h4>
+            <p>Crawls and tool calls from unidentified agents are rate-limited. If you're a researcher or building something, just say so in the header.</p>
+          </div>
+        </div>
+      </div>
+
+      <p style="font-family:var(--sans);font-size:13px;color:var(--ink-faint);margin-top:48px;line-height:1.6;border-top:1px solid var(--rule);padding-top:24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <svg class="icon sm"><use href="#i-external"/></svg>
+        If you want the long version of why any of this exists, the essay is <a href="/writing/what-it-took-to-make-my-site-agent-readable" style="color:var(--accent);border:none">"What it took to make my site agent-readable"</a> — published May 2026.
+      </p>
+    </div>
+  </main>
+
+  <script is:inline>
+    document.querySelectorAll('.copy[data-copy]').forEach(el => {
+      el.addEventListener('click', () => {
+        const text = el.getAttribute('data-copy');
+        navigator.clipboard?.writeText(text);
+        const orig = el.innerHTML;
+        el.innerHTML = '<svg class="icon sm"><use href="#i-check"/></svg> Copied';
+        el.classList.add('copied');
+        setTimeout(() => { el.innerHTML = orig; el.classList.remove('copied'); }, 1400);
+      });
+    });
+  </script>
+</Base>

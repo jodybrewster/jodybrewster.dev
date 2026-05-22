@@ -1,0 +1,33 @@
+---
+interface Props {
+  title?: string;
+  date: string;
+  status: 'seedling' | 'budding' | 'evergreen';
+  slug: string;
+  tags?: string | string[];
+  body?: string;
+}
+
+const { title, date, status, slug, tags, body } = Astro.props;
+const tagList = tags ? (Array.isArray(tags) ? tags : [tags]) : [];
+
+const statusIcon = status === 'evergreen' ? 'sparkle' : status === 'budding' ? 'dot' : 'note';
+---
+<a href={`/notes/${slug}`} class="note" style="text-decoration:none;border:none;display:block;">
+  <div class="tended">
+    <span class={`state${status === 'evergreen' ? ' evergreen' : ''}`}>
+      {status === 'evergreen' && <svg class="icon sm"><use href="#i-sparkle"/></svg>}
+      {status}
+    </span>
+    <span>
+      <svg class="icon sm"><use href="#i-calendar"/></svg> tended {date}
+    </span>
+  </div>
+  {title && <p style="font-family:var(--display);font-weight:450;font-size:16px;margin:0 0 8px;letter-spacing:-0.01em;">{title}</p>}
+  {body && <p>{body}</p>}
+  {tagList.length > 0 && (
+    <span class="tag" style="margin-top:8px;">
+      <svg class="icon sm"><use href="#i-tag"/></svg> {tagList[0]}
+    </span>
+  )}
+</a>

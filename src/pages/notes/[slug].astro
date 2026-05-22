@@ -1,0 +1,50 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const { slug } = Astro.params;
+const entry = slug ? await getEntry('notes', slug) : undefined;
+if (!entry || !entry.data.publish) return new Response('Not found', { status: 404 });
+
+const { Content } = await render(entry);
+
+const date = entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const tagList = entry.data.tags ?? [];
+const primaryTag = tagList[0] ?? '';
+---
+<Base
+  title={`${entry.data.title} — Notes — Jody Brewster`}
+  description={entry.data.title}
+  markdownHref={`${Astro.url.pathname.replace(/\/$/, '')}.md`}
+>
+  <main class="page active" style="padding: 72px 0 100px;">
+    <article class="essay-shell" style="max-width:660px;">
+      <a href="/notes" class="back">
+        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to notes
+      </a>
+
+      <div class="essay-meta">
+        <span class="tag-strong">
+          {entry.data.status === 'evergreen' && <svg class="icon sm"><use href="#i-sparkle"/></svg>}
+          {entry.data.status}
+        </span>
+        <span><svg class="icon sm"><use href="#i-calendar"/></svg> tended {date}</span>
+        {primaryTag && (
+          <span><svg class="icon sm"><use href="#i-tag"/></svg> {primaryTag}</span>
+        )}
+      </div>
+
+      <h1>{entry.data.title}</h1>
+
+      <div class="essay-body">
+        <Content />
+      </div>
+
+      <div class="essay-footer">
+        <a href="/notes">
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to notes
+        </a>
+      </div>
+    </article>
+  </main>
+</Base>

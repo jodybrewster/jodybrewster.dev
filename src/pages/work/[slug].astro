@@ -1,0 +1,77 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const { slug } = Astro.params;
+const entry = slug ? await getEntry('work', slug) : undefined;
+if (!entry) return new Response('Not found', { status: 404 });
+
+// Number derived from collection order, computed at request time in SSR.
+const briefs = (await getCollection('work')).sort((a, b) => a.data.title.localeCompare(b.data.title));
+const idx = briefs.findIndex(b => b.id === entry.id);
+const number = String(briefs.length - idx).padStart(3, '0');
+
+const { Content } = await render(entry);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Jody Brewster', item: 'https://jodybrewster.dev/' },
+    { '@type': 'ListItem', position: 2, name: 'Work', item: 'https://jodybrewster.dev/work' },
+    { '@type': 'ListItem', position: 3, name: entry.data.title, item: `https://jodybrewster.dev/work/${entry.id}` },
+  ],
+};
+---
+<Base
+  title={`${entry.data.title} — Brief — Jody Brewster`}
+  description={`A case brief: ${entry.data.role}, ${entry.data.sector}, ${entry.data.duration}.`}
+  jsonLd={jsonLd}
+  markdownHref={`${Astro.url.pathname.replace(/\/$/, '')}.md`}
+>
+  <main class="page active" style="padding: 72px 0 100px;">
+    <article class="brief-shell">
+      <div class="brief-head">
+        <p class="crumb">
+          <a href="/work"><svg class="icon sm"><use href="#i-brief"/></svg> Selected briefs</a>
+          <svg class="icon sm"><use href="#i-chev-right"/></svg>
+          <span style="color:var(--ink-soft)">Brief № {number}</span>
+        </p>
+        <h1>{entry.data.title}</h1>
+
+        {entry.data.sub && (
+          <p class="sub" set:html={entry.data.sub} />
+        )}
+
+        <div class="brief-bar">
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-building"/></svg> Sector</p>
+            <p class="v">{entry.data.sector}</p>
+          </div>
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-user"/></svg> Role</p>
+            <p class="v">{entry.data.role}</p>
+          </div>
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-clock"/></svg> Duration</p>
+            <p class="v">{entry.data.duration}</p>
+          </div>
+          {entry.data.pillar && (
+            <div class="item">
+              <p class="k"><svg class="icon sm"><use href="#i-target"/></svg> Pillar</p>
+              <p class="v" style="color:var(--accent)">{entry.data.pillar.replace(/-/g, ' ')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Content />
+
+      <div style="margin-top:64px;padding-top:28px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;font-family:var(--sans);font-size:12px;color:var(--ink-faint);font-weight:500;flex-wrap:wrap;gap:14px;">
+        <a href="/work" style="border:none;display:inline-flex;align-items:center;gap:6px">
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> All briefs
+        </a>
+      </div>
+    </article>
+  </main>
+</Base>

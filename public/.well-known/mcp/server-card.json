@@ -1,0 +1,21 @@
+{
+  "name": "jodybrewster-dev",
+  "displayName": "Jody Brewster — Writing",
+  "description": "Read-only tools over Jody Brewster's published essays, notes, and case briefs. Semantic search, full-text retrieval, and grounded Q&A in third person.",
+  "url": "https://jodybrewster.dev/api/mcp",
+  "transport": "streamable-http",
+  "protocolVersion": "2025-06-18",
+  "auth": { "type": "none" },
+  "tools": [
+    "search_writing",
+    "get_essay",
+    "list_notes",
+    "get_case_brief",
+    "whats_top_of_mind",
+    "ask_jody"
+  ],
+  "contact": {
+    "name": "Jody Brewster",
+    "url": "https://jodybrewster.dev/about"
+  }
+}

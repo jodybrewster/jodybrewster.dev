@@ -1,0 +1,34 @@
+---
+const pathname = Astro.url.pathname;
+
+const links = [
+  { href: '/writing', label: 'Writing', icon: 'i-book' },
+  { href: '/work',    label: 'Briefs',  icon: 'i-brief' },
+  { href: '/chat',    label: 'Chat',    icon: 'i-chat' },
+  { href: '/agent',   label: 'Agent',   icon: 'i-terminal' },
+];
+
+function isActive(href: string): boolean {
+  // Writing nav item owns the homepage too (prototype convention).
+  if (href === '/writing') {
+    return pathname === '/' || pathname === '/writing' || pathname.startsWith('/writing/');
+  }
+  return pathname === href || pathname.startsWith(href + '/');
+}
+---
+<header class="mast">
+  <a href="/" class="mark">
+    <span class="glyph">
+      <svg class="icon sm"><use href="#i-mark"/></svg>
+    </span>
+    <span>Jody</span>
+    <span class="role">— Principal Experience Architect</span>
+  </a>
+  <nav class="primary">
+    {links.map(({ href, label, icon }) => (
+      <a href={href} class={isActive(href) ? 'active' : undefined}>
+        <svg class="icon sm"><use href={`#${icon}`}/></svg>{label}
+      </a>
+    ))}
+  </nav>
+</header>

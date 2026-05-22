@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-22T00:00:00Z",
+  "title": "Design System: jodybrewster.dev",
+  "extensions": {
+    "colorMeta": {
+      "quiet-forest":  { "role": "primary",  "displayName": "Quiet Forest",  "canonical": "oklch(37% 0.073 161)", "darkMode": "#6fb39f", "tonalRamp": ["#0d1f1a", "#162e27", "#1f3f36", "#2d5d4f", "#3d7a6a", "#5a9d8a", "#8cc4b4", "#cfdcd6"] },
+      "forest-mist":   { "role": "primary",  "displayName": "Forest Mist",   "canonical": "oklch(88% 0.028 161)", "darkMode": "#1f2e2a", "tonalRamp": ["#1f2e2a", "#2a3d37", "#3d5a52", "#5a8075", "#8abfb3", "#cfdcd6", "#e2eeeb", "#f0f7f5"] },
+      "deep-ink":      { "role": "neutral",  "displayName": "Deep Ink",       "canonical": "oklch(13% 0.009 240)", "darkMode": "#e4e6e2", "tonalRamp": ["#0a0c0f", "#14181d", "#1c2028", "#2a3040", "#3d4455", "#5c6070", "#8a9099", "#c4c8cc"] },
+      "settled-ink":   { "role": "neutral",  "displayName": "Settled Ink",    "canonical": "oklch(30% 0.012 240)", "darkMode": "#a8aca6", "tonalRamp": ["#14181d", "#222830", "#2e3540", "#3d444d", "#525a64", "#6e7680", "#96a0a8", "#c4c8cc"] },
+      "receding-ink":  { "role": "neutral",  "displayName": "Receding Ink",   "canonical": "oklch(56% 0.009 240)", "darkMode": "#6e726c", "tonalRamp": ["#2a2e32", "#3a3f45", "#52575e", "#6e7480", "#828a93", "#9ea5ad", "#bcc0c5", "#d8dadd"] },
+      "ash-paper":     { "role": "neutral",  "displayName": "Ash Paper",      "canonical": "oklch(95% 0.005 130)", "darkMode": "#13161a", "tonalRamp": ["#1a1c1a", "#2a2e2a", "#404540", "#5c625c", "#808880", "#a8b0a8", "#d0d8d0", "#f1f2f0"] },
+      "warm-ash":      { "role": "neutral",  "displayName": "Warm Ash",       "canonical": "oklch(92% 0.006 130)", "darkMode": "#1c1f23", "tonalRamp": ["#161a16", "#232823", "#353b35", "#4a524a", "#6a726a", "#909890", "#b8c0b8", "#e6e8e4"] },
+      "ash-rule":      { "role": "neutral",  "displayName": "Ash Rule",       "canonical": "oklch(83% 0.007 130)", "darkMode": "#2a2d31", "tonalRamp": ["#1c1e1c", "#2e302e", "#444644", "#5c5e5c", "#787a78", "#9a9c9a", "#bcbeba", "#cbcec9"] }
+    },
+    "typographyMeta": {
+      "display":  { "displayName": "Display",  "purpose": "Hero and page-title headlines. Always use opsz matched to render size; SOFT axis rounds serifs at large sizes." },
+      "headline": { "displayName": "Headline", "purpose": "Essay and brief titles. opsz 120 for briefs, 144 for essays at maximum size." },
+      "title":    { "displayName": "Title",    "purpose": "Section headings within long-form pages." },
+      "body":     { "displayName": "Body",     "purpose": "UI text and short-form reading. Essay body uses Fraunces at 18.5px opsz 14 instead." },
+      "label":    { "displayName": "Label",    "purpose": "Section markers, timestamps, content-state badges, all metadata. Always mono, always uppercase." }
+    },
+    "shadows": [
+      { "name": "hover-lift",  "value": "0 6px 24px -12px rgba(20,24,29,0.18)", "purpose": "Note cards and interactive rows on hover. Always paired with translateY(-2px). Never at rest." },
+      { "name": "focus-ring",  "value": "0 0 0 3px #cfdcd6",                     "purpose": "Keyboard focus on inputs and interactive elements. Uses forest-mist, not blue." }
+    ],
+    "motion": [
+      { "name": "standard",    "value": "0.15s ease",           "purpose": "Default state transition (color, border, background)." },
+      { "name": "lift",        "value": "0.2s ease",            "purpose": "Hover lift: paired transform + shadow." },
+      { "name": "page-rise",   "value": "0.55s ease-out",       "purpose": "Page entrance animation. Opacity 0->1, translateY 8px->0. Staggered: 60ms, 120ms, 180ms, 240ms." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "720px", "purpose": "Single-column layout; nav collapses; brief-bar to 2 columns." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Submit and send actions. Forest green at rest; deep ink on hover.",
+      "html": "<button class=\"ds-btn-primary\">Send</button>",
+      "css": ".ds-btn-primary { background: #2d5d4f; color: #f1f2f0; padding: 12px 18px; font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; border: none; border-radius: 3px; cursor: pointer; transition: background 0.15s ease; } .ds-btn-primary:hover { background: #14181d; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px #cfdcd6; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "probe-button",
+      "description": "Probe/suggestion buttons and secondary actions. Transparent at rest; accent on hover.",
+      "html": "<button class=\"ds-btn-ghost\">Show me her work on voice interfaces.</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #14181d; padding: 14px 16px; font-family: Inter, system-ui, sans-serif; font-size: 14px; font-weight: 400; border: 1px solid #cbcec9; border-radius: 4px; cursor: pointer; text-align: left; transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.2s ease; } .ds-btn-ghost:hover { border-color: #2d5d4f; color: #2d5d4f; background: #e6e8e4; transform: translateY(-1px); } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 3px #cfdcd6; }"
+    },
+    {
+      "name": "Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Primary navigation. Pill-shaped. Recedes at rest; accent on hover and active.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item\" href=\"#\">Writing</a><a class=\"ds-nav-item ds-nav-item--active\" href=\"#\">Work</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 4px; } .ds-nav-item { font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 500; color: #3d444d; padding: 6px 12px; border-radius: 99px; text-decoration: none; transition: color 0.15s ease, background 0.15s ease; } .ds-nav-item:hover { color: #2d5d4f; background: #e6e8e4; } .ds-nav-item--active { color: #2d5d4f; background: #cfdcd6; }"
+    },
+    {
+      "name": "Note Card",
+      "kind": "card",
+      "refersTo": "note-card",
+      "description": "Digital garden note in the index. Hover lifts. State badge shows content maturity.",
+      "html": "<div class=\"ds-note-card\"><div class=\"ds-note-state ds-note-state--evergreen\">evergreen</div><p class=\"ds-note-body\">Evals are about deciding what good looks like, and that's a design problem.</p></div>",
+      "css": ".ds-note-card { padding: 20px 22px; border: 1px solid #cbcec9; border-radius: 4px; background: #e6e8e4; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.2s ease; } .ds-note-card:hover { border-color: #2d5d4f; transform: translateY(-2px); box-shadow: 0 6px 24px -12px rgba(20,24,29,0.18); } .ds-note-body { font-family: Inter, system-ui, sans-serif; font-size: 14.5px; line-height: 1.55; color: #14181d; margin: 8px 0 0; } .ds-note-state { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; font-weight: 500; padding: 3px 9px; border: 1px solid #cbcec9; border-radius: 99px; color: #3d444d; text-transform: uppercase; letter-spacing: 0.05em; } .ds-note-state--evergreen { color: #2d5d4f; border-color: #2d5d4f; background: #cfdcd6; }"
+    },
+    {
+      "name": "Chat Input",
+      "kind": "input",
+      "refersTo": "chat-input",
+      "description": "Primary chat composition field. Focus-within shifts border and adds forest-mist ring.",
+      "html": "<div class=\"ds-input-row\"><input class=\"ds-input\" type=\"text\" placeholder=\"Ask about the writing...\"><button class=\"ds-input-submit\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"/><polygon points=\"22 2 15 22 11 13 2 9 22 2\"/></svg></button></div>",
+      "css": ".ds-input-row { display: flex; border: 1px solid #cbcec9; border-radius: 4px; transition: border-color 0.15s ease, box-shadow 0.15s ease; } .ds-input-row:focus-within { border-color: #2d5d4f; box-shadow: 0 0 0 3px #cfdcd6; } .ds-input { flex: 1; padding: 14px; font-family: Inter, system-ui, sans-serif; font-size: 15px; color: #14181d; background: transparent; border: none; outline: none; } .ds-input::placeholder { color: #828a93; } .ds-input-submit { padding: 12px 18px; background: #2d5d4f; color: #f1f2f0; border: none; border-radius: 0 3px 3px 0; cursor: pointer; transition: background 0.15s ease; display: flex; align-items: center; } .ds-input-submit:hover { background: #14181d; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Practitioner",
+    "overview": "The design communicates expertise by not announcing it. Fraunces at full optical weight does the heavy lifting; color appears rarely enough to carry meaning when it does; layout exists only to get the reader to the text and out of the way once they are there. There are no decorative motifs, no gratuitous shadows, no visual moves made for their own sake. The craft is in what is absent.\n\nThe palette is near-monochromatic: warm ash tones, gradated ink, and one quiet forest green that appears at most twice per screen. Three voices handle the full register: Fraunces for ideas, Inter for interface, JetBrains Mono for system metadata. They do not cross-dress. The states visible in the UI (seedling, budding, evergreen; draft, published; brief numbers) are part of the design, not incidental labels.",
+    "keyCharacteristics": [
+      "Typography-led: Fraunces at optical scale is the primary design element on every long-form page",
+      "Near-monochromatic: forest green is the only saturated color; it appears sparingly",
+      "Three-register type system: display serif (ideas), UI sans (interface), system mono (metadata)",
+      "Flat by default: depth via tonal layering (warm-ash over ash-paper), not shadow",
+      "States as design: content maturity labels, brief numbers, and the Now page are aesthetic choices",
+      "Demonstrates its subject: agent-readable endpoints and MCP tools are treated with the same design rigor as the writing pages"
+    ],
+    "rules": [
+      { "name": "The One Note Rule",        "body": "Quiet Forest appears on one element at a time. It is a highlighter, not a paint bucket. If it appears on a link AND a label AND an icon in the same viewport, one of those uses is wrong.", "section": "colors" },
+      { "name": "The Optical Sizing Rule",  "body": "Fraunces must always carry a font-variation-settings value that includes opsz tuned to its render size. A Fraunces element without explicit opsz is a mistake, not a default.", "section": "typography" },
+      { "name": "The Three Voices Rule",    "body": "Fraunces speaks for ideas. Inter speaks for interface. JetBrains Mono speaks for the system. Do not mix within a single semantic role.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "A surface that is not being interacted with has no shadow. Shadows exist only as a response to hover or focus, never as ambient decoration.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set font-variation-settings: opsz on every Fraunces element, tuned to the rendered size",
+      "Do use warm-ash as the alternative surface for all card, sidebar, and inset contexts",
+      "Do treat system state labels (seedling/budding/evergreen, brief numbers) as design elements",
+      "Do keep quiet-forest to one prominent use per viewport",
+      "Do express hover and focus through translateY and border-color shifts before reaching for shadows",
+      "Do cap body line length at 64-75ch on all reading surfaces",
+      "Do style agent-readable endpoints and MCP surfaces with the same typographic care as writing pages"
+    ],
+    "donts": [
+      "Don't use background-clip: text with a gradient",
+      "Don't use glassmorphism, backdrop-filter blurs, or translucent cards for decoration",
+      "Don't use neon accents, dark-mode purple or blue glow effects, or AI startup visual vocabulary",
+      "Don't build a generic portfolio template: no headshot hero, no tech-stack badge grid, no project thumbnail card grid",
+      "Don't use SaaS landing page patterns: no gradient hero, no big-number metric with glowing accent",
+      "Don't use border-left or border-right greater than 1px as a colored decorative stripe on cards or list items",
+      "Don't animate layout properties; animate only transform and opacity",
+      "Don't render Fraunces without an opsz value",
+      "Don't place accent color on more than one element simultaneously in the same viewport"
+    ]
+  }
+}

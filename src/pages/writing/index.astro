@@ -1,0 +1,39 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import EssayCard from '../../components/EssayCard.astro';
+
+const essays = (await getCollection('writing', e => e.data.status === 'published'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function readTime(body: string) {
+  const words = body.split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min`;
+}
+---
+<Base title="Writing — Jody Brewster" description="Essays on AI experience architecture, runtime design, agentic interfaces, and senior design practice.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <div class="section-h" style="margin-top:0;">
+      <h2><svg class="icon"><use href="#i-book"/></svg> Writing</h2>
+      <span class="aside">{essays.length} essays, in order of having been finished.</span>
+    </div>
+
+    <ul class="essay-list">
+      {essays.map((essay, i) => (
+        <EssayCard
+          title={essay.data.title}
+          date={formatDate(essay.data.date)}
+          description={essay.data.description}
+          tags={essay.data.tags}
+          slug={essay.id}
+          index={`№ ${String(essays.length - i).padStart(3, '0')}`}
+          readTime={readTime(essay.body ?? '')}
+        />
+      ))}
+    </ul>
+  </main>
+</Base>

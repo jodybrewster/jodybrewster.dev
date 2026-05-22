@@ -1,0 +1,48 @@
+---
+interface Props {
+  title: string;
+  sector: string;
+  role: string;
+  duration: string;
+  slug: string;
+  pillar?: string;
+  number?: string;
+}
+
+const { title, sector, role, duration, slug, pillar, number } = Astro.props;
+---
+<a href={`/work/${slug}`} class="note" style="text-decoration:none;border:none;display:block;">
+  <div class="tended">
+    {number && (
+      <span class="state">
+        <svg class="icon sm"><use href="#i-brief"/></svg> Brief {number}
+      </span>
+    )}
+    {pillar && (
+      <span style="color:var(--accent);">
+        <svg class="icon sm"><use href="#i-tag"/></svg> {pillar}
+      </span>
+    )}
+  </div>
+  <p style="font-family:var(--display);font-weight:450;font-size:18px;margin:0 0 12px;letter-spacing:-0.01em;line-height:1.25;">{title}</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;">
+    <div>
+      <p class="k" style="font-family:var(--sans);font-size:11px;color:var(--ink-faint);margin:0 0 4px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:flex;align-items:center;gap:5px;">
+        <svg class="icon sm"><use href="#i-building"/></svg> Sector
+      </p>
+      <p class="v" style="font-family:var(--display);font-weight:450;font-size:14px;color:var(--ink);margin:0;line-height:1.3;">{sector}</p>
+    </div>
+    <div>
+      <p class="k" style="font-family:var(--sans);font-size:11px;color:var(--ink-faint);margin:0 0 4px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:flex;align-items:center;gap:5px;">
+        <svg class="icon sm"><use href="#i-user"/></svg> Role
+      </p>
+      <p class="v" style="font-family:var(--display);font-weight:450;font-size:14px;color:var(--ink);margin:0;line-height:1.3;">{role}</p>
+    </div>
+    <div>
+      <p class="k" style="font-family:var(--sans);font-size:11px;color:var(--ink-faint);margin:0 0 4px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;display:flex;align-items:center;gap:5px;">
+        <svg class="icon sm"><use href="#i-clock"/></svg> Duration
+      </p>
+      <p class="v" style="font-family:var(--display);font-weight:450;font-size:14px;color:var(--ink);margin:0;line-height:1.3;">{duration}</p>
+    </div>
+  </div>
+</a>

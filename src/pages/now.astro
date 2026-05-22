@@ -1,0 +1,56 @@
+---
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import Base from '../layouts/Base.astro';
+
+const nowRaw = await readFile(resolve('content/now.md'), 'utf-8');
+const fmMatch = nowRaw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+const frontmatter: Record<string, string> = fmMatch
+  ? Object.fromEntries(
+      fmMatch[1].split('\n').filter(Boolean).map(line => {
+        const idx = line.indexOf(':');
+        const k = line.slice(0, idx).trim();
+        const v = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
+        return [k, v];
+      })
+    )
+  : {};
+const body = (fmMatch ? fmMatch[2] : nowRaw).trim();
+const paragraphs = body.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+const [lede, ...rest] = paragraphs;
+
+const updatedDate = frontmatter.updated ? new Date(frontmatter.updated) : null;
+const updatedMonthYear = updatedDate
+  ? updatedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  : '';
+const updatedFull = updatedDate
+  ? updatedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  : '';
+---
+<Base title="Now — Jody Brewster" description="What Jody is working on, reading, and thinking about right now.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <article class="essay-shell">
+      <a href="/" class="back">
+        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
+      </a>
+
+      <p class="eyebrow">/ now{updatedMonthYear && ` · ${updatedMonthYear}`}</p>
+      <h1>Now</h1>
+
+      {lede && <p class="lede">{lede}</p>}
+
+      <div class="essay-body">
+        {rest.map(p => <p>{p}</p>)}
+      </div>
+
+      <div class="essay-footer">
+        <span>
+          <svg class="icon sm"><use href="#i-compass"/></svg> Last tended {updatedFull}
+        </span>
+        <a href="/">
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to home
+        </a>
+      </div>
+    </article>
+  </main>
+</Base>

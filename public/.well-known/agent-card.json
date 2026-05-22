@@ -1,0 +1,76 @@
+{
+  "$schema": "https://a2aproject.github.io/A2A/specification/json/agent-card-schema.json",
+  "name": "Ask Jody",
+  "description": "Read-only A2A surface over Jody Brewster's published writing on AI experience architecture. Speaks in third person (he/him) about a body of work, not as the author. Refuses questions outside the corpus.",
+  "url": "https://jodybrewster.dev/api/a2a",
+  "documentationUrl": "https://jodybrewster.dev/agent",
+  "provider": {
+    "organization": "Jody Brewster",
+    "url": "https://jodybrewster.dev/about"
+  },
+  "version": "0.1.0",
+  "protocolVersion": "0.2.0",
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain", "text/markdown"],
+  "securitySchemes": {
+    "oauth": {
+      "type": "oauth2",
+      "description": "Declared for forward-compatibility. Not enforced on v0 read skills.",
+      "flows": {
+        "authorizationCode": {
+          "authorizationUrl": "https://jodybrewster.dev/api/oauth/authorize",
+          "tokenUrl": "https://jodybrewster.dev/api/oauth/token",
+          "scopes": {
+            "read:writing": "Read published essays, notes, and case briefs."
+          }
+        }
+      }
+    }
+  },
+  "security": [],
+  "skills": [
+    {
+      "id": "discuss_writing",
+      "name": "Discuss Jody's writing",
+      "description": "Answer questions about what Jody has written, drawing only from his published essays, notes, and case briefs. Third person (he/him). Cites sources by title.",
+      "tags": ["writing", "rag", "synthesis", "third-person"],
+      "examples": [
+        "What has Jody written about evaluation as a design discipline?",
+        "How does he think about agent handoffs to humans?",
+        "What's his position on chat as a UI for AI?"
+      ],
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain"]
+    },
+    {
+      "id": "discuss_collaboration_style",
+      "name": "Discuss Jody's practice and collaboration style",
+      "description": "Describe how Jody works on AI experience architecture engagements — process, framings, what he pays attention to — strictly as expressed in published case briefs and essays.",
+      "tags": ["practice", "process", "case-briefs"],
+      "examples": [
+        "What's Jody's approach when he joins a team that already has an eval harness?",
+        "How does he handle design's relationship to engineering on AI features?"
+      ],
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain"]
+    },
+    {
+      "id": "recommend_essays",
+      "name": "Recommend essays for a topic",
+      "description": "Given a topic or question, return the most relevant essays, notes, and briefs with titles, dates, and URLs. Pure retrieval — no synthesis.",
+      "tags": ["search", "retrieval", "recommendation"],
+      "examples": [
+        "What should I read if I'm thinking about runtime as a design surface?",
+        "Anything on the politics of golden sets?"
+      ],
+      "inputModes": ["text/plain"],
+      "outputModes": ["text/plain", "application/json"]
+    }
+  ],
+  "supportsAuthenticatedExtendedCard": false
+}

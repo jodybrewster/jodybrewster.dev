@@ -1,0 +1,39 @@
+---
+interface Props {
+  title: string;
+  date: string;
+  description: string;
+  tags: string | string[];
+  slug: string;
+  pillar?: string;
+  index?: string;
+  readTime?: string;
+}
+
+const { title, date, description, tags, slug, pillar, index, readTime } = Astro.props;
+const tagList = Array.isArray(tags) ? tags : [tags];
+const primaryTag = tagList[0] ?? '';
+---
+<li>
+  <a href={`/writing/${slug}`} style="border:none;display:contents;">
+    <span class="idx">{index ?? ''}</span>
+    <div class="body">
+      <h3 set:html={title} />
+      <p class="dek">{description}</p>
+      {primaryTag && (
+        <span class="tag">
+          <svg class="icon sm"><use href="#i-tag"/></svg> {primaryTag}
+        </span>
+      )}
+    </div>
+    <span class="stamp">
+      <span><svg class="icon sm"><use href="#i-calendar"/></svg> {date}</span>
+      {readTime && (
+        <>
+          <br />
+          <span class="read"><svg class="icon sm"><use href="#i-clock"/></svg> {readTime}</span>
+        </>
+      )}
+    </span>
+  </a>
+</li>

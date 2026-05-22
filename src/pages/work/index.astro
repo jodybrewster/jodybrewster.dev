@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import BriefCard from '../../components/BriefCard.astro';
+
+const briefs = await getCollection('work');
+briefs.sort((a, b) => a.data.title.localeCompare(b.data.title));
+
+// With a single brief, /work redirects straight to its detail page —
+// matches the prototype's Briefs-nav-to-detail behavior. When more briefs
+// land here, this falls through to the listing.
+if (briefs.length === 1) {
+  return Astro.redirect(`/work/${briefs[0].id}`);
+}
+---
+<Base title="Work — Jody Brewster" description="Selected case briefs from twenty years of design and experience-architecture engagements, anonymized.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <div class="section-h" style="margin-top:0;">
+      <h2><svg class="icon"><use href="#i-brief"/></svg> Selected briefs</h2>
+      <span class="aside">{briefs.length} {briefs.length === 1 ? 'engagement' : 'engagements'}, anonymized.</span>
+    </div>
+
+    <div class="notes-stack">
+      {briefs.map((brief, i) => (
+        <BriefCard
+          title={brief.data.title}
+          sector={brief.data.sector}
+          role={brief.data.role}
+          duration={brief.data.duration}
+          slug={brief.id}
+          pillar={brief.data.pillar}
+          number={`№ ${String(briefs.length - i).padStart(3, '0')}`}
+        />
+      ))}
+    </div>
+  </main>
+</Base>

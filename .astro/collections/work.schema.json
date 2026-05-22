@@ -1,0 +1,39 @@
+{
+  "$ref": "#/definitions/work",
+  "definitions": {
+    "work": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "sector": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "string"
+        },
+        "pillar": {
+          "type": "string"
+        },
+        "sub": {
+          "type": "string"
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "sector",
+        "role",
+        "duration"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

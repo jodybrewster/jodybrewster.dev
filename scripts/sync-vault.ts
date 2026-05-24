@@ -98,6 +98,7 @@ async function main() {
   await syncDir('writing');
   await syncDir('notes', fm => fm.publish === true);
   await syncDir('work');
+  await syncDir('research');
   await syncNow();
   console.log('Done.');
 }

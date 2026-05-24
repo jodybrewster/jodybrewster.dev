@@ -8,14 +8,15 @@ interface Props {
   pillar?: string;
   index?: string;
   readTime?: string;
+  basePath?: string;
 }
 
-const { title, date, description, tags, slug, pillar, index, readTime } = Astro.props;
+const { title, date, description, tags, slug, pillar, index, readTime, basePath = '/writing' } = Astro.props;
 const tagList = Array.isArray(tags) ? tags : [tags];
 const primaryTag = tagList[0] ?? '';
 ---
 <li>
-  <a href={`/writing/${slug}`} style="border:none;display:contents;">
+  <a href={`${basePath}/${slug}`} style="border:none;display:contents;">
     <span class="idx">{index ?? ''}</span>
     <div class="body">
       <h3 set:html={title} />

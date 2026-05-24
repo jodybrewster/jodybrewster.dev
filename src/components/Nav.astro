@@ -2,10 +2,11 @@
 const pathname = Astro.url.pathname;
 
 const links = [
-  { href: '/writing', label: 'Writing', icon: 'i-book' },
-  { href: '/work',    label: 'Briefs',  icon: 'i-brief' },
-  { href: '/chat',    label: 'Chat',    icon: 'i-chat' },
-  { href: '/agent',   label: 'Agent',   icon: 'i-terminal' },
+  { href: '/writing',  label: 'Writing',  icon: 'i-book' },
+  { href: '/research', label: 'Research', icon: 'i-compass' },
+  { href: '/work',     label: 'Briefs',   icon: 'i-brief' },
+  { href: '/chat',     label: 'Chat',     icon: 'i-chat' },
+  { href: '/agent',    label: 'Agent',    icon: 'i-terminal' },
 ];
 
 function isActive(href: string): boolean {

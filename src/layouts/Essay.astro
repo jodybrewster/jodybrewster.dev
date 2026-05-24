@@ -10,9 +10,22 @@ interface Props {
   tags: string | string[];
   pillar?: string;
   number?: string;
+  sectionHref?: string;
+  sectionLabel?: string;
 }
 
-const { title, description, date, isoDate, readTime, tags, pillar, number } = Astro.props;
+const {
+  title,
+  description,
+  date,
+  isoDate,
+  readTime,
+  tags,
+  pillar,
+  number,
+  sectionHref = '/writing',
+  sectionLabel = 'writing',
+} = Astro.props;
 const tagList = Array.isArray(tags) ? tags : [tags];
 const primaryTag = tagList[0] ?? '';
 
@@ -34,8 +47,8 @@ const jsonLd: Record<string, unknown> = {
 <Base title={title} description={description} markdownHref={markdownHref} jsonLd={jsonLd}>
   <main class="page active" style="padding: 72px 0 100px;">
     <article class="essay-shell">
-      <a href="/writing" class="back">
-        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to writing
+      <a href={sectionHref} class="back">
+        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to {sectionLabel}
       </a>
 
       <div class="essay-meta">
@@ -63,8 +76,8 @@ const jsonLd: Record<string, unknown> = {
         <span>
           <svg class="icon sm"><use href="#i-tag"/></svg> filed under {primaryTag}
         </span>
-        <a href="/writing">
-          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to writing
+        <a href={sectionHref}>
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to {sectionLabel}
         </a>
         <a href={`${Astro.url.pathname}.md`}>
           <svg class="icon sm"><use href="#i-file"/></svg> View as .md

@@ -1,0 +1,40 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import EssayCard from '../../components/EssayCard.astro';
+
+const entries = (await getCollection('research'))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function readTime(body: string) {
+  const words = body.split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min`;
+}
+---
+<Base title="Research — Jody Brewster" description="Research notes — landscape scans, tool comparisons, and working maps of AI design and agentic systems.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <div class="section-h" style="margin-top:0;">
+      <h2><svg class="icon"><use href="#i-compass"/></svg> Research</h2>
+      <span class="aside">Landscape scans and working maps. {entries.length} {entries.length === 1 ? 'piece' : 'pieces'}.</span>
+    </div>
+
+    <ul class="essay-list">
+      {entries.map((entry, i) => (
+        <EssayCard
+          title={entry.data.title}
+          date={formatDate(entry.data.pubDate)}
+          description={entry.data.description}
+          tags={entry.data.tags}
+          slug={entry.id}
+          basePath="/research"
+          index={`№ ${String(entries.length - i).padStart(3, '0')}`}
+          readTime={readTime(entry.body ?? '')}
+        />
+      ))}
+    </ul>
+  </main>
+</Base>

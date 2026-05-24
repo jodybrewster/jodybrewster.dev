@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 interface Frontmatter {
   title?: string;
   date?: string;
+  pubDate?: string;
   description?: string;
   status?: string;
   publish?: boolean;
@@ -85,6 +86,11 @@ async function generate(site: string): Promise<{ index: string; full: string; st
     `${site}/work`,
   )).sort((a, b) => (a.fm.title ?? '').localeCompare(b.fm.title ?? ''));
 
+  const research = (await readCollection(
+    join(contentRoot, 'research'),
+    `${site}/research`,
+  )).sort((a, b) => (b.fm.pubDate ?? '').localeCompare(a.fm.pubDate ?? ''));
+
   let nowContent = '';
   try {
     const nowRaw = await readFile(join(contentRoot, 'now.md'), 'utf-8');
@@ -120,6 +126,13 @@ async function generate(site: string): Promise<{ index: string; full: string; st
     lines.push(`- [${b.fm.title ?? b.slug}](${b.url}.md)${sector}`);
   }
   lines.push('');
+  lines.push('## Research');
+  lines.push('');
+  for (const r of research) {
+    const desc = r.fm.description ? `: ${r.fm.description}` : '';
+    lines.push(`- [${r.fm.title ?? r.slug}](${r.url}.md)${desc}`);
+  }
+  lines.push('');
   if (nowContent) {
     lines.push('## Now');
     lines.push('');
@@ -147,12 +160,15 @@ async function generate(site: string): Promise<{ index: string; full: string; st
   if (briefs.length) {
     fullParts.push(`# Work\n\n${briefs.map(b => `## ${b.fm.title ?? b.slug}\n\nSource: ${b.url}\n\n${b.body}`).join(sep)}`);
   }
+  if (research.length) {
+    fullParts.push(`# Research\n\n${research.map(r => `## ${r.fm.title ?? r.slug}\n\nSource: ${r.url}\n\n${r.body}`).join(sep)}`);
+  }
   if (nowContent) {
     fullParts.push(`# Now\n\nSource: ${site}/now\n\n${nowContent}`);
   }
   const full = fullParts.join(sep);
 
-  return { index, full, stats: { essays: essays.length, notes: notes.length, briefs: briefs.length } };
+  return { index, full, stats: { essays: essays.length, notes: notes.length, briefs: briefs.length, research: research.length } };
 }
 
 export function llmsTxt(options: { site: string }): AstroIntegration {
@@ -185,7 +201,7 @@ export function llmsTxt(options: { site: string }): AstroIntegration {
         const { index, full, stats } = await generate(site);
         await writeFile(join(outDir, 'llms.txt'), index, 'utf-8');
         await writeFile(join(outDir, 'llms-full.txt'), full, 'utf-8');
-        logger.info(`Wrote llms.txt (${(index.length / 1024).toFixed(1)}KB, ${stats.essays} essays, ${stats.notes} notes, ${stats.briefs} briefs)`);
+        logger.info(`Wrote llms.txt (${(index.length / 1024).toFixed(1)}KB, ${stats.essays} essays, ${stats.notes} notes, ${stats.briefs} briefs, ${stats.research} research)`);
       },
     },
   };

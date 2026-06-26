@@ -20,6 +20,15 @@ const { title, description, jsonLd, markdownHref } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>{title}</title>
+  <!-- Anti-FOUC: apply stored theme before first paint -->
+  <script is:inline>
+    (function() {
+      var stored = localStorage.getItem('theme');
+      if (stored === 'dark' || stored === 'light') {
+        document.documentElement.setAttribute('data-theme', stored);
+      }
+    })();
+  </script>
   {description && <meta name="description" content={description} />}
 
   <link rel="preconnect" href="https://fonts.googleapis.com">

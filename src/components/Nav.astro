@@ -1,16 +1,20 @@
 ---
+import { getCollection } from 'astro:content';
+
 const pathname = Astro.url.pathname;
 
+const publishedWriting = await getCollection('writing', e => e.data.status === 'published');
+const hasWriting = publishedWriting.length > 0;
+
 const links = [
-  { href: '/writing',  label: 'Writing',  icon: 'i-book' },
-  { href: '/research', label: 'Research', icon: 'i-compass' },
-  { href: '/work',     label: 'Briefs',   icon: 'i-brief' },
-  { href: '/chat',     label: 'Chat',     icon: 'i-chat' },
-  { href: '/agent',    label: 'Agent',    icon: 'i-terminal' },
+  { href: '/writing',  label: 'Writing',  icon: 'i-book',     hidden: !hasWriting },
+  { href: '/research', label: 'Research', icon: 'i-compass',  hidden: false },
+  { href: '/work',     label: 'Briefs',   icon: 'i-brief',    hidden: false },
+  { href: '/chat',     label: 'Chat',     icon: 'i-chat',     hidden: false },
+  { href: '/agent',    label: 'Agent',    icon: 'i-terminal', hidden: false },
 ];
 
 function isActive(href: string): boolean {
-  // Writing nav item owns the homepage too (prototype convention).
   if (href === '/writing') {
     return pathname === '/' || pathname === '/writing' || pathname.startsWith('/writing/');
   }
@@ -26,10 +30,34 @@ function isActive(href: string): boolean {
     <span class="role">— Principal Experience Architect</span>
   </a>
   <nav class="primary">
-    {links.map(({ href, label, icon }) => (
+    {links.filter(l => !l.hidden).map(({ href, label, icon }) => (
       <a href={href} class={isActive(href) ? 'active' : undefined}>
         <svg class="icon sm"><use href={`#${icon}`}/></svg>{label}
       </a>
     ))}
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+      <svg class="icon sm i-sun"><use href="#i-sun"/></svg>
+      <svg class="icon sm i-moon"><use href="#i-moon"/></svg>
+    </button>
   </nav>
 </header>
+
+<script>
+  const root = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+
+  function getEffectiveTheme(): 'dark' | 'light' {
+    const stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme: 'dark' | 'light') {
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+
+  btn?.addEventListener('click', () => {
+    applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  });
+</script>

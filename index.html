@@ -28,17 +28,40 @@
     --sans:       "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono:       "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-    /* type scale (modular, ratio 1.25) */
-    --t-eyebrow:  11px;   /* mono, all-caps */
-    --t-meta:     12px;   /* sans, small ui */
+    /* type scale — sans/UI ramp (Inter) */
+    --t-micro:    10px;   /* mono, smallest stamp */
+    --t-eyebrow:  11px;   /* mono, all-caps labels */
+    --t-meta:     12px;   /* sans, ui chrome */
+    --t-meta-lg:  13px;   /* sans, nav, button labels */
+    --t-ui:       14px;   /* sans, small prose */
+    --t-ui-lg:    14.5px; /* sans, card/list prose */
+    --t-input:    15px;   /* sans, inputs, probes */
     --t-body:     16px;   /* sans, default body */
+    --t-body-lg:  16.5px; /* sans, long-form prose */
     --t-lede:     19px;   /* sans, intro paragraphs */
-    --t-h4:       18px;
-    --t-h3:       22px;
-    --t-h2:       28px;
-    --t-h1:       clamp(40px, 5.5vw, 60px);
-    --t-hero:     clamp(44px, 6.8vw, 78px);
 
+    /* type scale — display ramp (Fraunces) */
+    --t-h4:       19px;
+    --t-h3:       22px;
+    --t-h3-lg:    25px;   /* essay list titles */
+    --t-h2:       28px;
+    --t-h2-lg:    30px;   /* brief section h2 */
+    --t-display:  36px;   /* metric numerals */
+    --t-h1-sm:    clamp(34px, 4.8vw, 50px);  /* brief headlines */
+    --t-h1-md:    clamp(36px, 5vw, 54px);    /* chat / agent headlines */
+    --t-h1:       clamp(40px, 5.5vw, 60px);  /* essay headlines */
+    --t-hero:     clamp(44px, 6.8vw, 78px);  /* home hero */
+
+    /* letter-spacing — calibrated to size */
+    --ls-eyebrow: 0.06em;
+    --ls-h3:     -0.012em;
+    --ls-h2:     -0.015em;
+    --ls-h1:     -0.022em;
+    --ls-h1-lg:  -0.025em;
+    --ls-hero:   -0.03em;
+    --ls-display:-0.02em;
+
+    /* line height */
     --lh-tight:   1.15;
     --lh-snug:    1.35;
     --lh-body:    1.6;
@@ -46,7 +69,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --ink:        #e4e6e2;
       --ink-soft:   #a8aca6;
       --ink-faint:  #6e726c;
@@ -56,6 +79,18 @@
       --accent:     #6fb39f;
       --accent-soft:#1f2e2a;
     }
+  }
+
+  /* explicit overrides — placed after media query so data-theme wins */
+  :root[data-theme="dark"] {
+    --ink:        #e4e6e2;
+    --ink-soft:   #a8aca6;
+    --ink-faint:  #6e726c;
+    --paper:      #13161a;
+    --paper-warm: #1c1f23;
+    --rule:       #2a2d31;
+    --accent:     #6fb39f;
+    --accent-soft:#1f2e2a;
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -69,7 +104,8 @@
     background: var(--paper);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    font-feature-settings: "kern", "ss01", "cv11";
+    font-kerning: normal;
+    font-feature-settings: "ss01", "cv11";  /* Inter character variants; Fraunces/Mono ignore unknown features */
   }
 
   /* paper grain */
@@ -83,8 +119,10 @@
     mix-blend-mode: multiply;
   }
   @media (prefers-color-scheme: dark) {
-    body::before { mix-blend-mode: screen; opacity: .22; }
+    html:not([data-theme="light"]) body::before { mix-blend-mode: screen; opacity: .22; }
   }
+  [data-theme="dark"] body::before { mix-blend-mode: screen; opacity: .22; }
+  [data-theme="light"] body::before { mix-blend-mode: multiply; opacity: .3; }
 
   ::selection { background: var(--accent); color: var(--paper); }
 
@@ -179,7 +217,7 @@
   .eyebrow {
     font-family: var(--mono);
     font-size: var(--t-eyebrow);
-    letter-spacing: 0.16em;
+    letter-spacing: var(--ls-eyebrow);
     text-transform: uppercase;
     color: var(--ink-faint);
     font-weight: 500;
@@ -942,9 +980,11 @@
     background: #2a7a3f;
   }
   @media (prefers-color-scheme: dark) {
-    .endpoint-card .status.live { color: #6fd28d; border-color: #6fd28d; }
-    .endpoint-card .status.live .live-dot { background: #6fd28d; }
+    html:not([data-theme="light"]) .endpoint-card .status.live { color: #6fd28d; border-color: #6fd28d; }
+    html:not([data-theme="light"]) .endpoint-card .status.live .live-dot { background: #6fd28d; }
   }
+  [data-theme="dark"] .endpoint-card .status.live { color: #6fd28d; border-color: #6fd28d; }
+  [data-theme="dark"] .endpoint-card .status.live .live-dot { background: #6fd28d; }
   .endpoint-card h3 {
     font-family: var(--display);
     font-weight: 450;
@@ -1093,7 +1133,46 @@
   footer.foot a:hover { color: var(--accent); }
   footer.foot .right { display: flex; gap: 18px; flex-wrap: wrap; }
   footer.foot .left { display: inline-flex; align-items: center; gap: 8px; }
+
+  /* ── theme toggle ────────────────────────────────────────────── */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--rule);
+    border-radius: 99px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--ink-faint);
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+    flex-shrink: 0;
+  }
+  .theme-toggle:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--paper-warm);
+  }
+  /* show sun (switch to light) in dark mode, moon (switch to dark) in light mode */
+  .theme-toggle .i-sun  { display: none; }
+  .theme-toggle .i-moon { display: block; }
+  [data-theme="dark"] .theme-toggle .i-sun  { display: block; }
+  [data-theme="dark"] .theme-toggle .i-moon { display: none; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .theme-toggle .i-sun  { display: block; }
+    html:not([data-theme="light"]) .theme-toggle .i-moon { display: none; }
+  }
 </style>
+<script>
+  // Anti-FOUC: apply stored theme before first paint
+  (function() {
+    var stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.setAttribute('data-theme', stored);
+    }
+  })();
+</script>
 </head>
 <body>
 
@@ -1176,6 +1255,10 @@
     <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14 8 10 M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4 M5 19a10 10 0 1 1 14 0"/></symbol>
     <!-- zap -->
     <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></symbol>
+    <!-- sun (theme toggle) -->
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41"/></symbol>
+    <!-- moon (theme toggle) -->
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
   </defs>
 </svg>
 
@@ -1193,6 +1276,10 @@
       <a href="#" data-go="brief"><svg class="icon sm"><use href="#i-brief"/></svg>Briefs</a>
       <a href="#" data-go="chat"><svg class="icon sm"><use href="#i-chat"/></svg>Chat</a>
       <a href="#" data-go="agent"><svg class="icon sm"><use href="#i-terminal"/></svg>Agent</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <svg class="icon sm i-sun"><use href="#i-sun"/></svg>
+        <svg class="icon sm i-moon"><use href="#i-moon"/></svg>
+      </button>
     </nav>
   </header>
 
@@ -1752,6 +1839,29 @@
       el.classList.remove("copied");
     }, 1400);
   }
+
+  // dark mode toggle
+  (function() {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme-toggle');
+
+    function getEffectiveTheme() {
+      var stored = localStorage.getItem('theme');
+      if (stored === 'dark' || stored === 'light') return stored;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function applyTheme(theme) {
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+
+    if (btn) {
+      btn.addEventListener('click', function() {
+        applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+      });
+    }
+  })();
 </script>
 </body>
 </html>

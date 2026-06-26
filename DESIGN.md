@@ -49,6 +49,15 @@ spacing:
   md: "32px"
   lg: "56px"
   xl: "72px"
+motion:
+  duration:
+    fast: "150ms"
+    base: "250ms"
+    slow: "400ms"
+  easing:
+    enter: "cubic-bezier(0.0, 0.0, 0.2, 1)"
+    exit: "cubic-bezier(0.4, 0.0, 1, 1)"
+    standard: "cubic-bezier(0.4, 0.0, 0.2, 1)"
 components:
   nav-item:
     backgroundColor: "transparent"
@@ -208,3 +217,24 @@ Border: 1px ash-rule. Radius: 4px. Top accent bar: `::before` pseudo-element, 2p
 - **Don't** animate layout properties (width, height, padding, margin). Animate only transform and opacity.
 - **Don't** render Fraunces without an opsz value. A missing opsz is not a neutral default; it renders at opsz 14 regardless of size, which is visibly wrong at display scale.
 - **Don't** place accent color on more than one element simultaneously in the same viewport. If the nav is active-forest AND a link is forest AND a label is forest, one of those uses is wrong.
+
+## 7. Responsive Behavior
+
+Single breakpoint: `720px`. Below it, multi-column layouts collapse to single column; font sizes scale via `clamp()` already baked into the type scale. No horizontal scrolling; no viewport-specific display rules beyond this threshold.
+
+- Below 720px: Brief bar collapses from four to two columns.
+- Below 720px: Note grids collapse to a single column.
+- Content containers remain centered at all viewport widths.
+- Navigation condenses but retains the pill-shaped item treatment.
+
+## 8. Agent Prompt Guide
+
+Pre-written single-sentence constraints encoding the highest-stakes rules. Use these verbatim when generating or reviewing UI for this site:
+
+- "Use Quiet Forest (`#2d5d4f`) on at most one element per viewport — its rarity is the signal."
+- "Every Fraunces element must carry `font-variation-settings: 'opsz' <n>` where n matches the render size. A Fraunces element without explicit opsz is a visual mistake."
+- "Depth is tonal (warm-ash `#e6e8e4` over ash-paper `#f1f2f0`), not shadowed. A surface at rest has no box-shadow."
+- "JetBrains Mono for timestamps, section labels, badges, and code. Fraunces for ideas. Inter for interface. They do not cross roles."
+- "Hover states use `translateY(-2px)` and a border-color shift to `#2d5d4f`. Shadows appear only at hover or focus, never at rest."
+- "No pure white (#ffffff) backgrounds. No pure black text. No gradient fills. No glassmorphism."
+- "This is not a portfolio: no headshot hero, no tech-stack badge grid, no three-up feature card layout, no sticky CTA banner."

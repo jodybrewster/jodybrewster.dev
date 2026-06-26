@@ -14,6 +14,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Parallelize with subagents.** When the work splits into independent pieces (separate files, distinct features, isolated checks), spawn multiple subagents in a single message rather than working sequentially. Use the `general-purpose` agent for parallel writes/builds, and the `Explore` agent for parallel investigation. Brief each subagent on the existing context it needs (which components/layouts/styles to read) so it doesn't re-explore the whole repo. Skip subagents for trivially small work where their setup overhead outweighs the parallelism gain.
 
+**Verify before inventing.** If uncertain about a file path, function signature, library version, or API, use Read/Grep/search first. Say "I don't know" rather than fabricating. Never invent imports, function names, or citation sources.
+
+**Before any UI change, read `DESIGN.md`.** Use only the tokens, fonts, spacing, and components defined there. Do not introduce hex values, font families, or radius values outside the system.
+
 ## Commands
 
 ```bash
@@ -75,3 +79,11 @@ The chat page and search features use:
 - `PUSHOVER_*` — push notifications when someone uses the chat
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
+
+## Common Pitfalls
+
+- Design tokens live in `global.css` but are **extracted from `index.html`** — update the prototype first, then re-extract. Never manually edit the `/* Extracted from prototype */` block in `global.css`.
+- Fraunces must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size — visually wrong at display scale.
+- `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.
+- Don't add new npm packages without first checking if the dependency already exists in `package.json`.
+- Don't commit `.env` or any secrets file. Don't push to `main` without confirming with the user.

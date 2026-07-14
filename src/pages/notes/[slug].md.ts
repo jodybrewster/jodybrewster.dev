@@ -1,7 +1,12 @@
 import type { APIRoute } from 'astro';
-import { getEntry } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes', ({ data }) => data.publish);
+  return notes.map((entry) => ({ params: { slug: entry.id } }));
+}
 
 export const GET: APIRoute = async ({ params }) => {
   const slug = params.slug;

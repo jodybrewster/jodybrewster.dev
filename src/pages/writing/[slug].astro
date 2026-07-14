@@ -2,6 +2,11 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import Essay from '../../layouts/Essay.astro';
 
+export async function getStaticPaths() {
+  const published = await getCollection('writing', e => e.data.status === 'published');
+  return published.map((entry) => ({ params: { slug: entry.id } }));
+}
+
 const { slug } = Astro.params;
 const entry = slug ? await getEntry('writing', slug) : undefined;
 if (!entry || entry.data.status === 'draft') return new Response('Not found', { status: 404 });

@@ -17,11 +17,7 @@ const wikiLinkPlugin = [remarkWikiLink, {
 
 export default defineConfig({
   site: SITE,
-  // 'server' so middleware runs for every request (including pages that would
-  // otherwise be statically prerendered). Required by src/middleware.ts to gate
-  // the whole site behind Basic Auth during the preview phase. Switch back to
-  // 'static' (and delete middleware.ts) when going public.
-  output: 'server',
+  output: 'static',
   adapter: vercel(),
   integrations: [
     mdx(),

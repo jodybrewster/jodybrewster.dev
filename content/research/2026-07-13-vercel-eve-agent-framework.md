@@ -5,7 +5,7 @@ pubDate: 2026-07-13
 pillar: agentic-ax
 tags: [agentic-systems, tooling, vercel, agent-frameworks]
 description: "Vercel's Eve is an open-source, filesystem-first TypeScript agent framework. It defaults to the AI Gateway but does not require it."
-publish: true
+publish: false
 ---
 
 The interesting thing about Vercel's Eve is not that it is another agent framework in an already crowded year.

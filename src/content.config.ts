@@ -33,6 +33,7 @@ const work = defineCollection({
     duration: z.string(),
     pillar: z.string().optional(),
     sub: z.string().optional(),
+    draft: z.boolean().default(false),
   }),
 });
 
@@ -49,4 +50,22 @@ const research = defineCollection({
   }),
 });
 
-export const collections = { writing, notes, work, research };
+const portfolio = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './content/portfolio' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    description: z.string(),
+    tags: z.array(z.string()).default([]),
+    tools: z.array(z.string()).default([]),
+    cover: z.string(),
+    behance: z.string().url().optional(),
+    images: z.array(z.object({
+      src: z.string(),
+      alt: z.string(),
+      caption: z.string().optional(),
+    })).default([]),
+  }),
+});
+
+export const collections = { writing, notes, work, research, portfolio };

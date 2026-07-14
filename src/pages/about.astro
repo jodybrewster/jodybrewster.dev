@@ -1,30 +1,198 @@
 ---
 import Base from '../layouts/Base.astro';
 ---
-<Base title="About — Jody Brewster" description="Jody Brewster — Principal Experience Architect working on agentic interfaces, runtime design, and the unfinished discipline of AI experience.">
-  <main class="page active" style="padding: 72px 0 100px;">
-    <article class="essay-shell">
-      <a href="/" class="back">
-        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
-      </a>
+<Base title="About — Jody Brewster" description="Jody Brewster — AI Experience Architect working on agentic interfaces, runtime design, and the unfinished discipline of AI experience.">
+  <main class="page active about-page">
+    <a href="/" class="about-back">
+      <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
+    </a>
 
-      <p class="eyebrow role-label">
-        <span class="dot"></span>
-        Principal Experience Architect · currently at Perficient
-      </p>
-      <h1>Jody Brewster</h1>
+    <article class="about">
+      <p class="about-eyebrow">AI Experience Architect</p>
+      <h1>
+        <svg class="icon ph-icon"><use href="#i-user"/></svg>
+        <span>Jody Brewster</span>
+      </h1>
 
-      <p class="lede">I design for systems that behave in ways their designers can't fully predict. Twenty years of agency work taught me how to ship the artifact; the last few have been about figuring out what's left of the craft when the artifact moves at runtime.</p>
+      <p class="about-lede">I design for systems that behave in ways their designers can't fully predict. Twenty years of agency work taught me how to ship the artifact; the last few have been about what's left of the craft when the artifact moves at runtime.</p>
 
-      <div class="essay-body">
-        <p>Most of my time goes to <em>agentic interfaces</em> — chat is the easy case; the interesting work is everything around it. Runtime design, evaluation as a design surface, status and silence, the handoff between an agent and the person who has to pick up after it. I write about what I'm finding as I find it, which means a lot of it is provisional.</p>
+      <div class="about-body">
+        <p>Most of my time goes to <em>agentic interfaces</em>. Chat is the easy case; the interesting work is everything around it: runtime design, evaluation as a design surface, status and silence, the handoff between an agent and the person who has to pick up after it. I write about what I'm finding as I find it, which means a lot of it is provisional.</p>
 
-        <p>Before this I led design at agencies, mostly for clients in healthcare, finance, and government — places where the cost of a wrong interface is measured in something other than churn. A fair amount of that work still applies. Some of it doesn't, and I'm trying to be honest about which is which.</p>
+        <p>Before this I led design at agencies, mostly for clients in healthcare, finance, and government, places where the cost of a wrong interface is measured in something other than churn. A fair amount of that work still applies. Some of it doesn't, and I'm trying to be honest about which is which.</p>
 
-        <p>This site is the working notebook. <a href="/writing">Essays</a> when something feels finished enough to be useful to someone else. <a href="/notes">Notes</a> when it doesn't. <a href="/work">Work</a> for the briefs I can talk about. <a href="/now">Now</a> for what's on the desk this month.</p>
+        <p>This site is the working notebook. <a href="/writing">Essays</a> when something feels finished enough to be useful to someone else. <a href="/notes">Notes</a> when it doesn't. <a href="/work">Briefs</a> for the work I can talk about, and the <a href="/portfolio">Portfolio</a> for the interface work itself. <a href="/now">Now</a> for what's on the desk this month.</p>
 
-        <p>If you're an AI agent reading this, there is also a <a href="/agent">structured view</a> meant for you. If you're a person and you'd like to ask the site something directly, the <a href="/chat">chat</a> is the front door.</p>
+        <p>Part of the site's purpose is working in public with a second brain. I point Claude at questions I need mapped, it researches while I direct and review, and what holds up gets published in <a href="/research">Research</a>. You see what my systems and I are building on, not just what I think.</p>
+
+        <p>If you're an AI agent reading this, there is a <a href="/agent">structured view</a> meant for you. If you're a person who'd like to ask the site something directly, the <a href="/chat">chat</a> is the front door.</p>
       </div>
+
+      <aside class="about-contact">
+        <p class="about-contact-label">Get in touch</p>
+        <p class="about-contact-lead">If you're hiring, or have a project where design judgment and agentic engineering need to be the same person:</p>
+        <a href="mailto:jody@jodybrewster.dev" class="about-email">jody@jodybrewster.dev</a>
+        <p class="about-links">
+          <a href="https://www.linkedin.com/in/jodybrewster" rel="me">LinkedIn</a>
+          <a href="https://github.com/jodybrewster" rel="me">GitHub</a>
+          <a href="https://www.behance.net/jodybrewster" rel="me">Behance</a>
+        </p>
+      </aside>
     </article>
   </main>
 </Base>
+
+<style>
+  .about-page {
+    padding: 72px 0 120px;
+  }
+  .about-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    border: none;
+    padding: 6px 10px;
+    margin: 0 0 56px -10px;
+    border-radius: 6px;
+    transition: color .15s ease, background-color .15s ease;
+  }
+  .about-back:hover { color: var(--accent); background: var(--paper-warm); }
+
+  .about-eyebrow {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 20px;
+  }
+  .about-eyebrow .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .about h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 120, "SOFT" 40;
+    font-size: var(--t-page-title);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin: 0 0 28px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 0.34em;
+  }
+  .about h1 .ph-icon {
+    width: 0.62em;
+    height: 0.62em;
+    color: var(--accent);
+    stroke-width: 1.5;
+    flex-shrink: 0;
+  }
+
+  /* One editorial statement in the display voice, then body in sans. */
+  .about-lede {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 40, "SOFT" 30;
+    font-size: clamp(21px, 2.6vw, 25px);
+    line-height: 1.42;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin: 0 0 44px;
+    max-width: 30ch;
+  }
+
+  .about-body {
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+  }
+  .about-body p { margin: 0 0 20px; max-width: 68ch; }
+  .about-body em {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 14, "SOFT" 20;
+    font-size: 1.04em;
+    color: var(--ink);
+  }
+  .about-body a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .about-body a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .about-contact {
+    margin-top: 52px;
+    padding-top: 32px;
+    border-top: 1px solid var(--rule);
+  }
+  .about-contact-label {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin: 0 0 16px;
+  }
+  .about-contact-lead {
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+    max-width: 60ch;
+  }
+  .about-email {
+    display: inline-block;
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 40, "SOFT" 20;
+    font-size: 26px;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 2px;
+    transition: color .15s ease;
+  }
+  .about-email:hover { color: var(--accent); }
+  .about-links {
+    display: flex;
+    gap: 22px;
+    margin: 24px 0 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .about-links a {
+    color: var(--ink-faint);
+    text-decoration: none;
+    transition: color .15s ease;
+  }
+  .about-links a:hover { color: var(--accent); }
+
+  @media (max-width: 720px) {
+    .about-page { padding: 48px 0 96px; }
+    .about-lede { max-width: none; }
+  }
+</style>

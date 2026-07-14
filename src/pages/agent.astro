@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import PageHeader from '../components/PageHeader.astro';
 ---
 <Base
   title="For agents — Jody Brewster"
@@ -7,8 +8,13 @@ import Base from '../layouts/Base.astro';
 >
   <main class="page active" id="agent">
     <div class="agent-shell">
-      <h1><svg class="icon"><use href="#i-terminal"/></svg> For agents.</h1>
-      <p class="intro">This site is readable by your AI. If you got here because something you were running fetched the page and you're now reading the output, hi. Here's what's actually available.</p>
+      <PageHeader
+        icon="i-terminal"
+        eyebrow="Agent-readable"
+        title="For agents."
+        description="This site is readable by your AI. If you got here because something you were running fetched the page and you're now reading the output, hi. Here's what's actually available."
+      />
+
 
       <div class="endpoint-card">
         <div class="row">

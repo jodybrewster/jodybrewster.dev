@@ -5,7 +5,7 @@ pubDate: 2026-05-23
 pillar: beyond-chat
 tags: [agentic-systems, generative-ui, snowflake, tooling]
 description: "How Snowflake Cortex Agents actually works as a stack, what Snowflake Intelligence restricts on the UI layer, and how to handle Vega-Lite charts in a Next.js generative-UI build."
-publish: false
+publish: true
 ---
 
 Snowflake Cortex Agents went GA on November 4, 2025. Snowflake Intelligence went GA the same day. Most enterprise AI conversations about Snowflake now orbit one question: do you consume Intelligence's ready-made chat UI, or do you call the Cortex Agents REST API and build your own front-end? The answer turns entirely on what the UI layer needs to do — and Snowflake Intelligence's customization ceiling is lower than most people realize when they first see the demo.

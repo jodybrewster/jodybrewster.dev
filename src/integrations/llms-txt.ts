@@ -10,6 +10,7 @@ interface Frontmatter {
   description?: string;
   status?: string;
   publish?: boolean;
+  draft?: boolean;
   sector?: string;
   role?: string;
   duration?: string;
@@ -66,7 +67,7 @@ async function readCollection(dir: string, urlBase: string, filter?: (fm: Frontm
   return docs;
 }
 
-async function generate(site: string): Promise<{ index: string; full: string; stats: { essays: number; notes: number; briefs: number } }> {
+async function generate(site: string): Promise<{ index: string; full: string; stats: { essays: number; notes: number; briefs: number; research: number; portfolio: number } }> {
   const contentRoot = resolve('content');
 
   const essays = (await readCollection(
@@ -84,11 +85,18 @@ async function generate(site: string): Promise<{ index: string; full: string; st
   const briefs = (await readCollection(
     join(contentRoot, 'work'),
     `${site}/work`,
+    fm => fm.draft !== true,
   )).sort((a, b) => (a.fm.title ?? '').localeCompare(b.fm.title ?? ''));
+
+  const portfolio = (await readCollection(
+    join(contentRoot, 'portfolio'),
+    `${site}/portfolio`,
+  )).sort((a, b) => (b.fm.date ?? '').localeCompare(a.fm.date ?? ''));
 
   const research = (await readCollection(
     join(contentRoot, 'research'),
     `${site}/research`,
+    fm => fm.publish === true,
   )).sort((a, b) => (b.fm.pubDate ?? '').localeCompare(a.fm.pubDate ?? ''));
 
   let nowContent = '';
@@ -126,6 +134,13 @@ async function generate(site: string): Promise<{ index: string; full: string; st
     lines.push(`- [${b.fm.title ?? b.slug}](${b.url}.md)${sector}`);
   }
   lines.push('');
+  lines.push('## Portfolio');
+  lines.push('');
+  for (const p of portfolio) {
+    const desc = p.fm.description ? `: ${p.fm.description}` : '';
+    lines.push(`- [${p.fm.title ?? p.slug}](${p.url}.md)${desc}`);
+  }
+  lines.push('');
   lines.push('## Research');
   lines.push('');
   for (const r of research) {
@@ -160,6 +175,9 @@ async function generate(site: string): Promise<{ index: string; full: string; st
   if (briefs.length) {
     fullParts.push(`# Work\n\n${briefs.map(b => `## ${b.fm.title ?? b.slug}\n\nSource: ${b.url}\n\n${b.body}`).join(sep)}`);
   }
+  if (portfolio.length) {
+    fullParts.push(`# Portfolio\n\n${portfolio.map(p => `## ${p.fm.title ?? p.slug}\n\nSource: ${p.url}\n\n${p.body}`).join(sep)}`);
+  }
   if (research.length) {
     fullParts.push(`# Research\n\n${research.map(r => `## ${r.fm.title ?? r.slug}\n\nSource: ${r.url}\n\n${r.body}`).join(sep)}`);
   }
@@ -168,7 +186,7 @@ async function generate(site: string): Promise<{ index: string; full: string; st
   }
   const full = fullParts.join(sep);
 
-  return { index, full, stats: { essays: essays.length, notes: notes.length, briefs: briefs.length, research: research.length } };
+  return { index, full, stats: { essays: essays.length, notes: notes.length, briefs: briefs.length, research: research.length, portfolio: portfolio.length } };
 }
 
 export function llmsTxt(options: { site: string }): AstroIntegration {

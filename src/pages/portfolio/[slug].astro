@@ -1,0 +1,117 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const { slug } = Astro.params;
+const entry = slug ? await getEntry('portfolio', slug) : undefined;
+if (!entry) return new Response('Not found', { status: 404 });
+
+const { Content } = await render(entry);
+
+const date = entry.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Jody Brewster', item: 'https://jodybrewster.dev/' },
+    { '@type': 'ListItem', position: 2, name: 'Portfolio', item: 'https://jodybrewster.dev/portfolio' },
+    { '@type': 'ListItem', position: 3, name: entry.data.title, item: `https://jodybrewster.dev/portfolio/${entry.id}` },
+  ],
+};
+---
+<Base
+  title={`${entry.data.title} — Portfolio — Jody Brewster`}
+  description={entry.data.description}
+  jsonLd={jsonLd}
+>
+  <main class="page active" style="padding: 72px 0 100px;">
+    <article class="brief-shell">
+      <div class="brief-head">
+        <p class="crumb">
+          <a href="/portfolio"><svg class="icon sm"><use href="#i-layers"/></svg> Portfolio</a>
+          <svg class="icon sm"><use href="#i-chev-right"/></svg>
+          <span style="color:var(--ink-soft)">{entry.data.title}</span>
+        </p>
+        <h1>{entry.data.title}</h1>
+        <p class="sub">{entry.data.description}</p>
+
+        <div class="brief-bar">
+          <div class="item">
+            <p class="k"><svg class="icon sm"><use href="#i-calendar"/></svg> Shipped</p>
+            <p class="v">{date}</p>
+          </div>
+          {entry.data.tools.length > 0 && (
+            <div class="item">
+              <p class="k"><svg class="icon sm"><use href="#i-code"/></svg> Tools</p>
+              <p class="v">{entry.data.tools.join(', ')}</p>
+            </div>
+          )}
+          {entry.data.tags.length > 0 && (
+            <div class="item">
+              <p class="k"><svg class="icon sm"><use href="#i-tag"/></svg> Focus</p>
+              <p class="v">{entry.data.tags.slice(0, 3).map(t => t.replace(/-/g, ' ')).join(', ')}</p>
+            </div>
+          )}
+          {entry.data.behance && (
+            <div class="item">
+              <p class="k"><svg class="icon sm"><use href="#i-external"/></svg> Source</p>
+              <p class="v"><a href={entry.data.behance}>On Behance</a></p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div class="folio-prose">
+        <Content />
+      </div>
+
+      <div class="folio-gallery">
+        {entry.data.images.map(img => (
+          <figure>
+            <img src={img.src} alt={img.alt} loading="lazy" />
+            {img.caption && <figcaption>{img.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+
+      <div style="margin-top:64px;padding-top:28px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;font-family:var(--sans);font-size:12px;color:var(--ink-faint);font-weight:500;flex-wrap:wrap;gap:14px;">
+        <a href="/portfolio" style="border:none;display:inline-flex;align-items:center;gap:6px">
+          <svg class="icon sm"><use href="#i-arrow-left"/></svg> All projects
+        </a>
+      </div>
+    </article>
+  </main>
+</Base>
+
+<style>
+  .folio-prose {
+    max-width: 68ch;
+  }
+  .folio-gallery {
+    margin-top: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  .folio-gallery figure {
+    margin: 0;
+  }
+  .folio-gallery img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper-warm);
+  }
+  .folio-gallery figcaption {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+</style>

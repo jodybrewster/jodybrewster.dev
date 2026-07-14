@@ -1,30 +1,41 @@
 ---
 import Base from '../layouts/Base.astro';
-import ChatInterface from '../components/ChatInterface.astro';
+import PageHeader from '../components/PageHeader.astro';
 ---
 <Base
   title="Ask the site — Jody Brewster"
   description="A chat interface over Jody Brewster's published essays, notes, and case briefs. Speaks in third person, cites its sources, refuses what isn't in the corpus."
 >
-  <main class="page active" style="padding: 56px 0 100px;">
-    <div class="chat-shell">
-      <div class="preamble">
-        <h1>Ask the site.</h1>
-        <p>This is a chat interface on the personal site of someone who has written essays arguing that <a href="/notes/chat-is-not-the-answer">chat is a bad UI for AI</a>. The contradiction is the point.</p>
-        <p>It's here because the alternative — pretending the question doesn't come up — felt worse. So: this is the most opinionated chat I could build. It speaks <em>about</em> Jody in the third person, not <em>as</em> him. It cites its sources. It refuses some questions on purpose.</p>
+  <main class="page active" style="padding: 72px 0 100px;">
+    <PageHeader
+      icon="i-chat"
+      eyebrow="Ask the site"
+      title="Ask the site."
+      description="A chat interface on the site of someone who has argued that chat is a bad UI for AI. The contradiction is the point."
+    />
 
-        <div class="honesty-card">
-          <p class="h"><svg class="icon sm"><use href="#i-shield"/></svg> What this is, and isn't</p>
-          <ul>
-            <li><strong>Reads from</strong> Jody's published essays, notes, and anonymized case briefs on this site.</li>
-            <li><strong>Speaks in third person.</strong> "Jody has written…" not "I have written…" — voice cloning is a design choice not worth making.</li>
-            <li><strong>Refuses</strong> questions about specific clients, projects, employers, or anything that would impersonate his opinions on something he hasn't written about.</li>
-            <li><strong>Will be wrong sometimes.</strong> Use the cited essays as the source of truth, not the synthesis above them.</li>
-          </ul>
-        </div>
-      </div>
-
-      <ChatInterface />
+    <div class="chat-explainer">
+      <p>The ask bar at the bottom of every page is the chat. It speaks <em>about</em> Jody in the third person, cites its sources, and refuses questions outside what he has published. It will sometimes be wrong, so the cited essays are the source of truth, not the synthesis above them.</p>
+      <p>Type a question below, anywhere on the site.</p>
     </div>
   </main>
 </Base>
+
+<style>
+  .chat-explainer {
+    max-width: 62ch;
+  }
+  .chat-explainer p {
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+  .chat-explainer em {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 14, "SOFT" 20;
+    color: var(--ink);
+  }
+</style>

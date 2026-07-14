@@ -23,7 +23,7 @@ const statusIcon = status === 'evergreen' ? 'sparkle' : status === 'budding' ? '
       <svg class="icon sm"><use href="#i-calendar"/></svg> tended {date}
     </span>
   </div>
-  {title && <p style="font-family:var(--display);font-weight:450;font-size:16px;margin:0 0 8px;letter-spacing:-0.01em;">{title}</p>}
+  {title && <p style="font-family:var(--display);font-weight:600;font-size:var(--t-h3);line-height:var(--lh-snug);margin:0 0 10px;letter-spacing:var(--ls-h3);">{title}</p>}
   {body && <p>{body}</p>}
   {tagList.length > 0 && (
     <span class="tag" style="margin-top:8px;">

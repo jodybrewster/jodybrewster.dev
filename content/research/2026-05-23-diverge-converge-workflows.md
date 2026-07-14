@@ -5,7 +5,7 @@ pubDate: 2026-05-23
 pillar: shape-of-work
 tags: [ai-delivery, methodology, tooling, agentic-systems]
 description: "How the design community is operationalizing diverge-then-converge workflows with LLMs in 2026, and why convergence is now the only interesting problem."
-publish: false
+publish: true
 ---
 
 Karri Saarinen said it plainly in April 2026: "You can already see the result in products that look polished, ambitious, and impressive at first glance, but begin to unravel the moment you actually use them. The form is there. The fit is not." That sentence is the summary of every honest review of AI design tooling published in the past twelve months. Generating options is nearly free. Evaluating them — with taste, fit, and discipline — is not, and it is the only place an editorial site will distinguish itself from generic AI output.

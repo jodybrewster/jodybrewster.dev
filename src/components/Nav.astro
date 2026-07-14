@@ -8,10 +8,12 @@ const hasWriting = publishedWriting.length > 0;
 
 const links = [
   { href: '/writing',  label: 'Writing',  icon: 'i-book',     hidden: !hasWriting },
-  { href: '/research', label: 'Research', icon: 'i-compass',  hidden: false },
   { href: '/work',     label: 'Briefs',   icon: 'i-brief',    hidden: false },
+  { href: '/portfolio', label: 'Portfolio', icon: 'i-layers', hidden: false },
+  { href: '/research', label: 'Research', icon: 'i-compass',  hidden: false },
   { href: '/chat',     label: 'Chat',     icon: 'i-chat',     hidden: false },
   { href: '/agent',    label: 'Agent',    icon: 'i-terminal', hidden: false },
+  { href: '/about',    label: 'About',    icon: 'i-user',     hidden: false },
 ];
 
 function isActive(href: string): boolean {
@@ -24,23 +26,132 @@ function isActive(href: string): boolean {
 <header class="mast">
   <a href="/" class="mark">
     <span class="glyph">
-      <svg class="icon sm"><use href="#i-mark"/></svg>
+      <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+        <rect x="6" y="6" width="52" height="52" rx="14" style="fill:var(--paper)" stroke="#86B39C" stroke-width="3"/>
+        <path d="M16.764830508474574 25.715042372881353V28.99258474576271H28.398305084745765V25.715042372881353ZM16.98093220338983 15.8103813559322V19.051906779661014H28.470338983050848V15.8103813559322ZM16.764830508474574 30.649364406779657V33.89088983050847H28.398305084745765V30.649364406779657ZM15.0 20.63665254237288V24.058262711864405H29.802966101694913V20.63665254237288ZM31.24364406779661 16.494703389830505V20.600635593220336H42.733050847457626V28.128177966101692H31.351694915254235V42.35487288135593C31.351694915254235 46.965042372881356 32.720338983050844 48.18961864406779 37.186440677966104 48.18961864406779C38.1228813559322 48.18961864406779 42.15677966101695 48.18961864406779 43.16525423728814 48.18961864406779C47.271186440677965 48.18961864406779 48.45974576271187 46.42478813559322 49.0 40.44597457627118C47.811440677966104 40.193855932203384 45.9385593220339 39.4375 45.0021186440678 38.75317796610169C44.75 43.25529661016949 44.4978813559322 44.119703389830505 42.84110169491525 44.119703389830505C41.86864406779661 44.119703389830505 38.51906779661017 44.119703389830505 37.726694915254235 44.119703389830505C35.9978813559322 44.119703389830505 35.70974576271186 43.867584745762706 35.70974576271186 42.318855932203384V32.23411016949152H42.733050847457626V34.034957627118644H47.05508474576271V16.494703389830505ZM16.656779661016948 35.619703389830505V48.00953389830508H20.402542372881356V46.60487288135593H28.290254237288135V35.619703389830505ZM20.402542372881356 39.041313559322035H24.472457627118644V43.1832627118644H20.402542372881356Z" style="fill:var(--ink)"/>
+      </svg>
     </span>
-    <span>Jody</span>
-    <span class="role">— Principal Experience Architect</span>
+    <span class="mark-text">
+      <span class="name">Jody Brewster</span>
+      <span class="tag">notes on experience architecture</span>
+    </span>
   </a>
-  <nav class="primary">
-    {links.filter(l => !l.hidden).map(({ href, label, icon }) => (
-      <a href={href} class={isActive(href) ? 'active' : undefined}>
-        <svg class="icon sm"><use href={`#${icon}`}/></svg>{label}
-      </a>
-    ))}
+  <div class="nav-right">
+    <nav class="primary" id="primary-nav">
+      {links.filter(l => !l.hidden).map(({ href, label, icon }) => (
+        <a href={href} class={isActive(href) ? 'active' : undefined}>
+          <svg class="icon sm"><use href={`#${icon}`}/></svg>{label}
+        </a>
+      ))}
+    </nav>
     <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
       <svg class="icon sm i-sun"><use href="#i-sun"/></svg>
       <svg class="icon sm i-moon"><use href="#i-moon"/></svg>
     </button>
-  </nav>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="primary-nav">
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+  </div>
 </header>
+
+<style>
+  .mark .glyph {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 0;
+  }
+  .mark .glyph svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .mark-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+  }
+  .mark-text .name {
+    font-family: var(--display);
+    font-weight: 500;
+    font-variation-settings: "opsz" 30, "SOFT" 30;
+    font-size: 21px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .mark-text .tag {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 14;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+  }
+  header.mast { position: relative; }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav-toggle {
+    display: none;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color .15s ease;
+  }
+  .nav-toggle:hover { background: var(--paper-warm); }
+  .nav-toggle .bar {
+    width: 18px;
+    height: 1.5px;
+    background: var(--ink-soft);
+    border-radius: 2px;
+    transition: transform .22s cubic-bezier(0.4, 0, 0.2, 1), opacity .18s ease;
+  }
+  .nav-toggle[aria-expanded="true"] .bar:nth-child(1) { transform: translateY(3.25px) rotate(45deg); }
+  .nav-toggle[aria-expanded="true"] .bar:nth-child(2) { transform: translateY(-3.25px) rotate(-45deg); }
+
+  @media (max-width: 720px) {
+    .mark-text .tag { display: none; }
+    .nav-toggle { display: inline-flex; }
+    nav.primary {
+      position: absolute;
+      top: calc(100% + 1px);
+      right: 0;
+      left: 0;
+      flex-direction: column;
+      gap: 2px;
+      background: var(--paper);
+      border-bottom: 1px solid var(--rule);
+      padding: 10px 20px 18px;
+      box-shadow: 0 16px 32px -20px rgba(20, 24, 29, 0.4);
+      opacity: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 30;
+    }
+    nav.primary.open {
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
+    }
+    nav.primary a {
+      font-size: 15px;
+      padding: 11px 12px;
+      border-radius: 8px;
+    }
+  }
+</style>
 
 <script>
   const root = document.documentElement;
@@ -59,5 +170,28 @@ function isActive(href: string): boolean {
 
   btn?.addEventListener('click', () => {
     applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  });
+
+  const navToggle = document.getElementById('nav-toggle');
+  const primaryNav = document.getElementById('primary-nav');
+
+  function setMenu(open: boolean) {
+    navToggle?.setAttribute('aria-expanded', String(open));
+    primaryNav?.classList.toggle('open', open);
+  }
+
+  navToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setMenu(navToggle.getAttribute('aria-expanded') !== 'true');
+  });
+
+  // Dismiss on outside tap or Escape.
+  document.addEventListener('click', (e) => {
+    if (primaryNav?.classList.contains('open') && !primaryNav.contains(e.target as Node)) {
+      setMenu(false);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setMenu(false);
   });
 </script>

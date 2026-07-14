@@ -12,23 +12,25 @@ const iconForType: Record<string, string> = {
   work: 'i-brief',
 };
 ---
-<p class="eyebrow probes-label"><svg class="icon sm"><use href="#i-sparkle"/></svg> Try a probe</p>
-<div class="probes" id="probes">
-  {probes.map(q => (
-    <button class="probe" type="button" data-q={q}>
-      <svg class="icon sm"><use href="#i-arrow-right"/></svg>
-      {q}
-    </button>
-  ))}
-</div>
-
-<form class="input-row" id="chat-form">
-  <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
-  <input type="text" id="chat-q" autocomplete="off" placeholder="Ask a question, or pick a probe above…" />
-  <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
-</form>
-
 <div class="conversation" id="conversation"></div>
+
+<div class="chat-composer" id="composer">
+  <div class="composer-inner">
+    <div class="probes" id="probes">
+      {probes.map(q => (
+        <button class="probe" type="button" data-q={q}>
+          <svg class="icon sm"><use href="#i-sparkle"/></svg>
+          {q}
+        </button>
+      ))}
+    </div>
+    <form class="input-row" id="chat-form">
+      <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+      <input type="text" id="chat-q" autocomplete="off" placeholder="Ask the site a question…" />
+      <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+    </form>
+  </div>
+</div>
 
 <template id="tpl-you">
   <div class="turn you">
@@ -99,6 +101,8 @@ const iconForType: Record<string, string> = {
     async function ask(query) {
       const trimmed = query.trim();
       if (!trimmed) return;
+
+      document.getElementById('composer').classList.add('active');
 
       const youTurn = append(tplYou);
       youTurn.querySelector('.said').textContent = trimmed;

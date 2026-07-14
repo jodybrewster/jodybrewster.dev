@@ -1,0 +1,125 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+
+const projects = (await getCollection('portfolio'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+function formatDate(d: Date) {
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+}
+---
+<Base title="Portfolio — Jody Brewster" description="Selected interface and product design work — portals, mobile apps, mapping tools, and design systems.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    <PageHeader
+      icon="i-layers"
+      eyebrow={`${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`}
+      title="Portfolio"
+      description="Interface and product design work. Portals, mobile apps, mapping tools, and design systems. Currently, most of this is a small, recent sample of design work I've done before AI."
+    >
+      <p class="page-meta-link">Also on <a href="https://www.behance.net/jodybrewster" rel="me">Behance</a>.</p>
+    </PageHeader>
+
+    <ul class="folio-list">
+      {projects.map(p => (
+        <li>
+          <a href={`/portfolio/${p.id}`}>
+            <span class="thumb">
+              <img src={p.data.cover} alt="" loading="lazy" />
+            </span>
+            <span class="body">
+              <span class="title">{p.data.title}</span>
+              <span class="dek">{p.data.description}</span>
+              <span class="meta">
+                {formatDate(p.data.date)}
+                {p.data.tags.length > 0 && <span class="tags"> · {p.data.tags.slice(0, 3).join(' · ')}</span>}
+              </span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Base>
+
+<style>
+  .folio-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 100px;
+  }
+  .folio-list li {
+    border-bottom: 1px solid var(--rule);
+  }
+  .folio-list a {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 28px;
+    align-items: start;
+    padding: 28px 22px;
+    margin: 0 -22px;
+    border: none;
+    border-radius: 6px;
+    transition: background-color .2s ease;
+  }
+  .folio-list a:hover {
+    background: var(--paper-warm);
+  }
+  .title { transition: color .2s ease; }
+  .thumb {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--paper-warm);
+  }
+  .thumb img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top;
+  }
+  .body {
+    display: block;
+  }
+  .title {
+    display: block;
+    font-family: var(--display);
+    font-weight: 450;
+    font-variation-settings: "opsz" 30, "SOFT" 20;
+    font-size: 25px;
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .folio-list a:hover .title {
+    color: var(--accent);
+  }
+  .dek {
+    display: block;
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    margin-bottom: 12px;
+  }
+  .meta {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  @media (max-width: 720px) {
+    .folio-list a {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+</style>

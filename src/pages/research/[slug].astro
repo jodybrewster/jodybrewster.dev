@@ -4,9 +4,9 @@ import Essay from '../../layouts/Essay.astro';
 
 const { slug } = Astro.params;
 const entry = slug ? await getEntry('research', slug) : undefined;
-if (!entry) return new Response('Not found', { status: 404 });
+if (!entry || !entry.data.publish) return new Response('Not found', { status: 404 });
 
-const entries = (await getCollection('research'))
+const entries = (await getCollection('research', r => r.data.publish))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 const idx = entries.findIndex(e => e.id === entry.id);
 

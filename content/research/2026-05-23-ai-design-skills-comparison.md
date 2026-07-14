@@ -5,7 +5,7 @@ pubDate: 2026-05-23
 pillar: shape-of-work
 tags: [ai-tooling, design-systems, frontend, tooling]
 description: "Which AI design skills actually produce high-taste editorial frontend output, and why the answer is mostly already inside Claude."
-publish: false
+publish: true
 ---
 
 Anthropic's `frontend-design` skill paired with Paul Bakaus's `impeccable` in brand mode is the strongest stack for an editorial writer's notebook site. The critical insight: Claude Opus 4.7's default house style — warm cream (~`#F4F1EA`) backgrounds, serif display type (Georgia, Fraunces, Playfair), italic word-accents, terracotta accent — is already aimed at editorial, hospitality, and portfolio work. For a plainspoken writer's notebook, you mostly need to restrain the model, not push it harder.

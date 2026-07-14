@@ -10,7 +10,9 @@ Design and product practitioners, AI/agent researchers, and potential collaborat
 
 ## Product Purpose
 
-Personal site for Jody Brewster, Principal Experience Architect. Publishes writing, digital garden notes, and anonymized work briefs focused on agentic interfaces, AI-native design, and the craft of building experiences around systems that behave in ways their designers can't fully predict. The site is also itself a demonstration of the ideas it argues for: it exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class design decisions, not features.
+Personal site for Jody Brewster, AI Experience Architect. Publishes writing, digital garden notes, and anonymized work briefs focused on agentic interfaces, AI-native design, and the craft of building experiences around systems that behave in ways their designers can't fully predict. The site is also itself a demonstration of the ideas it argues for: it exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class design decisions, not features.
+
+A stated purpose of the site is working in public with a second brain: Claude researches questions under Jody's direction, Jody reviews, and what holds up is published in the Research section. Surfacing what that second brain is building on is deliberate, not a byproduct.
 
 ## Brand Personality
 

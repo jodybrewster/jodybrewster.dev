@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import EssayCard from '../../components/EssayCard.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 const essays = (await getCollection('writing', e => e.data.status === 'published'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -17,10 +18,12 @@ function readTime(body: string) {
 ---
 <Base title="Writing — Jody Brewster" description="Essays on AI experience architecture, runtime design, agentic interfaces, and senior design practice.">
   <main class="page active" style="padding: 72px 0 100px;">
-    <div class="section-h" style="margin-top:0;">
-      <h2><svg class="icon"><use href="#i-book"/></svg> Writing</h2>
-      <span class="aside">{essays.length} essays, in order of having been finished.</span>
-    </div>
+    <PageHeader
+      icon="i-book"
+      eyebrow={`${essays.length} ${essays.length === 1 ? 'essay' : 'essays'}`}
+      title="Writing"
+      description="Essays, in order of having been finished."
+    />
 
     <ul class="essay-list">
       {essays.map((essay, i) => (

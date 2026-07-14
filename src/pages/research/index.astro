@@ -2,8 +2,9 @@
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import EssayCard from '../../components/EssayCard.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
-const entries = (await getCollection('research'))
+const entries = (await getCollection('research', r => r.data.publish))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
 function formatDate(d: Date) {
@@ -17,10 +18,12 @@ function readTime(body: string) {
 ---
 <Base title="Research — Jody Brewster" description="Research notes — landscape scans, tool comparisons, and working maps of AI design and agentic systems.">
   <main class="page active" style="padding: 72px 0 100px;">
-    <div class="section-h" style="margin-top:0;">
-      <h2><svg class="icon"><use href="#i-compass"/></svg> Research</h2>
-      <span class="aside">Landscape scans and working maps. {entries.length} {entries.length === 1 ? 'piece' : 'pieces'}.</span>
-    </div>
+    <PageHeader
+      icon="i-compass"
+      eyebrow={`${entries.length} ${entries.length === 1 ? 'piece' : 'pieces'}`}
+      title="Research"
+      description="Landscape scans and working maps. Researched by Claude under my direction; I review everything before it ships. Surfacing what my second brain is building on is part of the point."
+    />
 
     <ul class="essay-list">
       {entries.map((entry, i) => (

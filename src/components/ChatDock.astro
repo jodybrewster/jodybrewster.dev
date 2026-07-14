@@ -1,0 +1,277 @@
+---
+/**
+ * Site-wide chat dock: fixed to the bottom of the browser on every page.
+ * Collapsed, it's just the ask bar. Focus or submit expands a panel above it
+ * with the conversation. Persists across dynamic (View Transitions) navigation.
+ */
+const probes = [
+  'What has Jody written about evaluation as a design discipline?',
+  'Show me his work on voice interfaces.',
+  "What's an opinion he's changed his mind on?",
+  'How does he think about agent handoffs to humans?',
+];
+
+const iconForType: Record<string, string> = {
+  writing: 'i-book',
+  notes: 'i-note',
+  work: 'i-brief',
+};
+---
+<div class="chat-dock" id="chat-dock" transition:persist>
+  <div class="dock-panel" id="dock-panel">
+    <div class="dock-panel-head">
+      <span class="dock-title"><svg class="icon sm"><use href="#i-sparkle"/></svg> Ask the site</span>
+      <button class="dock-close" id="dock-close" type="button" aria-label="Close chat">
+        <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+      </button>
+    </div>
+    <div class="dock-scroll" id="dock-scroll">
+      <div class="dock-empty" id="dock-empty">
+        <p>It answers from Jody's published essays, notes, and briefs, in the third person, with sources. It refuses what he hasn't written about.</p>
+        <div class="probes" id="probes">
+          {probes.map(q => (
+            <button class="probe" type="button" data-q={q}>
+              <svg class="icon sm"><use href="#i-arrow-right"/></svg>{q}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div class="conversation" id="conversation"></div>
+    </div>
+  </div>
+
+  <div class="dock-bar">
+    <form class="input-row" id="chat-form">
+      <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+      <input type="text" id="chat-q" autocomplete="off" placeholder="Ask the site a question…" />
+      <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+    </form>
+  </div>
+
+  <template id="tpl-you">
+    <div class="turn you">
+      <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> You</span>
+      <div class="said"></div>
+    </div>
+  </template>
+  <template id="tpl-site">
+    <div class="turn site">
+      <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> The site</span>
+      <div class="said"><div class="answer"></div></div>
+    </div>
+  </template>
+</div>
+
+<style>
+  .chat-dock {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    background: var(--paper);
+    border-top: 1px solid var(--rule);
+    box-shadow: 0 -14px 34px -20px rgba(20, 24, 29, 0.3);
+  }
+  .dock-bar {
+    padding: 14px 32px calc(14px + env(safe-area-inset-bottom));
+  }
+  .dock-bar .input-row {
+    max-width: var(--measure);
+    margin: 0 auto;
+  }
+
+  /* Panel expands above the bar; collapsed by default. */
+  .dock-panel {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height .32s cubic-bezier(0.4, 0, 0.2, 1), opacity .24s ease;
+    border-bottom: 1px solid transparent;
+  }
+  .chat-dock.open .dock-panel {
+    max-height: min(62vh, 640px);
+    opacity: 1;
+    border-bottom-color: var(--rule);
+  }
+  .dock-panel-head {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 16px 32px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .dock-title {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dock-close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-faint);
+    display: inline-flex;
+    padding: 6px;
+    border-radius: 6px;
+    transition: color .15s ease, background-color .15s ease;
+  }
+  .dock-close:hover { color: var(--accent); background: var(--paper-warm); }
+  .dock-scroll {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: 12px 32px 24px;
+    overflow-y: auto;
+    max-height: calc(min(62vh, 640px) - 44px);
+  }
+  .dock-empty p {
+    font-family: var(--sans);
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    max-width: 60ch;
+  }
+
+  @media (max-width: 720px) {
+    .dock-bar { padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); }
+    .dock-panel-head { padding: 14px 20px 4px; }
+    .dock-scroll { padding: 12px 20px 20px; }
+  }
+</style>
+
+<script is:inline define:vars={{ iconForType }}>
+  (function () {
+    // Guard: with View Transitions the persisted dock keeps its listeners;
+    // don't re-bind when the inline script re-runs on navigation.
+    if (window.__chatDockInit) return;
+    window.__chatDockInit = true;
+
+    const dock = document.getElementById('chat-dock');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('chat-q');
+    const conv = document.getElementById('conversation');
+    const empty = document.getElementById('dock-empty');
+    const scroll = document.getElementById('dock-scroll');
+    const probes = document.getElementById('probes');
+    const closeBtn = document.getElementById('dock-close');
+    const tplYou = document.getElementById('tpl-you');
+    const tplSite = document.getElementById('tpl-site');
+
+    function openDock() { dock.classList.add('open'); }
+    function closeDock() { dock.classList.remove('open'); input.blur(); }
+
+    function append(template) {
+      const node = template.content.firstElementChild.cloneNode(true);
+      conv.appendChild(node);
+      return node;
+    }
+
+    function paragraphize(text) {
+      const paras = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+      return paras.map(p => {
+        const html = p
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/_([^_]+)_/g, '<em>$1</em>')
+          .replace(/\n/g, '<br>');
+        return `<p>${html}</p>`;
+      }).join('');
+    }
+
+    function renderSources(sources) {
+      if (!sources || sources.length === 0) return '';
+      const count = sources.length;
+      const label = count === 1 ? 'One source' : count === 2 ? 'Two sources' : count === 3 ? 'Three sources' : `${count} sources`;
+      const items = sources.map(s => {
+        const icon = iconForType[s.type] || 'i-file';
+        return `<a class="source-item" href="${s.url}.md">
+          <svg class="icon sm si-icon"><use href="#${icon}"/></svg>
+          <span class="si-tag">${s.type}</span>
+          <span class="si-title">${s.title}</span>
+          <span class="si-date">${s.date || ''}</span>
+        </a>`;
+      }).join('');
+      return `<div class="sources"><p class="h"><svg class="icon sm"><use href="#i-quote"/></svg> ${label}</p>${items}</div>`;
+    }
+
+    async function ask(query) {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+      openDock();
+      if (empty) empty.style.display = 'none';
+
+      const youTurn = append(tplYou);
+      youTurn.querySelector('.said').textContent = trimmed;
+      const siteTurn = append(tplSite);
+      const answerEl = siteTurn.querySelector('.answer');
+      const saidEl = siteTurn.querySelector('.said');
+      answerEl.textContent = '…';
+      input.value = '';
+      saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: trimmed }),
+        });
+        if (!res.ok) {
+          if (res.status === 429 || res.status === 403) {
+            try { answerEl.textContent = (await res.text()) || 'Rate limit hit.'; }
+            catch { answerEl.textContent = 'Rate limit hit.'; }
+          } else if (res.status === 503) {
+            answerEl.textContent = 'Upstream service is busy — try again in a moment.';
+          } else {
+            answerEl.textContent = `Error: ${res.status}.`;
+          }
+          return;
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '', text = '', sources = null, started = false;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buffer.indexOf('\n\n')) >= 0) {
+            const chunk = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 2);
+            if (!chunk.startsWith('data: ')) continue;
+            let event;
+            try { event = JSON.parse(chunk.slice(6)); } catch { continue; }
+            if (event.text) {
+              if (!started) { answerEl.innerHTML = ''; started = true; }
+              text += event.text;
+              answerEl.innerHTML = paragraphize(text);
+            }
+            if (event.sources) sources = event.sources;
+            if (event.error) { answerEl.textContent = event.error; return; }
+          }
+        }
+        if (sources) saidEl.insertAdjacentHTML('beforeend', renderSources(sources));
+        saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (e) {
+        answerEl.textContent = 'Network error. Try again.';
+      }
+    }
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
+    input.addEventListener('focus', openDock);
+    probes.addEventListener('click', (e) => {
+      const btn = e.target.closest('.probe');
+      if (btn) ask(btn.dataset.q);
+    });
+    closeBtn.addEventListener('click', closeDock);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDock(); });
+    document.addEventListener('click', (e) => {
+      if (dock.classList.contains('open') && !dock.contains(e.target)) closeDock();
+    });
+  })();
+</script>

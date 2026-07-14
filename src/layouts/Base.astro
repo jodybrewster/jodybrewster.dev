@@ -1,17 +1,20 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 import IconSprite from '../components/IconSprite.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import ChatDock from '../components/ChatDock.astro';
 
 interface Props {
   title: string;
   description?: string;
   jsonLd?: Record<string, unknown>;
   markdownHref?: string;
+  bodyClass?: string;
 }
 
-const { title, description, jsonLd, markdownHref } = Astro.props;
+const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
 ---
 <!doctype html>
 <html lang="en">
@@ -31,6 +34,8 @@ const { title, description, jsonLd, markdownHref } = Astro.props;
   </script>
   {description && <meta name="description" content={description} />}
 
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Display: Fraunces (editorial serif w/ optical sizing). Body/UI: Inter (workhorse sans). Mono: JetBrains Mono. -->
@@ -43,13 +48,16 @@ const { title, description, jsonLd, markdownHref } = Astro.props;
   {jsonLd && (
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   )}
+
+  <ClientRouter />
 </head>
-<body>
+<body class={bodyClass}>
   <IconSprite />
   <div class="shell">
     <Nav />
     <slot />
     <Footer />
   </div>
+  <ChatDock />
 </body>
 </html>

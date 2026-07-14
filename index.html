@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jody — Principal Experience Architect</title>
+<title>Jody — AI Experience Architect</title>
 <meta name="description" content="On agentic interfaces, runtime design, and the unfinished discipline of AI experience." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -163,19 +163,31 @@
     display: flex; align-items: center; gap: 12px;
   }
   .mark .glyph {
-    width: 28px; height: 28px;
-    border: 1px solid var(--accent);
-    border-radius: 50%;
+    width: 40px; height: 40px;
     display: inline-flex; align-items: center; justify-content: center;
-    color: var(--accent);
     flex-shrink: 0;
   }
-  .mark .role {
-    font-family: var(--sans);
-    font-size: 12px;
+  .mark .glyph svg { width: 100%; height: 100%; display: block; }
+  .mark-text {
+    display: flex; flex-direction: column;
+    gap: 2px;
+    line-height: 1.1;
+  }
+  .mark-text .name {
+    font-family: var(--display);
     font-weight: 500;
+    font-variation-settings: "opsz" 30, "SOFT" 30;
+    font-size: 21px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .mark-text .tag {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 14;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
     color: var(--ink-faint);
-    letter-spacing: 0.01em;
   }
   nav.primary { display: flex; gap: 4px; }
   nav.primary a {
@@ -197,7 +209,7 @@
   @media (max-width: 720px) {
     header.mast { flex-direction: column; align-items: flex-start; }
     nav.primary { flex-wrap: wrap; }
-    .mark .role { display: none; }
+    .mark-text .tag { display: none; }
   }
 
   /* ── pages ─────────────────────────────────────────────────── */
@@ -1267,9 +1279,16 @@
   <!-- masthead -->
   <header class="mast">
     <a href="#" class="mark" data-go="home">
-      <span class="glyph"><svg class="icon sm"><use href="#i-mark"/></svg></span>
-      <span>Jody</span>
-      <span class="role">— Principal Experience Architect</span>
+      <span class="glyph">
+        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <rect x="6" y="6" width="52" height="52" rx="14" style="fill:var(--paper)" stroke="#86B39C" stroke-width="3"/>
+          <path d="M16.764830508474574 25.715042372881353V28.99258474576271H28.398305084745765V25.715042372881353ZM16.98093220338983 15.8103813559322V19.051906779661014H28.470338983050848V15.8103813559322ZM16.764830508474574 30.649364406779657V33.89088983050847H28.398305084745765V30.649364406779657ZM15.0 20.63665254237288V24.058262711864405H29.802966101694913V20.63665254237288ZM31.24364406779661 16.494703389830505V20.600635593220336H42.733050847457626V28.128177966101692H31.351694915254235V42.35487288135593C31.351694915254235 46.965042372881356 32.720338983050844 48.18961864406779 37.186440677966104 48.18961864406779C38.1228813559322 48.18961864406779 42.15677966101695 48.18961864406779 43.16525423728814 48.18961864406779C47.271186440677965 48.18961864406779 48.45974576271187 46.42478813559322 49.0 40.44597457627118C47.811440677966104 40.193855932203384 45.9385593220339 39.4375 45.0021186440678 38.75317796610169C44.75 43.25529661016949 44.4978813559322 44.119703389830505 42.84110169491525 44.119703389830505C41.86864406779661 44.119703389830505 38.51906779661017 44.119703389830505 37.726694915254235 44.119703389830505C35.9978813559322 44.119703389830505 35.70974576271186 43.867584745762706 35.70974576271186 42.318855932203384V32.23411016949152H42.733050847457626V34.034957627118644H47.05508474576271V16.494703389830505ZM16.656779661016948 35.619703389830505V48.00953389830508H20.402542372881356V46.60487288135593H28.290254237288135V35.619703389830505ZM20.402542372881356 39.041313559322035H24.472457627118644V43.1832627118644H20.402542372881356Z" style="fill:var(--ink)"/>
+        </svg>
+      </span>
+      <span class="mark-text">
+        <span class="name">Jody Brewster</span>
+        <span class="tag">notes on experience architecture</span>
+      </span>
     </a>
     <nav class="primary">
       <a href="#" data-go="home" class="active"><svg class="icon sm"><use href="#i-book"/></svg>Writing</a>
@@ -1289,10 +1308,10 @@
     <section class="hero">
       <p class="eyebrow role-label">
         <span class="dot"></span>
-        Principal Experience Architect · currently at Perficient
+        AI Experience Architect
       </p>
       <h1>On agentic interfaces, runtime design, and the <em>unfinished discipline</em> of AI experience.</h1>
-      <p class="lede">A working notebook. Essays and notes about what design becomes when systems behave in ways their designers can't fully predict — and what carries over from twenty years of agency craft.</p>
+      <p class="lede">A working notebook. Essays and notes about what design becomes when systems behave in ways their designers can't fully predict, and what carries over from twenty years of agency craft.</p>
       <div class="meta">
         <span><i class="pulse"></i> recently tended · May 18, 2026</span>
         <span><svg class="icon sm"><use href="#i-book"/></svg> 47 essays</span>

@@ -1,0 +1,24 @@
+import type { APIRoute } from 'astro';
+import { getEntry } from 'astro:content';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+
+export const GET: APIRoute = async ({ params }) => {
+  const slug = params.slug;
+  if (!slug || !/^[a-z0-9-]+$/i.test(slug)) {
+    return new Response('Bad request', { status: 400 });
+  }
+  const entry = await getEntry('portfolio', slug);
+  if (!entry) {
+    return new Response('Not found', { status: 404 });
+  }
+  const filePath = entry.filePath ?? resolve(`content/portfolio/${slug}.md`);
+  const raw = await readFile(filePath, 'utf-8');
+
+  return new Response(raw, {
+    headers: {
+      'Content-Type': 'text/markdown; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    },
+  });
+};

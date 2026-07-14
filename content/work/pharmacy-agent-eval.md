@@ -5,6 +5,7 @@ role: "Principal Experience Architect"
 duration: "~ 4 months, 2025–2026"
 pillar: "Evaluation as a design discipline"
 sub: "An eval-harness build for a refill, transfer, and adherence agent — where \"good\" was harder to define than \"working.\""
+draft: true
 ---
 
 ## § 01 — context

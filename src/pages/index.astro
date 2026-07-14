@@ -5,14 +5,20 @@ import { resolve } from 'node:path';
 import Base from '../layouts/Base.astro';
 import EssayCard from '../components/EssayCard.astro';
 import NoteCard from '../components/NoteCard.astro';
+import FeaturedBrief from '../components/FeaturedBrief.astro';
 
 const essays = (await getCollection('writing', e => e.data.status === 'published'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
+const research = (await getCollection('research', r => r.data.publish))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
 const notes = (await getCollection('notes', n => n.data.publish))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
+const hasWriting = essays.length > 0;
 const recentEssays = essays.slice(0, 5);
+const recentResearch = research.slice(0, 5);
 const recentNotes = notes.slice(0, 4);
 
 const nowRaw = await readFile(resolve('content/now.md'), 'utf-8');
@@ -59,8 +65,12 @@ const jsonLd = {
       '@id': 'https://jodybrewster.dev/#person',
       name: 'Jody Brewster',
       url: 'https://jodybrewster.dev/',
-      jobTitle: 'Principal Experience Architect',
-      worksFor: { '@type': 'Organization', name: 'Perficient' },
+      jobTitle: 'AI Experience Architect',
+      sameAs: [
+        'https://github.com/jodybrewster',
+        'https://www.linkedin.com/in/jodybrewster',
+        'https://www.behance.net/jodybrewster',
+      ],
       knowsAbout: [
         'AI experience architecture',
         'Agentic systems',
@@ -81,45 +91,77 @@ const jsonLd = {
     <section class="hero">
       <p class="eyebrow role-label">
         <span class="dot"></span>
-        Principal Experience Architect · currently at Perficient
+        AI Experience Architect
       </p>
       <h1>On agentic interfaces, runtime design, and the <em>unfinished discipline</em> of AI experience.</h1>
-      <p class="lede">A working notebook. Essays and notes about what design becomes when systems behave in ways their designers can't fully predict — and what carries over from twenty years of agency craft.</p>
+      <p class="lede">A working notebook. Essays and notes about what design becomes when systems behave in ways their designers can't fully predict, and what carries over from twenty years of agency craft.</p>
       <div class="meta">
         {nowUpdated && <span><i class="pulse"></i> recently tended · {nowUpdated}</span>}
-        <span><svg class="icon sm"><use href="#i-book"/></svg> {essays.length} essays</span>
-        <span><svg class="icon sm"><use href="#i-note"/></svg> {notes.length} notes</span>
+        {hasWriting
+          ? <span><svg class="icon sm"><use href="#i-book"/></svg> {essays.length} essays</span>
+          : <span><svg class="icon sm"><use href="#i-compass"/></svg> {research.length} research</span>
+        }
+        <span><svg class="icon sm"><use href="#i-note"/></svg> {notes.length} {notes.length === 1 ? 'note' : 'notes'}</span>
       </div>
     </section>
 
-    <div class="section-h">
-      <span class="num">§ 01</span>
-      <h2><svg class="icon"><use href="#i-book"/></svg> Recent writing</h2>
-      <span class="aside">Essays, in order of having been finished.</span>
-    </div>
+    <FeaturedBrief slug="agentic-analytics-platform" num="§ 01" />
 
-    <ul class="essay-list">
-      {recentEssays.map((essay, i) => (
-        <EssayCard
-          title={essay.data.title}
-          date={formatDate(essay.data.date)}
-          description={essay.data.description}
-          tags={essay.data.tags}
-          slug={essay.id}
-          index={`№ ${String(essays.length - i).padStart(3, '0')}`}
-          readTime={readTime(essay.body ?? '')}
-        />
-      ))}
-    </ul>
-
-    <a href="/writing" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
-      <svg class="icon sm"><use href="#i-arrow-right"/></svg> All writing
-    </a>
+    {hasWriting ? (
+      <>
+        <div class="section-h">
+          <span class="num">§ 02</span>
+          <h2><svg class="icon"><use href="#i-book"/></svg> Recent writing</h2>
+          <span class="aside">Essays, in order of having been finished.</span>
+        </div>
+        <ul class="essay-list">
+          {recentEssays.map((essay, i) => (
+            <EssayCard
+              title={essay.data.title}
+              date={formatDate(essay.data.date)}
+              description={essay.data.description}
+              tags={essay.data.tags}
+              slug={essay.id}
+              index={`№ ${String(essays.length - i).padStart(3, '0')}`}
+              readTime={readTime(essay.body ?? '')}
+            />
+          ))}
+        </ul>
+        <a href="/writing" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All writing
+        </a>
+      </>
+    ) : (
+      <>
+        <div class="section-h">
+          <span class="num">§ 02</span>
+          <h2><svg class="icon"><use href="#i-compass"/></svg> Recent research</h2>
+          <span class="aside">Landscape scans and working maps from my second brain, reviewed before they ship.</span>
+        </div>
+        <ul class="essay-list">
+          {recentResearch.map((entry, i) => (
+            <EssayCard
+              title={entry.data.title}
+              date={formatDate(entry.data.pubDate)}
+              description={entry.data.description}
+              tags={entry.data.tags}
+              slug={entry.id}
+              basePath="/research"
+              index={`№ ${String(research.length - i).padStart(3, '0')}`}
+              readTime={readTime(entry.body ?? '')}
+            />
+          ))}
+        </ul>
+        <a href="/research" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
+          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All research
+        </a>
+      </>
+    )}
 
     <div class="two-col">
       <div>
         <div class="section-h">
-          <span class="num">§ 02</span>
+          <span class="num">§ 03</span>
           <h2><svg class="icon"><use href="#i-note"/></svg> Notes</h2>
           <span class="aside">Shorter, less finished, sometimes wrong.</span>
         </div>

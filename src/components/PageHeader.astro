@@ -1,0 +1,23 @@
+---
+/**
+ * Canonical page header, shared across every top-level page so titles,
+ * eyebrows, and descriptions read as one system. Pass `icon` to show the
+ * page's nav glyph to the left of the title.
+ */
+interface Props {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  icon?: string;
+}
+const { eyebrow, title, description, icon } = Astro.props;
+---
+<header class="page-header">
+  {eyebrow && <p class="page-eyebrow">{eyebrow}</p>}
+  <h1>
+    {icon && <svg class="icon ph-icon"><use href={`#${icon}`}/></svg>}
+    <span>{title}</span>
+  </h1>
+  {description && <p class="page-desc">{description}</p>}
+  <slot />
+</header>

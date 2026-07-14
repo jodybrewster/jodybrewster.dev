@@ -4,23 +4,19 @@ import { flags } from '../lib/flags';
 ---
 <Base title="About — Jody Brewster" description="Jody Brewster, AI experience architect: designer, product thinker, builder. Working on agentic interfaces and runtime design.">
   <main class="page active about-page">
-    <a href="/" class="about-back">
-      <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
-    </a>
-
     <article class="about">
-      <p class="about-eyebrow">AI Experience Architect</p>
+      <p class="about-eyebrow">Architect of products people actually want</p>
       <h1>
         <svg class="icon ph-icon"><use href="#i-user"/></svg>
         <span>Jody Brewster</span>
       </h1>
 
-      <p class="about-lede">I design for systems that behave in ways their designers can't fully predict.</p>
+      <p class="about-lede">Great technology is invisible. Great products are inevitable.</p>
 
       <div class="about-body">
-        <p>Most of my work is <em>agentic interfaces</em>: runtime design, evaluation as a design surface, the handoff between an agent and the person who picks up after it. I write about it as I go, so a lot of it is provisional.</p>
+        <p>I'm an <em>AI experience architect</em> who believes the hardest problems in software aren't technical. They're about understanding what people need before they can articulate it. My work spans AI-powered prototypes, agentic workflows, and healthcare platforms, but the through-line is always the same: start with the experience, then bend the technology to serve it. A proof of concept is an argument for a future worth building, not a demo.</p>
 
-        <p>Before this I led design at agencies, mostly in healthcare, finance, and government, where a wrong interface costs more than churn.</p>
+        <p>When I'm not sketching product ideas or wiring up multi-agent systems, I'm exploring design-to-code tooling: the space where a designer's intent becomes a developer's reality without anything getting lost in translation. That gap is where products go to die, and closing it is kind of my obsession.</p>
 
         <p>This site is the notebook. <a href="/writing">Essays</a> when something is finished enough to be useful, <a href="/notes">notes</a> when it isn't, <a href="/work">briefs</a> for the work I can talk about, the <a href="/portfolio">portfolio</a> for the interface work itself, and <a href="/now">now</a> for what's on the desk.</p>
 
@@ -47,22 +43,6 @@ import { flags } from '../lib/flags';
   .about-page {
     padding: 72px 0 120px;
   }
-  .about-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink-faint);
-    border: none;
-    padding: 6px 10px;
-    margin: 0 0 56px -10px;
-    border-radius: 6px;
-    transition: color .15s ease, background-color .15s ease;
-  }
-  .about-back:hover { color: var(--accent); background: var(--paper-warm); }
-
   .about-eyebrow {
     font-family: var(--mono);
     font-size: var(--t-eyebrow);

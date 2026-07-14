@@ -361,14 +361,20 @@
     border-bottom: 1px solid var(--rule);
     align-items: baseline;
     cursor: pointer;
-    border-radius: 6px;
-    transition: background-color .2s ease;
+    position: relative;
   }
-  .essay-list li:hover {
+  /* hover bleed as a fading layer, not a margin swap: no layout pop */
+  .essay-list li::before {
+    content: "";
+    position: absolute;
+    inset: 0 -22px;
     background: var(--paper-warm);
-    margin: 0 -22px;
-    padding-left: 22px; padding-right: 22px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity .2s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: -1;
   }
+  .essay-list li:hover::before { opacity: 1; }
   .essay-list .idx {
     font-family: var(--mono); font-size: var(--t-eyebrow);
     color: var(--ink-faint); letter-spacing: var(--ls-eyebrow);
@@ -1230,12 +1236,64 @@
     border-color: var(--accent);
     background: var(--paper-warm);
   }
-  /* show sun (switch to light) in dark mode, moon (switch to dark) in light mode */
-  .theme-toggle .i-sun  { display: none; }
-  .theme-toggle .i-moon { display: block; }
-  [data-theme="dark"] .theme-toggle .i-sun  { display: block; }
-  [data-theme="dark"] .theme-toggle .i-moon { display: none; }
+  /* show sun (switch to light) in dark mode, moon (switch to dark) in light mode.
+     Both icons stay in the DOM, stacked; the switch is a rotate + fade. */
+  .theme-toggle { position: relative; }
+  .theme-toggle .icon {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    transition: opacity .25s cubic-bezier(0.22, 1, 0.36, 1), transform .25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .theme-toggle .i-sun  { opacity: 0; transform: rotate(-45deg) scale(.6); }
+  .theme-toggle .i-moon { opacity: 1; transform: none; }
+  [data-theme="dark"] .theme-toggle .i-sun  { opacity: 1; transform: none; }
+  [data-theme="dark"] .theme-toggle .i-moon { opacity: 0; transform: rotate(45deg) scale(.6); }
   @media (prefers-color-scheme: dark) {
-    html:not([data-theme="light"]) .theme-toggle .i-sun  { display: block; }
-    html:not([data-theme="light"]) .theme-toggle .i-moon { display: none; }
+    html:not([data-theme="light"]) .theme-toggle .i-sun  { opacity: 1; transform: none; }
+    html:not([data-theme="light"]) .theme-toggle .i-moon { opacity: 0; transform: rotate(45deg) scale(.6); }
+  }
+
+  /* ── microinteractions: the quiet feedback layer ─────────────
+     Extracted from prototype index.html. Feedback, not decoration.
+     Transform + opacity only. */
+
+  /* keyboard focus: the forest-mist ring, never suppressed */
+  :where(a, button, input, textarea, summary, [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  /* pressed states: a 1px dip acknowledges the click */
+  .nav a:active,
+  .theme-toggle:active,
+  .nav-toggle:active,
+  .copy:active,
+  .back:active,
+  .more-link:active,
+  button:active {
+    transform: translateY(1px);
+  }
+  .note:active { transform: translateY(0); }
+
+  /* arrow affordance: nudge toward the destination */
+  .more-link .icon, .back .icon {
+    transition: transform .2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .more-link:hover .icon { transform: translateX(3px); }
+  .back:hover .icon { transform: translateX(-3px); }
+
+  /* copy chips: the Copied state lands with a small pop */
+  @keyframes copied-pop {
+    from { transform: scale(.9); }
+  }
+  .copy.copied { animation: copied-pop .18s cubic-bezier(0.22, 1, 0.36, 1); }
+
+  /* respect reduced motion everywhere */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
   }

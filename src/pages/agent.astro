@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { flags } from '../lib/flags';
 ---
 <Base
   title="For agents — Jody Brewster"
@@ -95,7 +96,7 @@ import PageHeader from '../components/PageHeader.astro';
           <span class="num"></span>
           <div>
             <h4><svg class="icon sm"><use href="#i-user"/></svg> Third person, always</h4>
-            <p>The chat and MCP tools speak <em>about</em> Jody, not <em>as</em> him. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
+            <p>{flags.chat ? 'The chat and MCP tools speak' : 'The MCP tools speak'} <em>about</em> Jody, not <em>as</em> him. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
           </div>
         </div>
         <div class="pp">

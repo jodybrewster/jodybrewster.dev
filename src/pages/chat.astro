@@ -1,6 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import PageHeader from '../components/PageHeader.astro';
+import { flags } from '../lib/flags';
+
+if (!flags.chat) return Astro.redirect('/');
 ---
 <Base
   title="Ask the site — Jody Brewster"

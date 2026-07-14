@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { flags } from '../lib/flags';
 
 const pathname = Astro.url.pathname;
 
@@ -11,7 +12,7 @@ const links = [
   { href: '/work',     label: 'Briefs',   icon: 'i-brief',    hidden: false },
   { href: '/portfolio', label: 'Portfolio', icon: 'i-layers', hidden: false },
   { href: '/research', label: 'Research', icon: 'i-compass',  hidden: false },
-  { href: '/chat',     label: 'Chat',     icon: 'i-chat',     hidden: false },
+  { href: '/chat',     label: 'Chat',     icon: 'i-chat',     hidden: !flags.chat },
   { href: '/agent',    label: 'Agent',    icon: 'i-terminal', hidden: false },
   { href: '/about',    label: 'About',    icon: 'i-user',     hidden: false },
 ];

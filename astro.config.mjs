@@ -4,6 +4,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import remarkWikiLink from 'remark-wiki-link';
 import { llmsTxt } from './src/integrations/llms-txt.ts';
+import { flags } from './src/lib/flags.ts';
 
 const SITE = 'https://jodybrewster.dev';
 
@@ -21,7 +22,9 @@ export default defineConfig({
   adapter: vercel(),
   integrations: [
     mdx(),
-    sitemap(),
+    sitemap({
+      filter: (page) => flags.chat || !new URL(page).pathname.startsWith('/chat'),
+    }),
     llmsTxt({ site: SITE }),
   ],
   markdown: {

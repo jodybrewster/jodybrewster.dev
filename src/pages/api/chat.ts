@@ -4,6 +4,7 @@ import { searchVectors, getChunkText, type SearchHit } from '../../lib/rag';
 import { getIpLimiter, getGlobalLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
 import { notifyPushover } from '../../lib/notify';
 import { env } from '../../lib/env';
+import { flags } from '../../lib/flags';
 
 export const prerender = false;
 
@@ -33,6 +34,8 @@ interface ChatBody {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!flags.chat) return new Response('Not found', { status: 404 });
+
   let body: ChatBody;
   try {
     body = await request.json();

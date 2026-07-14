@@ -14,13 +14,13 @@ if (briefs.length === 1) {
   return Astro.redirect(`/work/${briefs[0].id}`);
 }
 ---
-<Base title="Work — Jody Brewster" description="Selected case briefs from twenty years of design and experience-architecture engagements, anonymized.">
+<Base title="Work — Jody Brewster" description="Selected case briefs from design and experience-architecture engagements, anonymized.">
   <main class="page active" style="padding: 72px 0 100px;">
     <PageHeader
       icon="i-brief"
       eyebrow={`${briefs.length} ${briefs.length === 1 ? 'engagement' : 'engagements'}`}
       title="Selected briefs"
-      description="Case studies from twenty years of design and experience-architecture work, anonymized."
+      description="Case studies from design and experience-architecture work, anonymized."
     />
 
     <div class="notes-stack">

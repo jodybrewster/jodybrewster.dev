@@ -109,7 +109,7 @@ async function generate(site: string): Promise<{ index: string; full: string; st
   const lines: string[] = [];
   lines.push('# Jody Brewster — jodybrewster.dev');
   lines.push('');
-  lines.push('> A working notebook on AI experience architecture, runtime design, and the unfinished discipline of designing for agentic systems. Essays, notes, and case briefs from twenty years of design practice.');
+  lines.push('> A working notebook on AI experience architecture, runtime design, and the unfinished discipline of designing for agentic systems. Essays, notes, and case briefs from a working design practice.');
   lines.push('');
   lines.push('Every page is available as raw markdown by appending `.md` to the URL, or by sending `Accept: text/markdown`.');
   lines.push('');

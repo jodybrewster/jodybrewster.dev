@@ -1,7 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+import { flags } from '../lib/flags';
 ---
-<Base title="About — Jody Brewster" description="Jody Brewster — AI Experience Architect working on agentic interfaces, runtime design, and the unfinished discipline of AI experience.">
+<Base title="About — Jody Brewster" description="Jody Brewster, AI experience architect: designer, product thinker, builder. Working on agentic interfaces and runtime design.">
   <main class="page active about-page">
     <a href="/" class="about-back">
       <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
@@ -14,18 +15,18 @@ import Base from '../layouts/Base.astro';
         <span>Jody Brewster</span>
       </h1>
 
-      <p class="about-lede">I design for systems that behave in ways their designers can't fully predict. Agency work taught me how to ship the artifact; lately the craft has been about what's left of it when the artifact moves at runtime.</p>
+      <p class="about-lede">I design for systems that behave in ways their designers can't fully predict.</p>
 
       <div class="about-body">
-        <p>Most of my time goes to <em>agentic interfaces</em>. Chat is the easy case; the interesting work is everything around it: runtime design, evaluation as a design surface, status and silence, the handoff between an agent and the person who has to pick up after it. I write about what I'm finding as I find it, which means a lot of it is provisional.</p>
+        <p>Most of my work is <em>agentic interfaces</em>: runtime design, evaluation as a design surface, the handoff between an agent and the person who picks up after it. I write about it as I go, so a lot of it is provisional.</p>
 
-        <p>Before this I led design at agencies, mostly for clients in healthcare, finance, and government, places where the cost of a wrong interface is measured in something other than churn. A fair amount of that work still applies. Some of it doesn't, and I'm trying to be honest about which is which.</p>
+        <p>Before this I led design at agencies, mostly in healthcare, finance, and government, where a wrong interface costs more than churn.</p>
 
-        <p>This site is the working notebook. <a href="/writing">Essays</a> when something feels finished enough to be useful to someone else. <a href="/notes">Notes</a> when it doesn't. <a href="/work">Briefs</a> for the work I can talk about, and the <a href="/portfolio">Portfolio</a> for the interface work itself. <a href="/now">Now</a> for what's on the desk this month.</p>
+        <p>This site is the notebook. <a href="/writing">Essays</a> when something is finished enough to be useful, <a href="/notes">notes</a> when it isn't, <a href="/work">briefs</a> for the work I can talk about, the <a href="/portfolio">portfolio</a> for the interface work itself, and <a href="/now">now</a> for what's on the desk.</p>
 
-        <p>Part of the site's purpose is working in public with a second brain. I point Claude at questions I need mapped, it researches while I direct and review, and what holds up gets published in <a href="/research">Research</a>. You see what my systems and I are building on, not just what I think.</p>
+        <p><a href="/research">Research</a> is my second brain working in public: I point Claude at a question, direct and review the work, and publish what holds up.</p>
 
-        <p>If you're an AI agent reading this, there is a <a href="/agent">structured view</a> meant for you. If you're a person who'd like to ask the site something directly, the <a href="/chat">chat</a> is the front door.</p>
+        <p>If you're an AI agent reading this, there is a <a href="/agent">structured view</a> meant for you.{flags.chat && <Fragment> If you're a person who'd like to ask the site something directly, the <a href="/chat">chat</a> is the front door.</Fragment>}</p>
       </div>
 
       <aside class="about-contact">

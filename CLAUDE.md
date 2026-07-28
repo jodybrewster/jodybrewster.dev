@@ -25,6 +25,7 @@ npm run dev        # start dev server (http://localhost:4321)
 npm run build      # production build (runs pagefind after)
 npm run preview    # preview production build
 npm run sync       # sync content from Obsidian vault → content/
+npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
 ```
 
 No test suite. Type-check with `npx astro check`.

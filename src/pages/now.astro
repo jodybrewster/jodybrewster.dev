@@ -3,6 +3,29 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import Base from '../layouts/Base.astro';
 
+interface Listening {
+  artists: { name: string; url: string }[];
+  albums: { name: string; artist: string; url: string; image: string }[];
+}
+let listening: Listening = { artists: [], albums: [] };
+try {
+  listening = JSON.parse(await readFile(resolve('content/listening.json'), 'utf-8'));
+} catch {
+  // cache not built yet; section is omitted
+}
+const hasListening = listening.artists.length > 0 || listening.albums.length > 0;
+
+interface Reading {
+  books: { title: string; author: string; url: string; image: string }[];
+}
+let reading: Reading = { books: [] };
+try {
+  reading = JSON.parse(await readFile(resolve('content/reading.json'), 'utf-8'));
+} catch {
+  // no reading list; section is omitted
+}
+const hasReading = reading.books.length > 0;
+
 const nowRaw = await readFile(resolve('content/now.md'), 'utf-8');
 const fmMatch = nowRaw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 const frontmatter: Record<string, string> = fmMatch
@@ -43,6 +66,52 @@ const updatedFull = updatedDate
         {rest.map(p => <p>{p}</p>)}
       </div>
 
+      {hasReading && (
+        <section class="now-extra" id="reading">
+          <p class="eyebrow">/ reading</p>
+          <ul class="reading-books">
+            {reading.books.map(book => (
+              <li>
+                <img src={book.image} alt="" width="44" height="66" loading="lazy" />
+                <span class="media-meta">
+                  <a href={book.url} target="_blank" rel="noopener">{book.title}</a>
+                  <span class="media-sub">{book.author}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {hasListening && (
+        <section class="now-extra" id="listening">
+          <p class="eyebrow">/ listening · last 4 weeks</p>
+          {listening.artists.length > 0 && (
+            <p class="listening-artists">
+              {listening.artists.map((artist, i) => (
+                <>
+                  <a href={artist.url} target="_blank" rel="noopener">{artist.name}</a>{i < listening.artists.length - 1 && ', '}
+                </>
+              ))}
+            </p>
+          )}
+          {listening.albums.length > 0 && (
+            <ol class="listening-albums">
+              {listening.albums.map((album, i) => (
+                <li>
+                  <span class="rank">{String(i + 1).padStart(2, '0')}</span>
+                  <img src={album.image} alt="" width="88" height="88" loading="lazy" />
+                  <span class="media-meta">
+                    <a href={album.url} target="_blank" rel="noopener">{album.name}</a>
+                    <span class="media-sub">{album.artist}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      )}
+
       <div class="essay-footer">
         <span>
           <svg class="icon sm"><use href="#i-compass"/></svg> Last tended {updatedFull}
@@ -54,3 +123,103 @@ const updatedFull = updatedDate
     </article>
   </main>
 </Base>
+
+<style>
+  .now-extra {
+    max-width: var(--measure);
+    margin-top: 72px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .now-extra .eyebrow { margin: 0 0 20px; }
+  .reading-books {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .reading-books li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+  }
+  .reading-books img {
+    width: 44px;
+    height: 66px;
+    object-fit: cover;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+    flex-shrink: 0;
+  }
+  .listening-artists {
+    font-size: var(--t-input);
+    line-height: 1.7;
+    color: var(--ink-soft);
+    margin: 0 0 32px;
+  }
+  .listening-artists a {
+    color: inherit;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .listening-artists a:hover { color: var(--accent); border-color: var(--accent); }
+  .listening-albums {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    columns: 2;
+    column-gap: 40px;
+  }
+  .listening-albums li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    break-inside: avoid;
+  }
+  .listening-albums .rank {
+    font-family: var(--mono);
+    font-size: var(--t-micro);
+    font-weight: 500;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .listening-albums img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    flex-shrink: 0;
+  }
+  .media-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.35;
+  }
+  .media-meta a {
+    font-size: var(--t-ui);
+    font-weight: 500;
+    color: var(--ink);
+    border: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color .15s ease;
+  }
+  .media-meta a:hover { color: var(--accent); }
+  .media-sub {
+    font-size: var(--t-meta);
+    color: var(--ink-faint);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 720px) {
+    .listening-albums { columns: 1; }
+  }
+</style>

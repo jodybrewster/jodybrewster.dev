@@ -1,0 +1,277 @@
+---
+/**
+ * The /library shelf.
+ *
+ * Astro renders a complete, linked, image-bearing shelf here. Three.js then
+ * progressively enhances it on pointer devices with room for the scene. The
+ * markup below is the whole experience on phones, without WebGL, and for
+ * assistive technology, so it is never a stub.
+ */
+import type { ShelfAlbum, ShelfBook, ShelfNotebook } from '../lib/shelf/media';
+
+interface Props {
+  albums: ShelfAlbum[];
+  books: ShelfBook[];
+  notebooks: ShelfNotebook[];
+  listeningLabel: string;
+  libraryLabel: string;
+  notebookLabel: string;
+}
+
+const { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel } = Astro.props;
+
+const shelves = [
+  { key: 'listening', label: listeningLabel, items: albums as (ShelfAlbum | ShelfBook | ShelfNotebook)[] },
+  { key: 'notebooks', label: notebookLabel, items: notebooks },
+  { key: 'library', label: libraryLabel, items: books },
+].filter(shelf => shelf.items.length > 0);
+
+const payload = { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel };
+
+function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
+  if (item.kind === 'album') return item.artist;
+  if (item.kind === 'book') return item.author;
+  return item.section;
+}
+---
+
+<div class="library" data-library>
+  <a class="library__skip" href="#library-end">Skip the shelf</a>
+
+  <div class="library__stage" data-library-stage>
+    <canvas class="library__canvas" data-library-canvas aria-hidden="true"></canvas>
+
+    <p class="library__hint" data-library-hint>
+      Scroll to walk the shelf. Click to turn something over, arrow keys to step through.
+    </p>
+
+    <div
+      class="library__card"
+      data-library-card
+      role="status"
+      aria-live="polite"
+      hidden
+    >
+      <p class="library__card-kind" data-card-kind></p>
+      <h2 class="library__card-title" data-card-title></h2>
+      <p class="library__card-credit" data-card-credit></p>
+      <p class="library__card-excerpt" data-card-excerpt hidden></p>
+      <a class="library__card-link" data-card-link href="#">Open</a>
+      <button class="library__card-close" data-card-close type="button">
+        Close<span class="library__kbd">esc</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="library__semantic" data-library-semantic>
+    {shelves.map(shelf => (
+      <section class="shelf" aria-labelledby={`shelf-${shelf.key}`}>
+        <h2 class="shelf__label" id={`shelf-${shelf.key}`}>{shelf.label}</h2>
+        <ul class="shelf__rail" role="list">
+          {shelf.items.map(item => (
+            <li class="shelf__slot">
+              <a
+                class={`shelf__item shelf__item--${item.kind}`}
+                href={item.kind === 'notebook' ? item.href : (item.url ?? '#')}
+                data-shelf-item={item.id}
+                data-shelf-kind={item.kind}
+                rel={item.kind === 'notebook' ? undefined : 'noopener'}
+                target={item.kind === 'notebook' ? undefined : '_blank'}
+              >
+                <span class="shelf__art" style={`--cloth:${item.color}`}>
+                  {item.kind !== 'notebook' && item.cover ? (
+                    <img src={item.cover} alt="" loading="lazy" decoding="async" width="180" height="180" />
+                  ) : (
+                    <span class="shelf__art-fallback" aria-hidden="true">{item.title.slice(0, 1)}</span>
+                  )}
+                </span>
+                <span class="shelf__text">
+                  <span class="shelf__title">{item.title}</span>
+                  <span class="shelf__credit">{credit(item)}</span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </div>
+
+  <span id="library-end" tabindex="-1"></span>
+</div>
+
+<script type="application/json" data-library-payload set:html={JSON.stringify(payload)} />
+
+<script>
+  import { LibraryScene } from '../lib/shelf/scene';
+  import type { ShelfPayload } from '../lib/shelf/scene';
+  import { ShelfStore } from '../lib/shelf/scene-state';
+  import type { ShelfItem } from '../lib/shelf/media';
+
+  function boot() {
+    const root = document.querySelector<HTMLElement>('[data-library]');
+    if (!root || root.dataset.booted === 'true') return;
+
+    const canvas = root.querySelector<HTMLCanvasElement>('[data-library-canvas]');
+    const stage = root.querySelector<HTMLElement>('[data-library-stage]');
+    const payloadNode = document.querySelector<HTMLScriptElement>('[data-library-payload]');
+    if (!canvas || !stage || !payloadNode) return;
+
+    let payload: ShelfPayload;
+    try {
+      payload = JSON.parse(payloadNode.textContent ?? '{}') as ShelfPayload;
+    } catch {
+      console.warn('[library] shelf payload was unreadable, keeping the semantic shelf.');
+      return;
+    }
+    if (!payload.books?.length && !payload.albums?.length) return;
+
+    // Phones and coarse pointers keep the semantic rails: a full 3D shelf on a
+    // small screen is slower and harder to read than the list it replaces.
+    const compact = window.matchMedia('(max-width: 860px), (pointer: coarse)');
+    if (compact.matches) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const store = new ShelfStore();
+    const scene = LibraryScene.create({ canvas, stage, scroller: root, payload, store, reducedMotion });
+    if (!scene) return;
+
+    root.dataset.booted = 'true';
+    root.dataset.scene = 'live';
+
+    if (import.meta.env.DEV) {
+      (window as unknown as { __libraryScene?: unknown }).__libraryScene = scene;
+    }
+
+    // Shelf order, top to bottom: albums, then notebooks, then books. Arrow
+    // keys walk this list.
+    const inOrder = [...payload.albums, ...payload.notebooks, ...payload.books];
+    const order = inOrder.map(item => item.id);
+    const byId = new Map<string, ShelfItem>();
+    for (const item of inOrder) byId.set(item.id, item);
+
+    const card = root.querySelector<HTMLElement>('[data-library-card]')!;
+    const kindEl = card.querySelector<HTMLElement>('[data-card-kind]')!;
+    const titleEl = card.querySelector<HTMLElement>('[data-card-title]')!;
+    const creditEl = card.querySelector<HTMLElement>('[data-card-credit]')!;
+    const excerptEl = card.querySelector<HTMLElement>('[data-card-excerpt]')!;
+    const linkEl = card.querySelector<HTMLAnchorElement>('[data-card-link]')!;
+    const closeEl = card.querySelector<HTMLButtonElement>('[data-card-close]')!;
+    const hint = root.querySelector<HTMLElement>('[data-library-hint]');
+
+    function renderCard(id: string | null) {
+      const item = id ? byId.get(id) : undefined;
+      if (!item) {
+        card.hidden = true;
+        if (hint) hint.hidden = false;
+        return;
+      }
+
+      if (hint) hint.hidden = true;
+      card.hidden = false;
+      card.dataset.kind = item.kind;
+
+      if (item.kind === 'album') {
+        kindEl.textContent = 'Listening';
+        creditEl.textContent = item.artist;
+        excerptEl.hidden = true;
+        linkEl.textContent = 'Open in Spotify';
+      } else if (item.kind === 'book') {
+        kindEl.textContent = item.edition ? `Library / ${item.edition} edition` : 'Library';
+        creditEl.textContent = item.author;
+        excerptEl.hidden = true;
+        linkEl.textContent = 'View catalog entry';
+      } else {
+        kindEl.textContent = item.section;
+        creditEl.textContent = item.date ?? '';
+        excerptEl.hidden = !item.excerpt;
+        excerptEl.textContent = item.excerpt;
+        linkEl.textContent = 'Read the full entry';
+      }
+
+      titleEl.textContent = item.title;
+
+      const href = item.kind === 'notebook' ? item.href : item.url;
+      linkEl.hidden = !href;
+      if (href) {
+        linkEl.href = href;
+        if (item.kind === 'notebook') {
+          linkEl.removeAttribute('target');
+          linkEl.removeAttribute('rel');
+        } else {
+          linkEl.target = '_blank';
+          linkEl.rel = 'noopener';
+        }
+      }
+    }
+
+    store.subscribe(state => renderCard(state.active));
+
+    // The rendered anchors stay the keyboard path into the scene. With the
+    // canvas live they drive selection; the card carries the real link.
+    for (const anchor of root.querySelectorAll<HTMLAnchorElement>('[data-shelf-item]')) {
+      const id = anchor.dataset.shelfItem!;
+      anchor.addEventListener('focus', () => scene.focus(id));
+      anchor.addEventListener('click', event => {
+        event.preventDefault();
+        store.dispatch({ type: 'activate', id });
+      });
+    }
+
+    closeEl.addEventListener('click', () => store.dispatch({ type: 'dismiss' }));
+
+    /** Steps the selection along the shelf from wherever it currently is. */
+    function stepSelection(delta: number) {
+      const current = store.state.active ?? store.state.hovered;
+      const at = current ? order.indexOf(current) : -1;
+      const next = at === -1
+        ? (delta > 0 ? 0 : order.length - 1)
+        : Math.min(order.length - 1, Math.max(0, at + delta));
+      // At either end there is nowhere to go. Dispatching the same id would
+      // toggle the open item shut, which is not what an arrow key should do.
+      if (next === at) return;
+      const id = order[next];
+      if (id) store.dispatch({ type: 'activate', id });
+    }
+
+    function isTyping(target: EventTarget | null): boolean {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+    }
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+
+      if (event.key === 'Escape' && store.state.active) {
+        event.preventDefault();
+        store.dispatch({ type: 'dismiss' });
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        stepSelection(1);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        stepSelection(-1);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+
+    // Astro's view transitions swap the document; drop GPU resources first.
+    document.addEventListener(
+      'astro:before-swap',
+      () => {
+        document.removeEventListener('keydown', onKey);
+        scene.dispose();
+      },
+      { once: true },
+    );
+  }
+
+  boot();
+  document.addEventListener('astro:page-load', boot);
+</script>

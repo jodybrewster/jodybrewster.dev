@@ -26,9 +26,12 @@ npm run build      # production build (runs pagefind after)
 npm run preview    # preview production build
 npm run sync       # sync content from Obsidian vault → content/
 npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
+npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
+npm test           # vitest run
 ```
 
-No test suite. Type-check with `npx astro check`.
+Unit tests live next to their subject (`src/lib/**/*.test.ts`) and cover the shelf's pure logic only.
+Type-check with `npx astro check`.
 
 ## Architecture
 
@@ -54,9 +57,23 @@ Content lives in two places:
 
 ### Pages
 
-Routes: `/` (home), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
+Routes: `/` (home), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`, `/library`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
+
+`/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below.
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
+
+### The /library shelf
+
+A Three.js shelving unit at `/library`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
+
+- `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
+- `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
+- `src/lib/shelf/textures.ts` draws wood, spines, plaques, and ruled notebook pages on canvas. Only real jackets and album art come from files.
+- `src/lib/shelf/scene.ts` owns the renderer, procedural geometry, raycasting, and the scroll-driven camera.
+- `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing shelf in HTML. Three.js progressively enhances it; that markup is the whole experience on phones, without WebGL, and for assistive tech.
+
+Gotchas: book covers load only when a book is opened (89 jackets at once is too much texture memory); the scene must not be booted on coarse pointers or under 861px; and the page must stay on the light palette because the birch and plaster are baked into the textures.
 
 ### Design system
 

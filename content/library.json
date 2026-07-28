@@ -1,0 +1,513 @@
+{
+  "updated": "2026-07-28",
+  "books": [
+    {
+      "title": "Grokking Simplicity: Taming Complex Software with Functional Thinking",
+      "author": "Eric Normand",
+      "url": "https://openlibrary.org/works/OL24583225W",
+      "cover": "/media/books/book-grokking-simplicity-taming-complex-software-with-functional-thinking.jpg"
+    },
+    {
+      "title": "The Artist's Way: 25th Anniversary Edition",
+      "author": "Julia Cameron",
+      "url": "https://openlibrary.org/works/OL14856321W",
+      "cover": "/media/books/book-the-artists-way-25th-anniversary-edition.jpg"
+    },
+    {
+      "title": "The Algebra of Wealth",
+      "author": "Scott Galloway",
+      "url": "https://openlibrary.org/works/OL43733858W",
+      "cover": "/media/books/book-the-algebra-of-wealth.jpg"
+    },
+    {
+      "title": "Accelerate",
+      "author": "Nicole Forsgren, Jez Humble, Gene Kim",
+      "url": "https://openlibrary.org/works/OL19542983W",
+      "cover": "/media/books/book-accelerate.jpg"
+    },
+    {
+      "title": "UX Research",
+      "author": "Brad Nunnally, David Farkas",
+      "url": "https://openlibrary.org/works/OL21593705W"
+    },
+    {
+      "title": "Designing Data-Intensive Applications",
+      "author": "Martin Kleppmann",
+      "url": "https://openlibrary.org/works/OL19293745W",
+      "cover": "/media/books/book-designing-data-intensive-applications.jpg"
+    },
+    {
+      "title": "Solutions Architect's Handbook",
+      "author": "Saurabh Shrivastava, Neelanjali Srivastav",
+      "url": "https://openlibrary.org/works/OL27082595W",
+      "cover": "/media/books/book-solutions-architects-handbook.jpg"
+    },
+    {
+      "title": "Microservices Patterns",
+      "author": "Chris Richardson",
+      "url": "https://openlibrary.org/works/OL19542339W",
+      "cover": "/media/books/book-microservices-patterns.jpg"
+    },
+    {
+      "title": "Clean Architecture",
+      "author": "Robert C. Martin",
+      "url": "https://openlibrary.org/works/OL19809141W",
+      "cover": "/media/books/book-clean-architecture.jpg"
+    },
+    {
+      "title": "The First 90 Days",
+      "author": "Michael D. Watkins",
+      "url": "https://openlibrary.org/works/OL5519710W",
+      "cover": "/media/books/book-the-first-90-days.jpg"
+    },
+    {
+      "title": "The Pragmatic Programmer (20th Anniversary Edition)",
+      "author": "David Thomas, Andrew Hunt",
+      "url": "https://openlibrary.org/works/OL5748544W",
+      "cover": "/media/books/book-the-pragmatic-programmer-20th-anniversary-edition.jpg"
+    },
+    {
+      "title": "Software Architecture: The Hard Parts",
+      "author": "Neal Ford, Mark Richards, Pramod Sadalage, Zhamak Dehghani",
+      "url": "https://openlibrary.org/works/OL25326737W",
+      "cover": "/media/books/book-software-architecture-the-hard-parts.jpg"
+    },
+    {
+      "title": "Little Bets",
+      "author": "Peter Sims",
+      "url": "https://openlibrary.org/works/OL17363369W",
+      "cover": "/media/books/book-little-bets.jpg"
+    },
+    {
+      "title": "The Checklist Manifesto",
+      "author": "Atul Gawande",
+      "url": "https://openlibrary.org/works/OL15436462W",
+      "cover": "/media/books/book-the-checklist-manifesto.jpg"
+    },
+    {
+      "title": "Conscious Business",
+      "author": "Fred Kofman",
+      "url": "https://openlibrary.org/works/OL8981507W",
+      "cover": "/media/books/book-conscious-business.jpg"
+    },
+    {
+      "title": "Think Again",
+      "author": "Adam Grant",
+      "url": "https://openlibrary.org/works/OL22484556W",
+      "cover": "/media/books/book-think-again.jpg"
+    },
+    {
+      "title": "The Intelligence Trap",
+      "author": "David Robson",
+      "url": "https://openlibrary.org/works/OL21363057W",
+      "cover": "/media/books/book-the-intelligence-trap.jpg"
+    },
+    {
+      "title": "The Order of Time",
+      "author": "Carlo Rovelli",
+      "url": "https://openlibrary.org/works/OL17870579W",
+      "cover": "/media/books/book-the-order-of-time.jpg"
+    },
+    {
+      "title": "Capital in the Twenty-First Century",
+      "author": "Thomas Piketty",
+      "url": "https://openlibrary.org/works/OL16814568W",
+      "cover": "/media/books/book-capital-in-the-twenty-first-century.jpg"
+    },
+    {
+      "title": "The Creative Act: A Way of Being",
+      "author": "Rick Rubin",
+      "url": "https://openlibrary.org/works/OL27955361W",
+      "cover": "/media/books/book-the-creative-act-a-way-of-being.jpg"
+    },
+    {
+      "title": "The Go-Giver",
+      "author": "Bob Burg, John Mann",
+      "url": "https://openlibrary.org/works/OL1936395W",
+      "cover": "/media/books/book-the-go-giver.jpg"
+    },
+    {
+      "title": "The Experience Machine",
+      "author": "Andy Clark"
+    },
+    {
+      "title": "Team Topologies",
+      "author": "Matthew Skelton, Manuel Pais",
+      "url": "https://openlibrary.org/works/OL21232655W",
+      "cover": "/media/books/book-team-topologies.jpg"
+    },
+    {
+      "title": "Continuous Discovery Habits",
+      "author": "Teresa Torres",
+      "url": "https://openlibrary.org/works/OL24510436W",
+      "cover": "/media/books/book-continuous-discovery-habits.jpg"
+    },
+    {
+      "title": "Data Science for Business",
+      "author": "Foster Provost, Tom Fawcett",
+      "url": "https://openlibrary.org/works/OL17363116W",
+      "cover": "/media/books/book-data-science-for-business.jpg"
+    },
+    {
+      "title": "The Customer of the Future",
+      "author": "Blake Morgan",
+      "url": "https://openlibrary.org/works/OL21649393W",
+      "cover": "/media/books/book-the-customer-of-the-future.jpg"
+    },
+    {
+      "title": "Simplify",
+      "author": "Richard Koch, Greg Lockwood",
+      "url": "https://openlibrary.org/works/OL21634509W",
+      "cover": "/media/books/book-simplify.jpg"
+    },
+    {
+      "title": "What Your Customer Wants and Can't Tell You",
+      "author": "Melina Palmer",
+      "url": "https://openlibrary.org/works/OL25252977W",
+      "cover": "/media/books/book-what-your-customer-wants-and-cant-tell-you.jpg"
+    },
+    {
+      "title": "Customer Data Platforms",
+      "author": "Martin Kihn, Christopher B. O'Hara",
+      "url": "https://openlibrary.org/works/OL25266361W",
+      "cover": "/media/books/book-customer-data-platforms.jpg"
+    },
+    {
+      "title": "The Power of Moments",
+      "author": "Chip Heath, Dan Heath",
+      "url": "https://openlibrary.org/works/OL17825383W",
+      "cover": "/media/books/book-the-power-of-moments.jpg"
+    },
+    {
+      "title": "Outside In",
+      "author": "Harley Manning, Kerry Bodine",
+      "url": "https://openlibrary.org/works/OL16637724W",
+      "cover": "/media/books/book-outside-in.jpg"
+    },
+    {
+      "title": "How to Invest",
+      "author": "David M. Rubenstein",
+      "url": "https://openlibrary.org/works/OL27591789W",
+      "cover": "/media/books/book-how-to-invest.jpg"
+    },
+    {
+      "title": "Principles for Dealing with the Changing World Order",
+      "author": "Ray Dalio"
+    },
+    {
+      "title": "The Obesity Code",
+      "author": "Jason Fung",
+      "url": "https://openlibrary.org/works/OL20027929W",
+      "cover": "/media/books/book-the-obesity-code.jpg"
+    },
+    {
+      "title": "They Call Me Baba Booey",
+      "author": "Gary Dell'Abate, Chad Millman"
+    },
+    {
+      "title": "Life 3.0",
+      "author": "Max Tegmark",
+      "url": "https://openlibrary.org/works/OL19717530W",
+      "cover": "/media/books/book-life-3-0.jpg"
+    },
+    {
+      "title": "TechGnosis",
+      "author": "Erik Davis",
+      "url": "https://openlibrary.org/works/OL1881888W",
+      "cover": "/media/books/book-techgnosis.jpg"
+    },
+    {
+      "title": "How to Raise the Perfect Dog",
+      "author": "Cesar Millan, Melissa Jo Peltier",
+      "url": "https://openlibrary.org/works/OL5838636W",
+      "cover": "/media/books/book-how-to-raise-the-perfect-dog.jpg"
+    },
+    {
+      "title": "High Output Management",
+      "author": "Andrew S. Grove",
+      "url": "https://openlibrary.org/works/OL2355834W",
+      "cover": "/media/books/book-high-output-management.jpg"
+    },
+    {
+      "title": "The Making of a Manager",
+      "author": "Julie Zhuo",
+      "url": "https://openlibrary.org/works/OL20159758W",
+      "cover": "/media/books/book-the-making-of-a-manager.jpg"
+    },
+    {
+      "title": "First, Break All the Rules",
+      "author": "Marcus Buckingham, Jim Harter",
+      "url": "https://openlibrary.org/works/OL16991995W",
+      "cover": "/media/books/book-first-break-all-the-rules.jpg"
+    },
+    {
+      "title": "Noise: A Flaw in Human Judgment",
+      "author": "Daniel Kahneman, Olivier Sibony, Cass R. Sunstein",
+      "url": "https://openlibrary.org/works/OL17962180W",
+      "cover": "/media/books/book-noise-a-flaw-in-human-judgment.jpg"
+    },
+    {
+      "title": "The Personal MBA",
+      "author": "Josh Kaufman",
+      "url": "https://openlibrary.org/works/OL15473892W",
+      "cover": "/media/books/book-the-personal-mba.jpg"
+    },
+    {
+      "title": "Clean Agile: Back to Basics",
+      "author": "Robert C. Martin",
+      "url": "https://openlibrary.org/works/OL20891686W",
+      "cover": "/media/books/book-clean-agile-back-to-basics.jpg"
+    },
+    {
+      "title": "Staff Engineer",
+      "author": "Will Larson",
+      "url": "https://openlibrary.org/works/OL24199831W",
+      "cover": "/media/books/book-staff-engineer.jpg"
+    },
+    {
+      "title": "Thinking, Fast and Slow",
+      "author": "Daniel Kahneman",
+      "url": "https://openlibrary.org/works/OL15992072W",
+      "cover": "/media/books/book-thinking-fast-and-slow.jpg"
+    },
+    {
+      "title": "Product Management in Practice",
+      "author": "Matt LeMay",
+      "url": "https://openlibrary.org/works/OL27092786W",
+      "cover": "/media/books/book-product-management-in-practice.jpg"
+    },
+    {
+      "title": "Project to Product",
+      "author": "Mik Kersten",
+      "url": "https://openlibrary.org/works/OL24141616W",
+      "cover": "/media/books/book-project-to-product.jpg"
+    },
+    {
+      "title": "Fundamentals of Software Architecture",
+      "author": "Mark Richards, Neal Ford",
+      "url": "https://openlibrary.org/works/OL20872782W",
+      "cover": "/media/books/book-fundamentals-of-software-architecture.jpg"
+    },
+    {
+      "title": "Multipliers, Revised and Updated",
+      "author": "Liz Wiseman",
+      "url": "https://openlibrary.org/works/OL20793797W",
+      "cover": "/media/books/book-multipliers-revised-and-updated.jpg"
+    },
+    {
+      "title": "Nudge (Revised Edition)",
+      "author": "Richard H. Thaler, Cass R. Sunstein",
+      "url": "https://openlibrary.org/works/OL3936258W",
+      "cover": "/media/books/book-nudge-revised-edition.jpg"
+    },
+    {
+      "title": "Escaping the Build Trap",
+      "author": "Melissa Perri",
+      "url": "https://openlibrary.org/works/OL20983859W",
+      "cover": "/media/books/book-escaping-the-build-trap.jpg"
+    },
+    {
+      "title": "Grit",
+      "author": "Angela Duckworth",
+      "url": "https://openlibrary.org/works/OL17361140W",
+      "cover": "/media/books/book-grit.jpg"
+    },
+    {
+      "title": "Find Your Why",
+      "author": "Simon Sinek, David Mead, Peter Docker",
+      "url": "https://openlibrary.org/works/OL28345185W"
+    },
+    {
+      "title": "Emotional Intelligence 2.0",
+      "author": "Travis Bradberry, Jean Greaves",
+      "url": "https://openlibrary.org/works/OL15189300W",
+      "cover": "/media/books/book-emotional-intelligence-2-0.jpg"
+    },
+    {
+      "title": "The Dance of Change",
+      "author": "Peter M. Senge",
+      "url": "https://openlibrary.org/works/OL15830057W",
+      "cover": "/media/books/book-the-dance-of-change.jpg"
+    },
+    {
+      "title": "Operations Anti-Patterns, DevOps Solutions",
+      "author": "Jeffery D. Smith",
+      "url": "https://openlibrary.org/works/OL22041008W",
+      "cover": "/media/books/book-operations-anti-patterns-devops-solutions.jpg"
+    },
+    {
+      "title": "Working Backwards",
+      "author": "Colin Bryar, Bill Carr",
+      "url": "https://openlibrary.org/works/OL20924654W",
+      "cover": "/media/books/book-working-backwards.jpg"
+    },
+    {
+      "title": "BE 2.0 (Beyond Entrepreneurship 2.0)",
+      "author": "Jim Collins, William Lazier",
+      "url": "https://openlibrary.org/works/OL27699181W"
+    },
+    {
+      "title": "Radical Candor",
+      "author": "Kim Scott",
+      "url": "https://openlibrary.org/works/OL24726509W",
+      "cover": "/media/books/book-radical-candor.jpg"
+    },
+    {
+      "title": "The Fearless Organization",
+      "author": "Amy C. Edmondson",
+      "url": "https://openlibrary.org/works/OL20185510W",
+      "cover": "/media/books/book-the-fearless-organization.jpg"
+    },
+    {
+      "title": "Leaders Eat Last",
+      "author": "Simon Sinek",
+      "url": "https://openlibrary.org/works/OL16821124W",
+      "cover": "/media/books/book-leaders-eat-last.jpg"
+    },
+    {
+      "title": "Measure What Matters",
+      "author": "John Doerr",
+      "url": "https://openlibrary.org/works/OL24232412W",
+      "cover": "/media/books/book-measure-what-matters.jpg"
+    },
+    {
+      "title": "Thinking in Systems: A Primer",
+      "author": "Donella H. Meadows",
+      "url": "https://openlibrary.org/works/OL3737036W",
+      "cover": "/media/books/book-thinking-in-systems-a-primer.jpg"
+    },
+    {
+      "title": "The Fifth Discipline",
+      "author": "Peter M. Senge",
+      "url": "https://openlibrary.org/works/OL4440692W",
+      "cover": "/media/books/book-the-fifth-discipline.jpg"
+    },
+    {
+      "title": "The Culture Code",
+      "author": "Daniel Coyle",
+      "url": "https://openlibrary.org/works/OL19670476W",
+      "cover": "/media/books/book-the-culture-code.jpg"
+    },
+    {
+      "title": "Coaching Agile Teams",
+      "author": "Lyssa Adkins",
+      "url": "https://openlibrary.org/works/OL15413610W",
+      "cover": "/media/books/book-coaching-agile-teams.jpg"
+    },
+    {
+      "title": "Algorithms to Live By",
+      "author": "Brian Christian, Tom Griffiths",
+      "url": "https://openlibrary.org/works/OL17357767W",
+      "cover": "/media/books/book-algorithms-to-live-by.jpg"
+    },
+    {
+      "title": "Deep Work",
+      "author": "Cal Newport",
+      "url": "https://openlibrary.org/works/OL17713267W",
+      "cover": "/media/books/book-deep-work.jpg"
+    },
+    {
+      "title": "Atomic Habits",
+      "author": "James Clear",
+      "url": "https://openlibrary.org/works/OL17930368W",
+      "cover": "/media/books/book-atomic-habits.jpg"
+    },
+    {
+      "title": "Girl, Stop Apologizing",
+      "author": "Rachel Hollis",
+      "url": "https://openlibrary.org/works/OL20155308W",
+      "cover": "/media/books/book-girl-stop-apologizing.jpg"
+    },
+    {
+      "title": "The Design of Everyday Things",
+      "author": "Don Norman",
+      "edition": "revised",
+      "url": "https://openlibrary.org/works/OL1879162W",
+      "cover": "/media/books/book-the-design-of-everyday-things-revised.jpg"
+    },
+    {
+      "title": "Insight Out",
+      "author": "Tina Seelig",
+      "url": "https://openlibrary.org/works/OL24245696W",
+      "cover": "/media/books/book-insight-out.jpg"
+    },
+    {
+      "title": "I Will Teach You to Be Rich",
+      "author": "Ramit Sethi",
+      "url": "https://openlibrary.org/works/OL8982032W",
+      "cover": "/media/books/book-i-will-teach-you-to-be-rich.jpg"
+    },
+    {
+      "title": "Hooked",
+      "author": "Nir Eyal, Ryan Hoover",
+      "url": "https://openlibrary.org/works/OL19992071W",
+      "cover": "/media/books/book-hooked.jpg"
+    },
+    {
+      "title": "Scrum",
+      "author": "Jeff Sutherland, J.J. Sutherland",
+      "url": "https://openlibrary.org/works/OL20978050W",
+      "cover": "/media/books/book-scrum.jpg"
+    },
+    {
+      "title": "One Up On Wall Street",
+      "author": "Peter Lynch",
+      "url": "https://openlibrary.org/works/OL2841891W",
+      "cover": "/media/books/book-one-up-on-wall-street.jpg"
+    },
+    {
+      "title": "Mastering Design Thinking",
+      "author": "Max Answell",
+      "url": "https://openlibrary.org/works/OL30357069W"
+    },
+    {
+      "title": "The Lean Product Playbook",
+      "author": "Dan Olsen",
+      "url": "https://openlibrary.org/works/OL20013140W",
+      "cover": "/media/books/book-the-lean-product-playbook.jpg"
+    },
+    {
+      "title": "The Experience Economy (Updated Edition)",
+      "author": "B. Joseph Pine II, James H. Gilmore",
+      "url": "https://openlibrary.org/works/OL24218819W",
+      "cover": "/media/books/book-the-experience-economy-updated-edition.jpg"
+    },
+    {
+      "title": "Mindset",
+      "author": "Carol S. Dweck",
+      "url": "https://openlibrary.org/works/OL2003465W",
+      "cover": "/media/books/book-mindset.jpg"
+    },
+    {
+      "title": "Dare to Lead",
+      "author": "Brene Brown",
+      "url": "https://openlibrary.org/works/OL19754782W",
+      "cover": "/media/books/book-dare-to-lead.jpg"
+    },
+    {
+      "title": "Change by Design (Revised and Updated)",
+      "author": "Tim Brown",
+      "url": "https://openlibrary.org/works/OL27426513W",
+      "cover": "/media/books/book-change-by-design-revised-and-updated.jpg"
+    },
+    {
+      "title": "Antifragile",
+      "author": "Nassim Nicholas Taleb",
+      "url": "https://openlibrary.org/works/OL16726829W",
+      "cover": "/media/books/book-antifragile.jpg"
+    },
+    {
+      "title": "The Design of Everyday Things",
+      "author": "Donald A. Norman",
+      "edition": "original",
+      "url": "https://openlibrary.org/works/OL1879162W",
+      "cover": "/media/books/book-the-design-of-everyday-things-original.jpg"
+    },
+    {
+      "title": "Extreme Ownership",
+      "author": "Jocko Willink, Leif Babin",
+      "url": "https://openlibrary.org/works/OL20017105W",
+      "cover": "/media/books/book-extreme-ownership.jpg"
+    }
+  ]
+}

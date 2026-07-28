@@ -17,7 +17,7 @@ export const GET: APIRoute = async (context) => {
   );
 
   return rss({
-    title: 'Jody Brewster — Notes',
+    title: 'Jody Brewster — Lab notes',
     description: 'Shorter, less finished notes from a working notebook on AI and design.',
     site: context.site!,
     items: sorted.map((entry) => ({

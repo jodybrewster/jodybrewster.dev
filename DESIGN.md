@@ -1,6 +1,6 @@
 ---
 name: jodybrewster.dev
-description: Personal site for Jody Brewster — writing, notes, and work briefs on agentic interface design.
+description: Personal site for Jody Brewster — writing, lab notes, and work briefs on agentic interface design.
 colors:
   quiet-forest: "#2d5d4f"
   forest-mist: "#cfdcd6"
@@ -187,6 +187,16 @@ Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shif
 
 Four-column metadata grid. Each cell: an 11px mono uppercase label in receding-ink, and a 16px Fraunces wght-450 value. The pillar cell uses quiet-forest for the value text. The grid collapses to two columns below 720px.
 
+### Media lists (Now page)
+
+The reading and listening sections on `/now` share one row primitive: a fixed-size cover image, then a two-line text column (`.media-meta`) holding a title link in Inter 13px wght-500 deep-ink over a secondary line in 12px receding-ink. Both lines truncate with `text-overflow: ellipsis` rather than wrapping, so rows stay on a single baseline rhythm. Covers are 1px ash-rule bordered: 44×66px at 3px radius for book jackets, 44×44px at 4px radius for album art. Hover shifts the title link to quiet-forest; there is no lift and no shadow, because these are reference rows, not cards.
+
+Each section sits in a `.now-extra` block: 72px top margin, 28px top padding, 1px ash-rule top border, capped at `--measure`. The section label uses the standard mono eyebrow.
+
+Listening carries two registers. Top artists render as running text - a comma-separated line of links at ink-soft with a 1px ash-rule underline that shifts to accent on hover, set as prose rather than a list because the names are read as a sentence. Top albums render as a two-column ranked list (40px column gap, `break-inside: avoid`) with a 20px mono tabular-nums rank stamp in receding-ink.
+
+**The rank stamp is metadata, not a scoreboard.** Zero-padded, receding-ink, mono. It should not be accented, enlarged, or given a medal treatment; the ranking is a fact about the data, not a big-number metric.
+
 ### Endpoint cards (agent page)
 
 Border: 1px ash-rule. Radius: 4px. Top accent bar: `::before` pseudo-element, 2px quiet-forest, full width, absolute positioned at the top. The bar is structural — it identifies the card type — not decoration. Background: ash-paper (light) / paper-warm (dark).
@@ -224,6 +234,7 @@ Single breakpoint: `720px`. Below it, multi-column layouts collapse to single co
 
 - Below 720px: Brief bar collapses from four to two columns.
 - Below 720px: Note grids collapse to a single column.
+- Below 720px: The Now page album list collapses from two columns to one.
 - Content containers remain centered at all viewport widths.
 - Navigation condenses but retains the pill-shaped item treatment.
 

@@ -10,7 +10,7 @@ Design and product practitioners, AI/agent researchers, and potential collaborat
 
 ## Product Purpose
 
-Personal site for Jody Brewster, AI Experience Architect. Publishes writing, digital garden notes, and anonymized work briefs focused on agentic interfaces, AI-native design, and the craft of building experiences around systems that behave in ways their designers can't fully predict. The site is also itself a demonstration of the ideas it argues for: it exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class design decisions, not features.
+Personal site for Jody Brewster, AI Experience Architect. Publishes writing, lab notes (the digital garden, named for work in progress rather than a finished bed), and anonymized work briefs focused on agentic interfaces, AI-native design, and the craft of building experiences around systems that behave in ways their designers can't fully predict. The site is also itself a demonstration of the ideas it argues for: it exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class design decisions, not features.
 
 A stated purpose of the site is working in public with a second brain: Claude researches questions under Jody's direction, Jody reviews, and what holds up is published in the Research section. Surfacing what that second brain is building on is deliberate, not a byproduct.
 
@@ -40,6 +40,8 @@ Not austere: warm, but never effusive. Not academic: rigorous, but never jargon-
 
 **Nothing optional is random.** The site's states (seedling, budding, evergreen on notes; draft, published on writing) are part of the design, not footnotes to it. The Now page exists. The briefs are numbered. These choices signal how the site is maintained, and that signal is part of what it communicates.
 
+The Now page carries what Jody is reading and listening to for the same reason. Taste is evidence: it shows a person with inputs, maintained on a real cadence, rather than a static profile. Listening is pulled from Spotify on every build so the page cannot quietly go stale; reading is hand-kept because a book list is a claim, not telemetry. Both are presented as plain reference rows - no play counts, no charts, no now-playing widget. The point is what is being taken in, not how much.
+
 ## Accessibility & Inclusion
 
-WCAG 2.1 AA. The site supports light and dark color schemes via `prefers-color-scheme`. Reduced motion is not currently handled; it should be. Semantic HTML throughout. All icon usage should include accessible text equivalents.
+WCAG 2.1 AA. The site supports light and dark color schemes via `prefers-color-scheme`, and honours `prefers-reduced-motion: reduce`. Semantic HTML throughout. All icon usage should include accessible text equivalents. Decorative imagery (book jackets, album art) carries an empty `alt`, since the adjacent text already names the title and artist.

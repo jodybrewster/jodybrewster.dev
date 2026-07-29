@@ -56,12 +56,11 @@ const jsonLd = {
     // net for a scene that never arrives.
     (function () {
       try {
-        if (window.matchMedia('(max-width: 860px), (pointer: coarse)').matches) return;
         var el = document.documentElement;
         el.setAttribute('data-shelf-pending', 'true');
         setTimeout(function () { el.removeAttribute('data-shelf-pending'); }, 8000);
       } catch (error) {
-        /* no matchMedia: fall through to the semantic shelf */
+        /* fall through to the semantic shelf */
       }
     })();
   </script>

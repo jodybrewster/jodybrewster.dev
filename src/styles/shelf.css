@@ -157,6 +157,10 @@ html:has(> .library-page) {
   display: block;
   width: 100%;
   height: 100%;
+  /* Sideways drags belong to the shelf, which walks the camera along the unit.
+     Vertical ones stay a page scroll: that already drives the camera, with the
+     browser's own momentum behind it. */
+  touch-action: pan-y;
 }
 
 /* -- Hint and selection card ---------------------------------------------- */
@@ -185,17 +189,31 @@ html:has(> .library-page) {
   pointer-events: none;
 }
 
+/* Sized to its text, not to the viewport. Tying the width to 46vw made the
+   card half the screen at every size, which on a phone left a column narrow
+   enough to break titles over five lines. */
 .library__card {
   position: absolute;
   right: clamp(24px, 5vw, 72px);
   bottom: clamp(24px, 5vh, 64px);
-  width: min(560px, 46vw);
+  width: max-content;
+  max-width: min(560px, calc(100vw - 2 * clamp(24px, 5vw, 72px)));
   padding: 22px 24px 20px;
   background: var(--paper);
   border: 1px solid var(--rule);
   border-radius: 4px;
   box-shadow: 0 18px 44px rgb(40 30 16 / 0.22);
   animation: library-card-in 260ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Narrow enough that a card floating in one corner reads as debris: give it
+   both edges and let it sit across the foot of the screen. */
+@media (max-width: 640px) {
+  .library__card {
+    left: clamp(24px, 5vw, 72px);
+    width: auto;
+    max-width: none;
+  }
 }
 
 .library__card[data-kind='notebook'] {

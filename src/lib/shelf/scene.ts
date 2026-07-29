@@ -131,13 +131,12 @@ const PRESENTATION = {
     spinTurns: 1,
   },
   book: {
-    // Held close: nearly the full frame, turned to a three-quarter view so the
-    // spine reads alongside the cover, and dropped so the tail runs off screen.
-    fill: 1.15,
+    // Held close, turned to a three-quarter view so the spine reads alongside
+    // the cover. It used to be framed at 1.15 with its tail running off the
+    // bottom, which put the jacket in your face rather than in your hands.
+    fill: 0.92,
     shiftX: -0.13,
-    // Centre it so the head of the book lands on the top edge of the window:
-    // half the fill above centre is 0.575, and the frame's half-height is 0.5.
-    shiftY: 0.5 - 1.15 / 2,
+    shiftY: 0,
     tilt: { x: 0.075, y: 0.52, z: 0.05 },
     spinTurns: 0,
   },
@@ -151,6 +150,17 @@ const PRESENTATION = {
     spinTurns: 0,
   },
 } as const;
+
+/**
+ * Ceiling on how far the width may push the camera back, as a multiple of the
+ * distance the height asks for. Narrow viewports want a distance that grows
+ * without limit to fit the unit across; this is where that stops being framing
+ * and starts being a diagram of a bookcase.
+ */
+const MAX_WIDTH_FIT = 1.08;
+
+/** Pixels of travel past which a pointer was panning, not picking. */
+const DRAG_SLOP = 6;
 
 const SETTLE_EPSILON = 0.0006;
 /** Seconds for the site's notebook to travel between held-open and shelved. */
@@ -178,8 +188,10 @@ interface ItemView {
   /** Full turns taken on the way in. */
   spinTurns: number;
   spinElapsed: number;
-  /** How far in front of the camera this item parks, from its own size. */
-  closeUp: number;
+  /** The item's framed size, which the parking distance is worked out from. */
+  closeUpSize: { width: number; height: number };
+  /** Share of the frame that size should cover. */
+  closeUpFill: number;
   /** Offsets when active, as fractions of the framed width and height. */
   closeUpShift: { x: number; y: number };
   /** Materials whose emissive is raised while hovered or active. */
@@ -194,6 +206,10 @@ interface ItemView {
 
 function jitter(seed: string, min: number, max: number): number {
   return min + seededUnit(seed) * (max - min);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 /** Distance at which an object of `size` covers `fill` of the frame height. */
@@ -226,6 +242,9 @@ export class LibraryScene {
   #cameraTopY = 0;
   #cameraBottomY = 0;
   #cameraDistance = 14;
+  /** Sideways offset from dragging, and how far it is allowed to travel. */
+  #panX = 0;
+  #panLimitX = 0;
   #visibleHeight = 0;
   #unitHeight = 0;
   #rowBounds: Array<{ top: number; bottom: number; centre: number }> = [];
@@ -952,7 +971,8 @@ export class LibraryScene {
         activeSpin: new Quaternion().setFromEuler(
           new Euler(PRESENTATION.album.tilt.x, PRESENTATION.album.tilt.y, PRESENTATION.album.tilt.z),
         ),
-        closeUp: closeUpDistance(ALBUM_SIZE, PRESENTATION.album.fill),
+        closeUpSize: { width: ALBUM_SIZE, height: ALBUM_SIZE },
+        closeUpFill: PRESENTATION.album.fill,
         closeUpShift: { x: PRESENTATION.album.shiftX, y: PRESENTATION.album.shiftY },
         spinTurns: PRESENTATION.album.spinTurns,
         lit: [front],
@@ -1054,7 +1074,10 @@ export class LibraryScene {
             PRESENTATION.book.tilt.z,
           ),
         ),
-        closeUp: closeUpDistance(height, PRESENTATION.book.fill),
+        // Turned three-quarter, so what has to fit across is the cover plus the
+        // sliver of spine still facing the reader.
+        closeUpSize: { width: depth + thickness, height },
+        closeUpFill: PRESENTATION.book.fill,
         closeUpShift: { x: PRESENTATION.book.shiftX, y: PRESENTATION.book.shiftY },
         spinTurns: PRESENTATION.book.spinTurns,
         lit: [spineMaterial, cover],
@@ -1185,8 +1208,10 @@ export class LibraryScene {
             PRESENTATION.notebook.tilt.z,
           ),
         ),
-        // Extra room: the cover swings out well past the notebook's own width.
-        closeUp: closeUpDistance(Math.max(height, width * 1.55), PRESENTATION.notebook.fill),
+        // Extra room across: the cover swings out well past the notebook's own
+        // width, and the opened spread is what has to fit.
+        closeUpSize: { width: width * 1.55, height },
+        closeUpFill: PRESENTATION.notebook.fill,
         closeUpShift: { x: PRESENTATION.notebook.shiftX, y: PRESENTATION.notebook.shiftY },
         spinTurns: PRESENTATION.notebook.spinTurns,
         lit: [coverMaterial, leafMaterial],
@@ -1242,10 +1267,20 @@ export class LibraryScene {
     const vFov = (CAMERA_FOV * Math.PI) / 180;
     const byWidth = half / (Math.tan(vFov / 2) * this.#camera.aspect);
     const byHeight = 3.4 / Math.tan(vFov / 2);
-    this.#cameraDistance = Math.max(byWidth, byHeight) + INTERIOR_DEPTH;
+    // Fitting the whole width is right until the viewport gets narrow enough
+    // that obeying it puts the entire unit on screen at once - which is what a
+    // phone was doing, every shelf visible and nothing on any of them legible.
+    // Past that the width is handed to dragging, and the framing follows the
+    // height, so a phone stands at roughly the same distance as a desktop.
+    const fit = Math.min(Math.max(byWidth, byHeight), byHeight * MAX_WIDTH_FIT);
+    this.#cameraDistance = fit + INTERIOR_DEPTH;
     this.#camera.updateProjectionMatrix();
 
     this.#visibleHeight = 2 * Math.tan(vFov / 2) * this.#cameraDistance;
+    // How far the camera may be dragged sideways before it leaves the unit.
+    // Zero whenever the whole width already fits, which is the desktop case.
+    this.#panLimitX = Math.max(0, half - (this.#visibleHeight * this.#camera.aspect) / 2);
+    this.#panX = clamp(this.#panX, -this.#panLimitX, this.#panLimitX);
     this.#cameraTopY = -this.#visibleHeight / 2 + 0.25;
     this.#cameraBottomY = Math.min(
       this.#cameraTopY,
@@ -1282,14 +1317,17 @@ export class LibraryScene {
       this.#parallax.lerp(this.#parallaxTarget, ease);
     }
 
-    const x = this.#parallax.x * 0.62;
+    const drift = this.#parallax.x * 0.62;
+    const x = this.#panX + drift;
     const y = targetY + this.#parallax.y * 0.34;
     const previous = this.#camera.position.clone();
 
     this.#camera.position.set(x, y, this.#cameraDistance);
     // Aim just short of the shelf so the parallax reads as a head shift rather
-    // than a camera orbit. The composition can never be lost.
-    this.#camera.lookAt(x * 0.4, targetY + this.#parallax.y * 0.12, 0);
+    // than a camera orbit. The composition can never be lost. The pan is added
+    // to both, so dragging moves the camera along the unit instead of turning
+    // it to look down the shelf from where it already stood.
+    this.#camera.lookAt(this.#panX + drift * 0.4, targetY + this.#parallax.y * 0.12, 0);
 
     if (this.#lens) {
       this.#lens.uniforms.uShadeSlide.value = (this.#scrollProgress - 0.5) * 0.55;
@@ -1311,8 +1349,45 @@ export class LibraryScene {
       if (!document.hidden) this.#invalidate();
     };
 
+    // Dragging walks the camera along the unit. Only sideways: the canvas keeps
+    // `touch-action: pan-y`, so a vertical drag stays a page scroll and keeps
+    // the momentum the browser gives it, which the scroll-driven camera already
+    // follows. Taking that axis too would mean reimplementing flick physics to
+    // arrive back where we started.
+    let dragFrom: number | null = null;
+    let dragged = 0;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0 || this.#panLimitX <= 0) return;
+      dragFrom = event.clientX;
+      dragged = 0;
+      canvas.setPointerCapture?.(event.pointerId);
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      dragFrom = null;
+      canvas.releasePointerCapture?.(event.pointerId);
+    };
+
     const onPointerMove = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
+
+      if (dragFrom !== null && rect.width > 0) {
+        const delta = event.clientX - dragFrom;
+        dragFrom = event.clientX;
+        dragged += Math.abs(delta);
+        // A pixel of drag should move the shelf a pixel: the frame's world
+        // width over its pixel width. Negated so the shelf follows the finger
+        // rather than sliding away from it.
+        const worldPerPixel = (this.#visibleHeight * this.#camera.aspect) / rect.width;
+        this.#panX = clamp(
+          this.#panX - delta * worldPerPixel,
+          -this.#panLimitX,
+          this.#panLimitX,
+        );
+        this.#invalidate();
+      }
+
       this.#pointer.set(
         ((event.clientX - rect.left) / rect.width) * 2 - 1,
         -((event.clientY - rect.top) / rect.height) * 2 + 1,
@@ -1331,12 +1406,21 @@ export class LibraryScene {
     };
 
     const onClick = (event: MouseEvent) => {
+      // A drag that finishes over a book is not a click on it. Anything past a
+      // few pixels was someone moving along the shelf, not picking from it.
+      if (dragged > DRAG_SLOP) {
+        dragged = 0;
+        return;
+      }
       const id = this.#pick(event);
       if (id) this.#store.dispatch({ type: 'activate', id });
       else this.#store.dispatch({ type: 'dismiss' });
     };
 
+    canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('click', onClick);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -1344,7 +1428,10 @@ export class LibraryScene {
     document.addEventListener('visibilitychange', onVisibility);
 
     this.#cleanup.push(() => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('click', onClick);
       window.removeEventListener('scroll', onScroll);
@@ -1628,14 +1715,29 @@ export class LibraryScene {
   /* Animation                                                               */
   /* ---------------------------------------------------------------------- */
 
+  /**
+   * How far in front of the camera a selected item parks.
+   *
+   * Framed by its height, then pulled back further if the frame is too narrow
+   * to take its width. A portrait phone is far narrower than it is tall, so an
+   * item sized only against the height runs off both edges there.
+   */
+  #closeUpDistance(view: ItemView): number {
+    const byHeight = closeUpDistance(view.closeUpSize.height, view.closeUpFill);
+    const byWidth =
+      closeUpDistance(view.closeUpSize.width, view.closeUpFill) / this.#camera.aspect;
+    return Math.max(byHeight, byWidth);
+  }
+
   /** Where a selected item parks: in front of the camera, turned to face the
    *  reader, offset clear of the card. */
   #activePose(view: ItemView, position: Vector3, quaternion: Quaternion): void {
     const vFov = (CAMERA_FOV * Math.PI) / 180;
-    const frameHeight = 2 * Math.tan(vFov / 2) * view.closeUp;
+    const closeUp = this.#closeUpDistance(view);
+    const frameHeight = 2 * Math.tan(vFov / 2) * closeUp;
     const frameWidth = frameHeight * this.#camera.aspect;
     position
-      .set(frameWidth * view.closeUpShift.x, frameHeight * view.closeUpShift.y, -view.closeUp)
+      .set(frameWidth * view.closeUpShift.x, frameHeight * view.closeUpShift.y, -closeUp)
       .applyQuaternion(this.#camera.quaternion)
       .add(this.#camera.position);
     quaternion.copy(this.#camera.quaternion).multiply(view.activeSpin);

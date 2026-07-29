@@ -81,7 +81,9 @@ Three rules keep that iframe alive, and breaking any one of them silently reload
 2. Never hide it with `display: none`. Blink drops a `display:none` iframe's document and loads it again when display returns, which is why the page always looked blank at the moment the book opened. `#updatePage` keeps the CSS3D object visible and gates the element on `visibility` instead.
 3. The `.library__dock` plaster is the 3D layer's sibling, so a `z-index` on the page alone cannot lift it above the dock - the whole CSS3D layer has to be raised while docked.
 
-Gotchas: book covers load only when a book is opened (89 jackets at once is too much texture memory); the scene must not be booted on coarse pointers or under 861px; and the page must stay on the light palette because the birch and plaster are baked into the textures.
+The scene runs at every width, including phones. It used to bail below 861px or on a coarse pointer, because fitting the unit's full width across a narrow viewport pushed the camera back far enough to show every shelf at once and make none of them legible. `#resize` now caps how far the width may push the camera (`MAX_WIDTH_FIT`) so a phone stands at roughly the desktop distance, and the width it can no longer show is reached by dragging: the canvas takes `touch-action: pan-y`, so sideways drags pan the camera and vertical ones stay a page scroll with the browser's own momentum. Close-ups are framed by height and then pulled back if the frame is too narrow for the item's width, or a book fills a portrait screen edge to edge.
+
+Gotchas: book covers load only when a book is opened (89 jackets at once is too much texture memory); a drag past `DRAG_SLOP` must not also register as a click on whatever it ended over; and the page must stay on the light palette because the birch and plaster are baked into the textures. Devices without WebGL still get the semantic shelf.
 
 ### Design system
 

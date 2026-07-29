@@ -237,9 +237,6 @@ function isActive(href: string): boolean {
   async function warmLibrary() {
     if (warmed) return;
     warmed = true;
-    // Coarse pointers keep the server-rendered rails and never boot the scene,
-    // so warming it there is bandwidth spent on a bundle that never runs.
-    if (window.matchMedia('(max-width: 860px), (pointer: coarse)').matches) return;
     try {
       // force-cache: Astro's hover prefetch has usually just fetched this, and
       // the point is to read its script tags, not to fetch the page again.

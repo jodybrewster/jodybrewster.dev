@@ -144,13 +144,11 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
       return;
     }
 
-    // Phones and coarse pointers keep the semantic rails: a full 3D shelf on a
-    // small screen is slower and harder to read than the list it replaces.
-    const compact = window.matchMedia('(max-width: 860px), (pointer: coarse)');
-    if (compact.matches) {
-      revealFallback();
-      return;
-    }
+    // The shelf used to stop here on anything narrow or touch-driven, because
+    // fitting the whole unit across a phone shrank it to an unreadable diagram.
+    // The camera now frames a phone at the same distance as a desktop and hands
+    // the width to dragging, so the scene is worth having on both. Devices
+    // without WebGL still fall back, below.
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const store = new ShelfStore();

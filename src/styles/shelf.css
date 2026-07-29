@@ -6,6 +6,12 @@
  * but the semantic one always exists in the document.
  */
 
+/* The document root, not just the body. Mid-transition the body can be turned
+   out of the way, and without this the browser's white shows through. */
+html:has(> .library-page) {
+  background: #ece4d6;
+}
+
 .library-page {
   --birch: #e2caa1;
   --birch-shade: #c8ab7e;
@@ -67,6 +73,38 @@
   text-decoration: none;
 }
 
+/* The live site, set into the notebook's page by CSS3DRenderer. It sits on a
+   layer above the canvas, so it carries its own paper and edge shading rather
+   than picking up the scene's. */
+.library__page {
+  display: block;
+  border: 0;
+  background: var(--paper);
+  box-shadow: inset 22px 0 26px -22px rgb(40 30 16 / 0.5);
+}
+
+/* Where the page goes once it has left the book and taken the window. */
+.library__dock {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  background: var(--plaster);
+}
+
+.library__dock .library__page {
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
+}
+
+.library__page.is-settling {
+  transition: transform 620ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library__page.is-settling { transition: none; }
+}
+
 /* -- Stage ---------------------------------------------------------------- */
 
 .library {
@@ -88,6 +126,17 @@
   top: 0;
   height: 100vh;
   overflow: hidden;
+  /* The semantic shelf is what was on screen a frame ago. Fading in over it
+     reads as the shelf resolving rather than as the page changing its mind. */
+  animation: library-stage-in 380ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes library-stage-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library[data-scene='live'] .library__stage { animation: none; }
 }
 
 .library__canvas {
@@ -246,6 +295,23 @@
 
 .library__semantic {
   padding: clamp(28px, 6vw, 64px) 0 96px;
+}
+
+/* Held back on devices getting the scene, so the reader never sees this design
+   and the 3D one in the same visit. Its covers are lazy, so keeping it clipped
+   also keeps ~90 image requests off the boot. */
+[data-shelf-pending] .library__semantic {
+  /* `display: none`, not the clipped treatment used once the scene is live: a
+     clipped shelf still counts as rendered, so its ~85 lazy covers all fetch
+     and compete with the scene for the boot. This stops them dead. */
+  display: none;
+}
+
+/* Plaster, full height, rather than a short page that jumps when the scene
+   sets its own. Same colour the shelf sits in, so the canvas fades up out of
+   it instead of replacing it. */
+[data-shelf-pending] .library {
+  min-height: 100vh;
 }
 
 /* With the canvas live this stays reachable by keyboard but out of the way. */

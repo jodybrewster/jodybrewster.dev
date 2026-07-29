@@ -20,6 +20,9 @@ export default defineConfig({
   site: SITE,
   output: 'static',
   adapter: vercel(),
+  // The shelf is a heavy route. Warming it on hover means the fold has
+  // something to land on instead of a blank frame.
+  prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
   integrations: [
     mdx(),
     sitemap({

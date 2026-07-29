@@ -16,9 +16,13 @@ interface Props {
   listeningLabel: string;
   libraryLabel: string;
   notebookLabel: string;
+  /** The notebook that stands in for the site itself. */
+  siteNotebookId: string;
 }
 
-const { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel } = Astro.props;
+const {
+  albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel, siteNotebookId,
+} = Astro.props;
 
 const shelves = [
   { key: 'listening', label: listeningLabel, items: albums as (ShelfAlbum | ShelfBook | ShelfNotebook)[] },
@@ -26,7 +30,9 @@ const shelves = [
   { key: 'library', label: libraryLabel, items: books },
 ].filter(shelf => shelf.items.length > 0);
 
-const payload = { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel };
+const payload = {
+  albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel, siteNotebookId,
+};
 
 function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
   if (item.kind === 'album') return item.artist;
@@ -108,6 +114,11 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
   import { ShelfStore } from '../lib/shelf/scene-state';
   import type { ShelfItem } from '../lib/shelf/media';
 
+  /** Puts the server-rendered shelf back; the scene is not coming. */
+  function revealFallback() {
+    document.documentElement.removeAttribute('data-shelf-pending');
+  }
+
   function boot() {
     const root = document.querySelector<HTMLElement>('[data-library]');
     if (!root || root.dataset.booted === 'true') return;
@@ -115,29 +126,243 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
     const canvas = root.querySelector<HTMLCanvasElement>('[data-library-canvas]');
     const stage = root.querySelector<HTMLElement>('[data-library-stage]');
     const payloadNode = document.querySelector<HTMLScriptElement>('[data-library-payload]');
-    if (!canvas || !stage || !payloadNode) return;
+    if (!canvas || !stage || !payloadNode) {
+      revealFallback();
+      return;
+    }
 
     let payload: ShelfPayload;
     try {
       payload = JSON.parse(payloadNode.textContent ?? '{}') as ShelfPayload;
     } catch {
       console.warn('[library] shelf payload was unreadable, keeping the semantic shelf.');
+      revealFallback();
       return;
     }
-    if (!payload.books?.length && !payload.albums?.length) return;
+    if (!payload.books?.length && !payload.albums?.length) {
+      revealFallback();
+      return;
+    }
 
     // Phones and coarse pointers keep the semantic rails: a full 3D shelf on a
     // small screen is slower and harder to read than the list it replaces.
     const compact = window.matchMedia('(max-width: 860px), (pointer: coarse)');
-    if (compact.matches) return;
+    if (compact.matches) {
+      revealFallback();
+      return;
+    }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const store = new ShelfStore();
     const scene = LibraryScene.create({ canvas, stage, scroller: root, payload, store, reducedMotion });
-    if (!scene) return;
+    if (!scene) {
+      revealFallback();
+      return;
+    }
 
+    // The scene owns the view now; the plaster hold has done its job.
     root.dataset.booted = 'true';
     root.dataset.scene = 'live';
+    revealFallback();
+
+    const siteId = (payload as { siteNotebookId?: string }).siteNotebookId ?? '';
+
+    // The site itself, set into that notebook's page as live markup. Real text
+    // beats a flat picture of it at the size the page is read at.
+    if (siteId) {
+      // Captured post-guard; TypeScript does not carry the narrowing into the
+      // function declarations below.
+      const shelf = scene;
+      const shelfRoot = root;
+      const page = document.createElement('iframe');
+      page.className = 'library__page';
+      page.title = 'jodybrewster.dev';
+      page.loading = 'eager';
+      scene.mountPage(siteId, page);
+
+      // The src is set after the shelf is up, not with it. Pointing this at the
+      // site pulls the whole home page - its fonts, styles, scripts, some 130
+      // requests - through the same main thread that is building the scene, and
+      // that competition is what made the shelf slow to arrive. It only has to
+      // be ready before the notebook opens, which is a user action away.
+      const loadPage = () => { if (!page.src) page.src = '/'; };
+      const whenIdle = (window as Window & {
+        requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      }).requestIdleCallback;
+      if (whenIdle) whenIdle(loadPage, { timeout: 2000 });
+      else window.setTimeout(loadPage, 400);
+
+      // Once the cover is clear, the page leaves the book and grows to fill the
+      // window, so reading the site is not reading through a paper-sized hole.
+      // Measured out of its 3D position and animated from there, so it starts
+      // exactly where it already looked like it was.
+      const dock = document.createElement('div');
+      dock.className = 'library__dock';
+      dock.hidden = true;
+      stage.appendChild(dock);
+
+      // CSS3DRenderer only inserts the element on its first render, so the
+      // page has no parent yet at mount time. Remember it when we take it.
+      let home: HTMLElement | null = null;
+      let docked = false;
+
+      /** Puts the page back exactly where CSS3D expects it. */
+      function restoreInBook() {
+        page.style.transform = '';
+        page.style.transformOrigin = '';
+        page.style.width = page.dataset.pageWidth ?? '';
+        page.style.height = page.dataset.pageHeight ?? '';
+      }
+
+      /** Lifts the page out of the book to fill the window. */
+      function openFull(animated = true) {
+        if (docked) return;
+        home = page.parentElement;
+        if (!home) return;
+        const from = page.getBoundingClientRect();
+        docked = true;
+        shelf.setPageDocked(true);
+        shelfRoot.dataset.docked = 'true';
+
+        dock.hidden = false;
+        dock.appendChild(page);
+        page.style.width = '';
+        page.style.height = '';
+        page.style.transformOrigin = 'top left';
+        // The 3D layer left its own matrix on the element. Clear it before
+        // measuring, or the destination box is the transformed one.
+        page.style.transform = 'none';
+        if (!animated) return;
+
+        const to = page.getBoundingClientRect();
+        page.style.transform =
+          `translate(${from.left - to.left}px, ${from.top - to.top}px) ` +
+          `scale(${from.width / to.width}, ${from.height / to.height})`;
+        void page.offsetWidth;
+        page.classList.add('is-settling');
+        page.style.transform = 'none';
+        page.addEventListener('transitionend', () => {
+          page.classList.remove('is-settling');
+          page.style.transform = '';
+        }, { once: true });
+      }
+
+      /**
+       * The same move backwards: the page shrinks out of the window and back
+       * onto the notebook's inner page. The destination is measured by briefly
+       * returning it to the 3D layer and rendering one frame, which is
+       * invisible because it happens inside a single task.
+       */
+      function closeFull(animated = false, done?: () => void) {
+        if (!docked || !home) return;
+        docked = false;
+        shelfRoot.removeAttribute('data-docked');
+
+        if (!animated) {
+          shelf.setPageDocked(false);
+          restoreInBook();
+          home.appendChild(page);
+          // The element carries no transform of its own once returned; CSS3D
+          // has to stamp its matrix back on or it inherits the layer's scale.
+          shelf.render();
+          done?.();
+          return;
+        }
+
+        // Where does it need to land?
+        shelf.setPageDocked(false);
+        home.appendChild(page);
+        restoreInBook();
+        shelf.render();
+        const to = page.getBoundingClientRect();
+
+        // Back to full window, then travel to that box.
+        shelf.setPageDocked(true);
+        dock.appendChild(page);
+        page.style.width = '';
+        page.style.height = '';
+        page.style.transformOrigin = 'top left';
+        page.style.transform = 'none';
+        const from = page.getBoundingClientRect();
+        void page.offsetWidth;
+        page.classList.add('is-settling');
+        page.style.transform =
+          `translate(${to.left - from.left}px, ${to.top - from.top}px) ` +
+          `scale(${to.width / from.width}, ${to.height / from.height})`;
+
+        let landed = false;
+        const land = () => {
+          if (landed) return;
+          landed = true;
+          page.classList.remove('is-settling');
+          shelf.setPageDocked(false);
+          restoreInBook();
+          home?.appendChild(page);
+          dock.hidden = true;
+          // Same as above: without a render the page keeps the layer's scale.
+          shelf.render();
+          done?.();
+        };
+        page.addEventListener('transitionend', land, { once: true });
+        // The transition does not run in a tab that is not being composited.
+        window.setTimeout(land, 900);
+      }
+
+      store.subscribe(state => {
+        if (state.active !== siteId && docked) closeFull(false);
+      });
+
+      // Watch only while the notebook is opening, and stop the moment the page
+      // has taken the window. An interval rather than an animation frame so the
+      // takeover still happens in a background tab.
+      let watch = 0;
+      store.subscribe(state => {
+        if (state.active !== siteId) {
+          window.clearInterval(watch);
+          watch = 0;
+          return;
+        }
+        if (watch) return;
+        watch = window.setInterval(() => {
+          if (shelf.isPageOpen()) {
+            window.clearInterval(watch);
+            watch = 0;
+            // The notebook stands for the site, so opening it goes there. It
+            // used to dock a live copy instead, which left you browsing the
+            // site while the address bar still said /library.
+            window.location.assign('/');
+          }
+        }, 80);
+      });
+
+      // Arriving from the rest of the site: open on that notebook held open,
+      // the site showing on its inner page, and close it onto the shelf. Read
+      // off the referrer so the main site needs no transition code of its own.
+      let cameFromSite = false;
+      try {
+        const from = document.referrer ? new URL(document.referrer) : null;
+        cameFromSite = Boolean(
+          from
+          && from.origin === window.location.origin
+          && from.pathname !== window.location.pathname,
+        );
+      } catch {
+        cameFromSite = false;
+      }
+      if (cameFromSite) {
+        // Exactly the forward move, reversed. The site is already filling the
+        // window when the reader arrives, so it picks up where the last page
+        // left off, then shrinks onto the notebook, which closes onto the
+        // shelf.
+        void shelf.playSiteFold(siteId, -1, Number.POSITIVE_INFINITY);
+        shelf.render();
+        openFull(false);
+        window.setTimeout(() => {
+          closeFull(true, () => shelf.releaseSiteFold());
+        }, 500);
+      }
+
+    }
 
     if (import.meta.env.DEV) {
       (window as unknown as { __libraryScene?: unknown }).__libraryScene = scene;

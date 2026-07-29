@@ -2,106 +2,22 @@
 /**
  * /library - the shelf.
  *
- * A separate surface from the rest of the site: full bleed, its own rail, no
- * global nav or footer chrome. Everything else on jodybrewster.dev is untouched.
+ * A separate surface from the rest of the site: full bleed, no global nav or
+ * footer chrome. The data comes from the shared payload builder, so this page
+ * and the /library-data.json endpoint that warms the scene never diverge.
  */
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { getCollection } from 'astro:content';
 import LibraryShelf from '../components/LibraryShelf.astro';
-import {
-  monthLabel,
-  normalizeAlbums,
-  normalizeBooks,
-  normalizeNotebooks,
-  slugify,
-} from '../lib/shelf/media';
+import { buildShelfPayload } from '../lib/shelf/payload';
 import '../styles/global.css';
 import '../styles/shelf.css';
 
-async function readJson(path: string): Promise<Record<string, unknown>> {
-  try {
-    return JSON.parse(await readFile(resolve(path), 'utf-8'));
-  } catch {
-    return {};
-  }
-}
-
-const libraryData = await readJson('content/library.json');
-const listeningData = await readJson('content/listening.json');
-
-const books = normalizeBooks((libraryData.books as unknown[]) ?? []);
-
-// Prefer the locally cached art so the scene never reaches across origins for a
-// texture. Falls back to the Spotify CDN URL when the cache is cold.
-const rawAlbums = ((listeningData.albums as Record<string, unknown>[]) ?? []).map(album => {
-  const id = `album-${slugify(`${album.artist ?? ''}-${album.name ?? ''}`)}`;
-  const cached = `/media/albums/${id}.jpg`;
-  return { ...album, cover: existsSync(resolve(`public${cached}`)) ? cached : album.image };
-});
-const albums = normalizeAlbums(rawAlbums);
-
-/** First real paragraph of an entry, with headings and frontmatter dropped. */
-function excerptOf(body: string | undefined): string {
-  return (body ?? '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#') && !line.startsWith('---') && !line.startsWith('!['))
-    .slice(0, 3)
-    .join(' ');
-}
-
-function dateLabel(value: Date | undefined): string | undefined {
-  return value
-    ? value.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : undefined;
-}
-
-const writing = (await getCollection('writing', entry => entry.data.status === 'published'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3)
-  .map(entry => ({
-    title: entry.data.title,
-    href: `/writing/${entry.id}`,
-    section: 'Writing',
-    date: dateLabel(entry.data.date),
-    excerpt: entry.data.description || excerptOf(entry.body),
-  }));
-
-const research = (await getCollection('research', entry => entry.data.publish))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .slice(0, 3)
-  .map(entry => ({
-    title: entry.data.title,
-    href: `/research/${entry.id}`,
-    section: 'Research',
-    date: dateLabel(entry.data.pubDate),
-    excerpt: entry.data.description || excerptOf(entry.body),
-  }));
-
-const labNotes = (await getCollection('notes', entry => entry.data.publish))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-  .slice(0, 3)
-  .map(entry => ({
-    title: entry.data.title,
-    href: `/notes/${entry.id}`,
-    section: 'Lab',
-    date: dateLabel(entry.data.date),
-    excerpt: excerptOf(entry.body),
-  }));
-
-const notebooks = normalizeNotebooks([...writing, ...research, ...labNotes]);
-
-const month = monthLabel(listeningData.updated as string | undefined);
-const listeningLabel = month ? `LISTENING · ${month.toUpperCase()}` : 'LISTENING';
-const libraryLabel = `LIBRARY · ${books.length} BOOKS`;
-const notebookLabel = `NOTEBOOKS · ${notebooks.length} ENTRIES`;
+const { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel, siteNotebookId } =
+  await buildShelfPayload();
 
 const title = 'Library - Jody Brewster';
 const description =
-  `A shelf of what Jody Brewster is reading and listening to: ${books.length} books, ` +
-  `${albums.length} albums in rotation, and recent notebooks from the site.`;
+  `A shelf of what Jody Brewster is reading and listening to: ${books.length} books, `
+  + `${albums.length} albums in rotation, and recent notebooks from the site.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -130,6 +46,24 @@ const jsonLd = {
   />
 
   <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <script is:inline>
+    // On anything getting the 3D shelf, the server-rendered one is not a
+    // loading state - it is a different design, and showing it first means
+    // arriving at flat colour blocks that are then replaced. Hold it back and
+    // let the plaster stand until the scene draws. The timeout is the safety
+    // net for a scene that never arrives.
+    (function () {
+      try {
+        if (window.matchMedia('(max-width: 860px), (pointer: coarse)').matches) return;
+        var el = document.documentElement;
+        el.setAttribute('data-shelf-pending', 'true');
+        setTimeout(function () { el.removeAttribute('data-shelf-pending'); }, 8000);
+      } catch (error) {
+        /* no matchMedia: fall through to the semantic shelf */
+      }
+    })();
+  </script>
 </head>
 <body class="library-page">
   <main>
@@ -141,6 +75,7 @@ const jsonLd = {
       listeningLabel={listeningLabel}
       libraryLabel={libraryLabel}
       notebookLabel={notebookLabel}
+      siteNotebookId={siteNotebookId}
     />
   </main>
 </body>

@@ -36,10 +36,13 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
-import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+// Postprocessing is pulled in after the first frame, so its parse cost and its
+// shader compilation land once the shelf is already on screen. Types only here.
+import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import type { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
+import type { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { CSS3DObject, CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
 import type { ShelfAlbum, ShelfBook, ShelfItem, ShelfNotebook } from './media';
 import { seededUnit } from './media';
 import type { ShelfStore } from './scene-state';
@@ -85,17 +88,24 @@ const SIDE_THICKNESS = 0.42;
 /** Shelf boards are the same stock as the uprights. */
 const BOARD_THICKNESS = SIDE_THICKNESS;
 const ROW_PAD = 0.22;
+/** Eased edge on the timber. Nothing in the real world has a true 90 degree
+ *  corner, and a sharp one never catches the highlight that says "solid". */
+const EDGE_RADIUS = 0.022;
 /** Solid band across the top of the unit, carrying the nameplate. */
 const CROWN_HEIGHT = 1.0;
 
 const ALBUM_SIZE = 1.2;
 /** A real jewel case is 142mm across and 10mm deep, so depth is 0.07 of width. */
 const ALBUM_CASE_DEPTH = ALBUM_SIZE * 0.07;
-const ALBUM_ROW_HEIGHT = ALBUM_SIZE + 0.32;
+const ALBUM_ROW_HEIGHT = ALBUM_SIZE + 0.55;
 const ALBUMS_PER_ROW = 9;
 
-const NOTEBOOK_ROW_HEIGHT = 2.32;
-const BOOK_ROW_HEIGHT = 3.16;
+const NOTEBOOK_ROW_HEIGHT = 2.58;
+const BOOK_ROW_HEIGHT = 3.44;
+
+/** Per-frame ceiling for drawing spine artwork. Comfortably inside a 60fps
+ *  frame, so filling the shelf in never costs a dropped frame while scrolling. */
+const SPINE_PAINT_BUDGET_MS = 6;
 
 const CAMERA_FOV = 32;
 /** How far an item slides out of the shelf under the pointer. Has to clear the
@@ -143,6 +153,10 @@ const PRESENTATION = {
 } as const;
 
 const SETTLE_EPSILON = 0.0006;
+/** Seconds for the site's notebook to travel between held-open and shelved. */
+const SITE_FOLD_SECONDS = 1.05;
+/** Beat the notebook stays open on arrival before it closes. */
+const SITE_FOLD_HOLD = 0.7;
 /** Seconds for a selected item to unwind its entry spin. */
 const SPIN_SECONDS = 0.9;
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -229,9 +243,38 @@ export class LibraryScene {
     aspect: number;
     palette?: SpinePalette;
   }>();
+  /**
+   * Books whose spine artwork has not been drawn yet. Drawing all 86 up front
+   * costs about two thirds of the boot, and the result is thrown away twice
+   * over anyway: once when the webfonts land and again as jacket colours are
+   * sampled. They start as flat cloth and get their lettering in slices.
+   */
+  #pendingSpines = new Set<string>();
+  #spinePaint = 0;
 
   #composer: EffectComposer | null = null;
   #gtao: GTAOPass | null = null;
+  #lens: ShaderPass | null = null;
+  /** Second renderer for the live page set into the notebook. */
+  #cssRenderer: CSS3DRenderer | null = null;
+  #page: {
+    object: CSS3DObject;
+    element: HTMLElement;
+    notebookId: string;
+    parent: Object3D;
+  } | null = null;
+  /** Where a mounted page sits, keyed by notebook id. */
+  #pageSlots = new Map<string, { parent: Object3D; width: number; height: number; z: number }>();
+  #docked = false;
+  /** One-shot arrival animation: the site's notebook closing onto the shelf. */
+  #siteFold: {
+    id: string;
+    progress: number;
+    direction: 1 | -1;
+    hold: number;
+    settle: () => void;
+  } | null = null;
+  #keyLight: DirectionalLight | null = null;
   #lastActive: string | null = null;
   #reduced: boolean;
 
@@ -283,7 +326,7 @@ export class LibraryScene {
     this.#renderer.setClearColor(new Color('#e9e3d6'), 1);
     this.#renderer.outputColorSpace = SRGBColorSpace;
     this.#renderer.toneMapping = ACESFilmicToneMapping;
-    this.#renderer.toneMappingExposure = 0.96;
+    this.#renderer.toneMappingExposure = 0.88;
     this.#renderer.shadowMap.enabled = true;
     this.#renderer.shadowMap.type = PCFSoftShadowMap;
 
@@ -292,9 +335,9 @@ export class LibraryScene {
 
     const rows = this.#planRows(payload);
     this.#buildFrame(rows);
+    this.#fitShadowCamera();
     this.#buildRows(rows);
 
-    this.#buildComposer();
     this.#resize();
     this.#bindEvents();
     this.#unsubscribe = this.#store.subscribe(() => this.#onStateChange());
@@ -302,6 +345,17 @@ export class LibraryScene {
     // Paint the first frame here rather than waiting on the first animation
     // frame, so the shelf is on screen the moment the scene is ready.
     this.render();
+
+    // Shelf is on screen. Everything from here fills in behind it: the spine
+    // lettering, then the ambient occlusion once its shaders have compiled.
+    this.#paintSpines();
+    void this.#buildComposer().then(() => {
+      if (this.#disposed) return;
+      // The composer needs the current size, and the frame already on screen
+      // was drawn without it.
+      this.#resize();
+      this.#invalidate();
+    });
 
     // Text textures need the webfonts; redraw once they land.
     void fontsReady().then(() => {
@@ -334,6 +388,12 @@ export class LibraryScene {
     this.#updateCamera(0);
     if (this.#composer) this.#composer.render();
     else this.#renderer.render(this.#scene, this.#camera);
+
+    this.#updatePage();
+    // While docked the page has been lifted out of the 3D layer into a plain
+    // full-window element. Rendering the layer would stamp the scene's matrix
+    // back onto it and fight the takeover.
+    if (!this.#docked) this.#cssRenderer?.render(this.#scene, this.#camera);
   }
 
   /**
@@ -343,8 +403,23 @@ export class LibraryScene {
    * space. If the pass will not build, we fall back to rendering straight to
    * the canvas rather than losing the shelf.
    */
-  #buildComposer(): void {
+  async #buildComposer(): Promise<void> {
     try {
+      const [
+        { EffectComposer },
+        { GTAOPass },
+        { OutputPass },
+        { RenderPass },
+        { ShaderPass },
+      ] = await Promise.all([
+        import('three/examples/jsm/postprocessing/EffectComposer.js'),
+        import('three/examples/jsm/postprocessing/GTAOPass.js'),
+        import('three/examples/jsm/postprocessing/OutputPass.js'),
+        import('three/examples/jsm/postprocessing/RenderPass.js'),
+        import('three/examples/jsm/postprocessing/ShaderPass.js'),
+      ]);
+      if (this.#disposed) return;
+
       const composer = new EffectComposer(this.#renderer);
       composer.addPass(new RenderPass(this.#scene, this.#camera));
 
@@ -352,19 +427,69 @@ export class LibraryScene {
       // Radius is world units: a book is ~0.3 thick and shelves are ~2 deep,
       // so this catches book-to-board and book-to-book contact without
       // smearing shadow across whole boards.
+      // Radius has to match the cavity you want darkened. A shelf niche is
+      // ~2 units deep, so a 0.4 radius only ever found hairline crevices and
+      // left the whole niche as bright as the board fronts.
       gtao.updateGtaoMaterial({
-        radius: 0.42,
-        distanceExponent: 1.4,
-        thickness: 0.6,
-        scale: 1.1,
+        radius: 1.7,
+        distanceExponent: 1.0,
+        thickness: 1.4,
+        scale: 1.25,
         samples: 16,
         screenSpaceRadius: false,
       });
-      gtao.blendIntensity = 0.92;
+      gtao.blendIntensity = 1;
       composer.addPass(gtao);
 
       // Applies the renderer's tone mapping and sRGB conversion at the end.
       composer.addPass(new OutputPass());
+
+      // Nothing in the real world is evenly lit corner to corner or perfectly
+      // clean. A little falloff and grain is most of the difference between
+      // reading as a render and reading as a photograph.
+      const lens = new ShaderPass({
+        uniforms: {
+          tDiffuse: { value: null },
+          uVignette: { value: 0.38 },
+          uGrain: { value: 0.035 },
+          uShade: { value: 0.46 },
+          uShadeSlide: { value: 0 },
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform float uVignette;
+          uniform float uGrain;
+          uniform float uShade;
+          uniform float uShadeSlide;
+          varying vec2 vUv;
+          void main() {
+            vec4 colour = texture2D(tDiffuse, vUv);
+
+            // Standing in for something out of frame across the window: the
+            // light falls off along a diagonal, leaving the right of the unit
+            // in shade. Slides with the scroll so it behaves like a cast
+            // shadow rather than a mark on the lens.
+            float edge = 0.35 + 0.30 * (vUv.y + uShadeSlide);
+            float shade = smoothstep(edge - 0.26, edge + 0.26, vUv.x);
+            colour.rgb *= 1.0 - shade * uShade;
+
+            vec2 offset = vUv - 0.5;
+            colour.rgb *= 1.0 - dot(offset, offset) * uVignette;
+            float n = fract(sin(dot(vUv, vec2(12.9898, 78.233))) * 43758.5453);
+            colour.rgb += (n - 0.5) * uGrain;
+            gl_FragColor = colour;
+          }
+        `,
+      });
+      composer.addPass(lens);
+      this.#lens = lens;
 
       this.#composer = composer;
       this.#gtao = gtao;
@@ -385,13 +510,15 @@ export class LibraryScene {
     // key read as dead flat; an environment map gives every material light
     // from every direction, which is what reads as global illumination.
     this.#scene.environment = this.#buildEnvironment();
-    this.#scene.environmentIntensity = 0.95;
+    this.#scene.environmentIntensity = 0.8;
 
     // One lamp remains, and it stays strong: the environment supplies bounce
     // and reflection, but without a dominant key the shelves lose the shadow
     // under each board that makes the niches read as deep.
-    const key = new DirectionalLight(0xffeccd, 1.35);
-    key.position.set(-5.5, 7.5, 16);
+    // Raking from the left, not head-on. A frontal key flattens everything it
+    // touches; the angle is what gives the boards and spines form.
+    const key = new DirectionalLight(0xffeccd, 2.15);
+    key.position.set(-13, 9.5, 7.5);
     key.castShadow = true;
     key.shadow.mapSize.set(2048, 2048);
     key.shadow.bias = -0.0012;
@@ -399,6 +526,34 @@ export class LibraryScene {
     key.shadow.radius = 5;
     this.#scene.add(key);
     this.#scene.add(key.target);
+    this.#keyLight = key;
+  }
+
+  /**
+   * Sizes the shadow camera to the whole unit.
+   *
+   * A directional light's shadow frustum defaults to a 10x10 box. The shelf is
+   * over 20 units tall, so everything outside the middle was silently getting
+   * no cast shadow at all.
+   */
+  #fitShadowCamera(): void {
+    const key = this.#keyLight;
+    if (!key) return;
+
+    const centre = -this.#unitHeight / 2;
+    key.target.position.set(0, centre, 0);
+    key.position.set(-13, centre + 11, 7.5);
+    key.target.updateMatrixWorld();
+
+    const reach = this.#unitHeight / 2 + 4;
+    const shadow = key.shadow.camera;
+    shadow.left = -reach;
+    shadow.right = reach;
+    shadow.top = reach;
+    shadow.bottom = -reach;
+    shadow.near = 0.5;
+    shadow.far = 60;
+    shadow.updateProjectionMatrix();
   }
 
   /**
@@ -555,8 +710,18 @@ export class LibraryScene {
 
     const grainH = woodTexture('boards', 4, 1);
     const grainV = woodTexture('uprights', 1, 6);
-    const wood = new MeshStandardMaterial({ map: grainH, roughness: 0.72, metalness: 0.02 });
-    const woodUpright = new MeshStandardMaterial({ map: grainV, roughness: 0.72, metalness: 0.02 });
+    const wood = new MeshStandardMaterial({
+      map: grainH,
+      roughness: 0.54,
+      metalness: 0.02,
+      envMapIntensity: 1.15,
+    });
+    const woodUpright = new MeshStandardMaterial({
+      map: grainV,
+      roughness: 0.54,
+      metalness: 0.02,
+      envMapIntensity: 1.15,
+    });
     this.#cleanup.push(() => {
       grainH.dispose();
       grainV.dispose();
@@ -601,7 +766,7 @@ export class LibraryScene {
     // Uprights.
     for (const side of [-1, 1]) {
       const upright = new Mesh(
-        new BoxGeometry(SIDE_THICKNESS, outerHeight, INTERIOR_DEPTH),
+        new RoundedBoxGeometry(SIDE_THICKNESS, outerHeight, INTERIOR_DEPTH, 2, EDGE_RADIUS),
         woodUpright,
       );
       upright.position.set(
@@ -616,7 +781,10 @@ export class LibraryScene {
 
     // Crown: a solid band across the top of the unit that carries the
     // nameplate, the way a fitted library shelf does.
-    const crown = new Mesh(new BoxGeometry(outerWidth, CROWN_HEIGHT, INTERIOR_DEPTH), wood);
+    const crown = new Mesh(
+      new RoundedBoxGeometry(outerWidth, CROWN_HEIGHT, INTERIOR_DEPTH, 2, EDGE_RADIUS),
+      wood,
+    );
     crown.position.set(0, top - CROWN_HEIGHT / 2, 0);
     crown.castShadow = true;
     crown.receiveShadow = true;
@@ -642,7 +810,10 @@ export class LibraryScene {
   }
 
   #addBoard(y: number, width: number, material: MeshStandardMaterial): void {
-    const board = new Mesh(new BoxGeometry(width, BOARD_THICKNESS, INTERIOR_DEPTH), material);
+    const board = new Mesh(
+      new RoundedBoxGeometry(width, BOARD_THICKNESS, INTERIOR_DEPTH, 2, EDGE_RADIUS),
+      material,
+    );
     board.position.set(0, y, 0);
     board.castShadow = true;
     board.receiveShadow = true;
@@ -829,9 +1000,24 @@ export class LibraryScene {
         : 0;
       const setBack = jitter(`${book.id}-set`, -0.14, 0.02);
 
-      const spine = spineTexture(book, height / thickness);
-      const spineMaterial = new MeshStandardMaterial({ map: spine, roughness: 0.82 });
+      // Real shelves mix matte paperbacks, satin cloth, and glossy dust
+      // jackets. One roughness across 86 books is a dead giveaway.
+      const jacketed = seededUnit(`${book.id}-finish`) > 0.62;
+      const spineMaterial = new MeshPhysicalMaterial({
+        // The book's own cloth, standing in until #paintSpines draws the
+        // lettering over it. Right colour from the first frame, so filling it
+        // in reads as the titles arriving rather than the shelf changing.
+        color: new Color(book.color),
+        roughness: jacketed
+          ? jitter(`${book.id}-rough`, 0.28, 0.46)
+          : jitter(`${book.id}-rough`, 0.62, 0.94),
+        metalness: 0,
+        clearcoat: jacketed ? 0.85 : 0,
+        clearcoatRoughness: jacketed ? jitter(`${book.id}-cc`, 0.06, 0.2) : 0,
+        envMapIntensity: jacketed ? 1.25 : 0.85,
+      });
       this.#spines.set(book.id, { book, material: spineMaterial, aspect: height / thickness });
+      this.#pendingSpines.add(book.id);
       const boards = new MeshStandardMaterial({ color: new Color(book.color), roughness: 0.85 });
       const cover = new MeshStandardMaterial({ color: new Color(book.color), roughness: 0.78 });
 
@@ -877,7 +1063,8 @@ export class LibraryScene {
       });
 
       this.#cleanup.push(() => {
-        spine.dispose();
+        // Drawn lazily and swapped on redraw, so dispose whatever is current.
+        spineMaterial.map?.dispose();
         spineMaterial.dispose();
         boards.dispose();
         cover.map?.dispose();
@@ -977,6 +1164,13 @@ export class LibraryScene {
         group.add(ring);
       }
 
+      this.#pageSlots.set(notebook.id, {
+        parent: group,
+        width: width - 0.03,
+        height: height - 0.05,
+        z: thickness / 2 + 0.006,
+      });
+
       this.#unit.add(group);
       this.#register({
         id: notebook.id,
@@ -1039,6 +1233,7 @@ export class LibraryScene {
     this.#renderer.setSize(width, height, false);
     this.#composer?.setPixelRatio(this.#renderer.getPixelRatio());
     this.#composer?.setSize(width, height);
+    this.#cssRenderer?.setSize(width, height);
     this.#gtao?.setSize(width, height);
     this.#camera.aspect = width / height;
 
@@ -1077,7 +1272,10 @@ export class LibraryScene {
   #updateCamera(delta: number): void {
     const targetY = this.#cameraTopY + (this.#cameraBottomY - this.#cameraTopY) * this.#scrollProgress;
 
-    if (this.#reduced) {
+    // Nothing moves during the handoff: a drifting camera under a page that is
+    // itself resizing reads as the whole scene sliding.
+    if (this.#reduced || this.#siteFold || this.#docked) {
+      this.#parallaxTarget.set(0, 0);
       this.#parallax.set(0, 0);
     } else {
       const ease = 1 - Math.pow(0.0015, delta);
@@ -1092,6 +1290,10 @@ export class LibraryScene {
     // Aim just short of the shelf so the parallax reads as a head shift rather
     // than a camera orbit. The composition can never be lost.
     this.#camera.lookAt(x * 0.4, targetY + this.#parallax.y * 0.12, 0);
+
+    if (this.#lens) {
+      this.#lens.uniforms.uShadeSlide.value = (this.#scrollProgress - 0.5) * 0.55;
+    }
 
     if (previous.distanceToSquared(this.#camera.position) > SETTLE_EPSILON) this.#invalidate();
   }
@@ -1258,6 +1460,158 @@ export class LibraryScene {
     });
   }
 
+  /**
+   * Sets a live DOM element into a notebook's page.
+   *
+   * Rendered by CSS3DRenderer on a second layer that shares this camera, so it
+   * is real interactive markup sitting exactly where the page is, not a picture
+   * of one. The two layers do not share a depth buffer, so the page is only
+   * shown once the notebook is open and facing the reader, and is pulled the
+   * moment the cover starts back across it.
+   */
+  mountPage(notebookId: string, element: HTMLElement): void {
+    const slot = this.#pageSlots.get(notebookId);
+    if (!slot || this.#disposed) return;
+
+    // Mounting twice would leave an orphaned layer holding a stale reference,
+    // and the stranded one never gets hidden again.
+    this.#teardownPage();
+
+    const css = new CSS3DRenderer();
+    css.setSize(this.#options.stage.clientWidth, this.#options.stage.clientHeight);
+    const layer = css.domElement;
+    layer.style.position = 'absolute';
+    layer.style.inset = '0';
+    // The layer must not swallow pointer events meant for the shelf; only the
+    // page itself takes them, and only while it is visible.
+    layer.style.pointerEvents = 'none';
+    this.#options.stage.appendChild(layer);
+
+    // CSS3D maps one CSS pixel to one world unit, so the element is authored at
+    // a readable pixel size and scaled down to the page's real dimensions.
+    const pixelWidth = 1000;
+    const pixelHeight = Math.round(pixelWidth * (slot.height / slot.width));
+    element.style.width = `${pixelWidth}px`;
+    element.style.height = `${pixelHeight}px`;
+    element.dataset.pageWidth = `${pixelWidth}px`;
+    element.dataset.pageHeight = `${pixelHeight}px`;
+    element.style.pointerEvents = 'auto';
+
+    // CSS3DRenderer only inserts the element once it is first shown, and an
+    // iframe that is not in the document never fetches. Park it in a hidden
+    // holder so the site is loaded and painted before the page is revealed.
+    const holder = document.createElement('div');
+    holder.setAttribute('aria-hidden', 'true');
+    holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;opacity:0';
+    holder.appendChild(element);
+    this.#options.stage.appendChild(holder);
+    this.#cleanup.push(() => holder.remove());
+
+    const object = new CSS3DObject(element);
+    object.visible = false;
+    object.position.set(0, 0, slot.z);
+    object.scale.setScalar(slot.width / pixelWidth);
+    slot.parent.add(object);
+
+    this.#cssRenderer = css;
+    this.#page = { object, element, notebookId, parent: slot.parent };
+    this.#cleanup.push(() => this.#teardownPage());
+    this.#invalidate();
+  }
+
+  #teardownPage(): void {
+    this.#page?.parent.remove(this.#page.object);
+    this.#cssRenderer?.domElement.remove();
+    this.#cssRenderer = null;
+    this.#page = null;
+  }
+
+  /** True while the page is square enough to the reader to be readable. */
+  isPageOpen(): boolean {
+    const page = this.#page;
+    if (!page) return false;
+    const view = this.#views.get(page.notebookId);
+    const open = view?.hinge ? Math.abs(view.hinge.rotation.y) : 0;
+    const engaged = this.#store.state.active === page.notebookId
+      || this.#siteFold?.id === page.notebookId;
+    // Below half open the cover starts crossing the page, and the page cannot
+    // be occluded by it, so it has to be gone before then.
+    return engaged && open > Math.PI * 0.5;
+  }
+
+  /**
+   * Plays the site's notebook between held-open and shelved.
+   *
+   * `-1` puts it away, which is the arrival animation: the shelf opens on the
+   * notebook already open in front of the reader, page showing, and closes it
+   * onto the shelf. Resolves when it lands, or on a timeout so a background tab
+   * can never strand it.
+   */
+  /** Places the folding notebook at a given point between shelf and held-open. */
+  #poseSiteFold(view: ItemView, progress: number): void {
+    const p = progress * progress * (3 - 2 * progress);
+    const position = new Vector3();
+    const quaternion = new Quaternion();
+    this.#activePose(view, position, quaternion);
+    view.object.position.lerpVectors(view.restPosition, position, p);
+    view.object.quaternion.copy(view.restQuaternion).slerp(quaternion, p);
+    view.baseQuaternion.copy(view.object.quaternion);
+    if (view.hinge) view.hinge.rotation.y = -Math.PI * 0.78 * p;
+  }
+
+  /** Releases a fold that was posed and held, letting it run. */
+  releaseSiteFold(): void {
+    if (this.#siteFold) this.#siteFold.hold = 0;
+    this.#invalidate();
+  }
+
+  playSiteFold(id: string, direction: 1 | -1, holdSeconds?: number): Promise<void> {
+    const view = this.#views.get(id);
+    if (!view || this.#disposed) return Promise.resolve();
+
+    return new Promise<void>(resolve => {
+      let done = false;
+      const settle = () => {
+        if (done) return;
+        done = true;
+        resolve();
+      };
+      this.#siteFold = {
+        id,
+        progress: direction > 0 ? 0 : 1,
+        direction,
+        hold: holdSeconds ?? (direction < 0 ? SITE_FOLD_HOLD : 0),
+        settle,
+      };
+      // Pose it now rather than on the next animation frame: callers render
+      // immediately to find where the page has landed, and an unposed notebook
+      // reports the page as shut.
+      this.#poseSiteFold(view, this.#siteFold.progress);
+      this.#animating.add(id);
+      this.#invalidate();
+      if (holdSeconds === undefined) {
+        window.setTimeout(settle, (SITE_FOLD_SECONDS + SITE_FOLD_HOLD) * 1000 + 600);
+      }
+    });
+  }
+
+  /** Shows the page only while its notebook is open and turned to the reader. */
+  #updatePage(): void {
+    const page = this.#page;
+    if (!page) return;
+    // Visibility goes through the object, not the element: CSS3DRenderer
+    // rewrites element.style.display and the element's transform on every
+    // render, so anything set directly on the element is overwritten.
+    page.object.visible = this.isPageOpen();
+    if (this.#docked) page.element.style.display = '';
+  }
+
+  /** While docked the page has left the book and covers the viewport. */
+  setPageDocked(docked: boolean): void {
+    this.#docked = docked;
+    this.#invalidate();
+  }
+
   /** Public entry used by the overlay when a control receives focus. */
   focus(id: string): void {
     const view = this.#views.get(id);
@@ -1269,6 +1623,19 @@ export class LibraryScene {
   /* ---------------------------------------------------------------------- */
   /* Animation                                                               */
   /* ---------------------------------------------------------------------- */
+
+  /** Where a selected item parks: in front of the camera, turned to face the
+   *  reader, offset clear of the card. */
+  #activePose(view: ItemView, position: Vector3, quaternion: Quaternion): void {
+    const vFov = (CAMERA_FOV * Math.PI) / 180;
+    const frameHeight = 2 * Math.tan(vFov / 2) * view.closeUp;
+    const frameWidth = frameHeight * this.#camera.aspect;
+    position
+      .set(frameWidth * view.closeUpShift.x, frameHeight * view.closeUpShift.y, -view.closeUp)
+      .applyQuaternion(this.#camera.quaternion)
+      .add(this.#camera.position);
+    quaternion.copy(this.#camera.quaternion).multiply(view.activeSpin);
+  }
 
   #animateItems(delta: number): void {
     if (!this.#animating.size) return;
@@ -1290,17 +1657,33 @@ export class LibraryScene {
       const isActive = active === id;
       const isHovered = hovered === id && !isActive;
 
+      // Mid-fold the notebook is driven straight off a clock, so the arrival
+      // lands on an exact frame instead of easing in from wherever it was.
+      const fold = this.#siteFold;
+      if (fold && fold.id === id) {
+        // Held open for a beat first, so the site on the inner page is actually
+        // readable before the cover comes across it.
+        if (fold.hold > 0) {
+          fold.hold -= delta;
+          this.#invalidate();
+        }
+        if (fold.hold <= 0) fold.progress = Math.min(1, Math.max(
+          0,
+          fold.progress + (delta / SITE_FOLD_SECONDS) * fold.direction,
+        ));
+
+        this.#poseSiteFold(view, fold.progress);
+
+        if (fold.progress === (fold.direction > 0 ? 1 : 0)) {
+          this.#siteFold = null;
+          fold.settle();
+          if (fold.direction < 0) settled.push(id);
+        }
+        continue;
+      }
+
       if (isActive) {
-        // Parked in front of the camera, so it stays framed while the reader
-        // keeps scrolling.
-        const vFov = (CAMERA_FOV * Math.PI) / 180;
-        const frameHeight = 2 * Math.tan(vFov / 2) * view.closeUp;
-        const frameWidth = frameHeight * this.#camera.aspect;
-        targetPosition
-          .set(frameWidth * view.closeUpShift.x, frameHeight * view.closeUpShift.y, -view.closeUp)
-          .applyQuaternion(this.#camera.quaternion)
-          .add(this.#camera.position);
-        targetQuaternion.copy(this.#camera.quaternion).multiply(view.activeSpin);
+        this.#activePose(view, targetPosition, targetQuaternion);
       } else {
         targetPosition.copy(view.restPosition);
         if (isHovered) targetPosition.addScaledVector(view.hoverAxis, HOVER_LIFT);
@@ -1364,14 +1747,38 @@ export class LibraryScene {
     const fresh = spineTexture(entry.book, entry.aspect, entry.palette);
     entry.material.map?.dispose();
     entry.material.map = fresh;
+    // Cloth colour was standing in for the artwork; leaving it on would tint
+    // the drawn spine.
+    entry.material.color.set(0xffffff);
     entry.material.needsUpdate = true;
+    this.#pendingSpines.delete(id);
+  }
+
+  /**
+   * Draws queued spines a slice at a time.
+   *
+   * Each spine is a canvas draw, and 86 of them back to back is a single task
+   * long enough to stall the first frame. A frame budget keeps the shelf
+   * interactive while the lettering fills in behind it.
+   */
+  #paintSpines(): void {
+    if (this.#disposed) return;
+    const started = performance.now();
+    for (const id of this.#pendingSpines) {
+      this.#redrawSpine(id);
+      if (performance.now() - started > SPINE_PAINT_BUDGET_MS) break;
+    }
+    this.#invalidate();
+    this.#spinePaint = this.#pendingSpines.size
+      ? requestAnimationFrame(() => this.#paintSpines())
+      : 0;
   }
 
   #refreshTextTextures(): void {
     // Spines were drawn before the webfonts resolved. Redrawing is cheaper than
     // blocking first paint on fonts.
-    for (const id of this.#spines.keys()) this.#redrawSpine(id);
-    this.#invalidate();
+    for (const id of this.#spines.keys()) this.#pendingSpines.add(id);
+    if (!this.#spinePaint) this.#paintSpines();
   }
 
   /**
@@ -1443,6 +1850,8 @@ export class LibraryScene {
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
+    if (this.#spinePaint) cancelAnimationFrame(this.#spinePaint);
+    this.#pendingSpines.clear();
     this.#unsubscribe();
     for (const teardown of this.#cleanup.splice(0)) {
       try {

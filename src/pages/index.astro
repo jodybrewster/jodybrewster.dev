@@ -1,219 +1,83 @@
 ---
-import { getCollection } from 'astro:content';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import Base from '../layouts/Base.astro';
-import EssayCard from '../components/EssayCard.astro';
-import NoteCard from '../components/NoteCard.astro';
-import FeaturedBrief from '../components/FeaturedBrief.astro';
+/**
+ * / - the shelf, and the site's front door.
+ *
+ * A separate surface from the rest of the site, which lives under /home: full
+ * bleed, no global nav or footer chrome. The data comes from the shared payload
+ * builder, so this page and the /library-data.json endpoint that warms the
+ * scene never diverge.
+ */
+import LibraryShelf from '../components/LibraryShelf.astro';
+import { buildShelfPayload } from '../lib/shelf/payload';
+import '../styles/global.css';
+import '../styles/shelf.css';
 
-const essays = (await getCollection('writing', e => e.data.status === 'published'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel, siteNotebookId } =
+  await buildShelfPayload();
 
-const research = (await getCollection('research', r => r.data.publish))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-
-const notes = (await getCollection('notes', n => n.data.publish))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-const hasWriting = essays.length > 0;
-const recentEssays = essays.slice(0, 5);
-const recentResearch = research.slice(0, 5);
-const recentNotes = notes.slice(0, 4);
-
-const nowRaw = await readFile(resolve('content/now.md'), 'utf-8');
-const fmMatch = nowRaw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-const nowFrontmatter: Record<string, string> = fmMatch
-  ? Object.fromEntries(
-      fmMatch[1].split('\n').filter(Boolean).map(line => {
-        const idx = line.indexOf(':');
-        const k = line.slice(0, idx).trim();
-        const v = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-        return [k, v];
-      })
-    )
-  : {};
-const nowContent = fmMatch ? fmMatch[2] : nowRaw;
-
-let listeningArtists: string[] = [];
-try {
-  const listening = JSON.parse(await readFile(resolve('content/listening.json'), 'utf-8'));
-  listeningArtists = (listening.artists ?? []).slice(0, 3).map((a: { name: string }) => a.name);
-} catch { /* no listening cache */ }
-
-let readingTitles: string[] = [];
-try {
-  const reading = JSON.parse(await readFile(resolve('content/reading.json'), 'utf-8'));
-  readingTitles = (reading.books ?? []).map((b: { title: string }) => b.title);
-} catch { /* no reading list */ }
-const nowLines = nowContent.trim().split('\n').filter(Boolean).slice(0, 4);
-const nowUpdated = nowFrontmatter.updated
-  ? new Date(nowFrontmatter.updated).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-  : '';
-
-function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function readTime(body: string) {
-  const words = body.split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min`;
-}
+const title = 'Library - Jody Brewster';
+const description =
+  `A shelf of what Jody Brewster is reading and listening to: ${books.length} books, `
+  + `${albums.length} albums in rotation, and recent notebooks from the site.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': 'https://jodybrewster.dev/#website',
-      url: 'https://jodybrewster.dev/',
-      name: 'Jody Brewster',
-      description: 'Jody Brewster is an AI experience architect - designer, product thinker, builder. Shipping agentic products end to end.',
-      inLanguage: 'en',
-      publisher: { '@id': 'https://jodybrewster.dev/#person' },
-    },
-    {
-      '@type': 'Person',
-      '@id': 'https://jodybrewster.dev/#person',
-      name: 'Jody Brewster',
-      url: 'https://jodybrewster.dev/',
-      jobTitle: 'AI Experience Architect',
-      sameAs: [
-        'https://github.com/jodybrewster',
-        'https://www.linkedin.com/in/jodybrewster',
-        'https://www.behance.net/jodybrewster',
-      ],
-      knowsAbout: [
-        'AI experience architecture',
-        'Agentic systems',
-        'Runtime design',
-        'Evaluation as design',
-      ],
-    },
-  ],
+  '@type': 'CollectionPage',
+  name: 'Library',
+  url: 'https://jodybrewster.dev/',
+  description,
+  isPartOf: { '@type': 'WebSite', url: 'https://jodybrewster.dev/' },
 };
 ---
-<Base
-  title="Jody Brewster"
-  description="Jody Brewster is an AI experience architect - designer, product thinker, builder. Shipping agentic products end to end."
-  jsonLd={jsonLd}
->
-  <main class="page active">
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <section class="hero">
-      <p class="eyebrow role-label">
-        <span class="dot"></span>
-        Agency craft, agentic systems
-      </p>
-      <h1>AI experience architect, designer, <em>product thinker</em>, builder.</h1>
-      <p class="lede">I figure out what to build and then build it - interface, strategy, and runtime in one pass. What used to take a department now takes me a sprint.</p>
-      <div class="meta">
-        {nowUpdated && <span><i class="pulse"></i> recently tended · {nowUpdated}</span>}
-        {hasWriting
-          ? <span><svg class="icon sm"><use href="#i-book"/></svg> {essays.length} essays</span>
-          : <span><svg class="icon sm"><use href="#i-compass"/></svg> {research.length} research</span>
-        }
-        <span><svg class="icon sm"><use href="#i-note"/></svg> {notes.length} {notes.length === 1 ? 'lab note' : 'lab notes'}</span>
-      </div>
-    </section>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,30..100;1,9..144,300..600,30..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
 
-    <FeaturedBrief slug="agentic-analytics-platform" num="§ 01" />
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 
-    {hasWriting ? (
-      <>
-        <div class="section-h">
-          <span class="num">§ 02</span>
-          <h2><svg class="icon"><use href="#i-book"/></svg> Recent writing</h2>
-          <span class="aside">Essays, in order of having been finished.</span>
-        </div>
-        <ul class="essay-list">
-          {recentEssays.map((essay, i) => (
-            <EssayCard
-              title={essay.data.title}
-              date={formatDate(essay.data.date)}
-              description={essay.data.description}
-              tags={essay.data.tags}
-              slug={essay.id}
-              index={`№ ${String(essays.length - i).padStart(3, '0')}`}
-              readTime={readTime(essay.body ?? '')}
-            />
-          ))}
-        </ul>
-        <a href="/writing" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All writing
-        </a>
-      </>
-    ) : (
-      <>
-        <div class="section-h">
-          <span class="num">§ 02</span>
-          <h2><svg class="icon"><use href="#i-compass"/></svg> Recent research</h2>
-          <span class="aside">Landscape scans and working maps from my second brain, reviewed before they ship.</span>
-        </div>
-        <ul class="essay-list">
-          {recentResearch.map((entry, i) => (
-            <EssayCard
-              title={entry.data.title}
-              date={formatDate(entry.data.pubDate)}
-              description={entry.data.description}
-              tags={entry.data.tags}
-              slug={entry.id}
-              basePath="/research"
-              index={`№ ${String(research.length - i).padStart(3, '0')}`}
-              readTime={readTime(entry.body ?? '')}
-            />
-          ))}
-        </ul>
-        <a href="/research" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All research
-        </a>
-      </>
-    )}
-
-    <div class="two-col">
-      <div>
-        <div class="section-h">
-          <span class="num">§ 03</span>
-          <h2><svg class="icon"><use href="#i-note"/></svg> Lab notes</h2>
-          <span class="aside">Shorter, less finished, sometimes wrong.</span>
-        </div>
-        <div class="notes-stack">
-          {recentNotes.map((note) => {
-            const excerpt = (note.body ?? '').split('\n').find(l => l.trim() && !l.startsWith('#')) ?? '';
-            return (
-              <NoteCard
-                title={note.data.title}
-                date={formatDate(note.data.date)}
-                status={note.data.status}
-                slug={note.id}
-                tags={note.data.tags}
-                body={excerpt.slice(0, 200)}
-              />
-            );
-          })}
-        </div>
-        <a href="/notes" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All lab notes
-        </a>
-      </div>
-
-      <aside class="now-panel">
-        <p class="eyebrow label">/ now{nowUpdated && ` · ${nowUpdated}`}</p>
-        <h4><svg class="icon"><use href="#i-compass"/></svg> What I'm thinking about</h4>
-        <ul>
-          {nowLines.map(line => (
-            <li><svg class="icon sm li-icon"><use href="#i-file"/></svg> {line.replace(/^[-*]\s*/, '')}</li>
-          ))}
-        </ul>
-        <p class="stamp"><a href="/now">Read more →</a></p>
-        {listeningArtists.length > 0 && (
-          <p class="stamp"><a href="/now#listening">Listening: {listeningArtists.join(', ')} →</a></p>
-        )}
-        {readingTitles.length > 0 && (
-          <p class="stamp"><a href="/now#reading">Reading: {readingTitles.join(', ')} →</a></p>
-        )}
-      </aside>
-    </div>
-
+  <script is:inline>
+    // On anything getting the 3D shelf, the server-rendered one is not a
+    // loading state - it is a different design, and showing it first means
+    // arriving at flat colour blocks that are then replaced. Hold it back and
+    // let the plaster stand until the scene draws. The timeout is the safety
+    // net for a scene that never arrives.
+    (function () {
+      try {
+        if (window.matchMedia('(max-width: 860px), (pointer: coarse)').matches) return;
+        var el = document.documentElement;
+        el.setAttribute('data-shelf-pending', 'true');
+        setTimeout(function () { el.removeAttribute('data-shelf-pending'); }, 8000);
+      } catch (error) {
+        /* no matchMedia: fall through to the semantic shelf */
+      }
+    })();
+  </script>
+</head>
+<body class="library-page">
+  <main>
+    <h1 class="library__h1">Library</h1>
+    <LibraryShelf
+      albums={albums}
+      books={books}
+      notebooks={notebooks}
+      listeningLabel={listeningLabel}
+      libraryLabel={libraryLabel}
+      notebookLabel={notebookLabel}
+      siteNotebookId={siteNotebookId}
+    />
   </main>
-</Base>
+</body>
+</html>

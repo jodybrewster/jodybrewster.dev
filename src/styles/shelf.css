@@ -1,4 +1,4 @@
-/* /library - full-bleed shelf.
+/* / - full-bleed shelf.
  *
  * Two views live in this file. The Three.js stage is the desktop experience;
  * the semantic shelf underneath it is the phone experience, the no-WebGL
@@ -91,9 +91,10 @@ html:has(> .library-page) {
   background: var(--plaster);
 }
 
-.library__dock .library__page {
-  width: 100%;
-  height: 100%;
+/* Docking never moves the page - moving an iframe in the DOM would reload the
+   site inside it - so the fullscreen state is addressed off the shelf's own
+   flag rather than off a new parent. */
+.library[data-docked] .library__page {
   box-shadow: none;
 }
 

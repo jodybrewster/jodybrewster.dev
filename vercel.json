@@ -3,6 +3,9 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
+  "redirects": [
+    { "source": "/library", "destination": "/", "permanent": true }
+  ],
   "rewrites": [
     {
       "source": "/writing/:slug",

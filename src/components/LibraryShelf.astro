@@ -1,6 +1,6 @@
 ---
 /**
- * The /library shelf.
+ * The shelf at /.
  *
  * Astro renders a complete, linked, image-bearing shelf here. Three.js then
  * progressively enhances it on pointer devices with room for the scene. The
@@ -185,53 +185,89 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
       // requests - through the same main thread that is building the scene, and
       // that competition is what made the shelf slow to arrive. It only has to
       // be ready before the notebook opens, which is a user action away.
-      const loadPage = () => { if (!page.src) page.src = '/'; };
+      const loadPage = () => { if (!page.src) page.src = '/home'; };
       const whenIdle = (window as Window & {
         requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
       }).requestIdleCallback;
       if (whenIdle) whenIdle(loadPage, { timeout: 2000 });
       else window.setTimeout(loadPage, 400);
 
-      // Once the cover is clear, the page leaves the book and grows to fill the
-      // window, so reading the site is not reading through a paper-sized hole.
-      // Measured out of its 3D position and animated from there, so it starts
-      // exactly where it already looked like it was.
+      // Once the cover is clear, the page grows to fill the window, so reading
+      // the site is not reading through a paper-sized hole. Measured out of its
+      // 3D position and animated from there, so it starts exactly where it
+      // already looked like it was.
       const dock = document.createElement('div');
       dock.className = 'library__dock';
       dock.hidden = true;
       stage.appendChild(dock);
 
-      // CSS3DRenderer only inserts the element on its first render, so the
-      // page has no parent yet at mount time. Remember it when we take it.
-      let home: HTMLElement | null = null;
       let docked = false;
+
+      // The page never leaves the 3D layer. Moving an iframe in the DOM tears
+      // its document down and navigates it again, so lifting it into a dock
+      // element would drop the site on every open and every close - the fold
+      // would carry a blank rectangle and the site would reload behind it.
+      // Docking is done in place instead: while docked CSS3D stops stamping the
+      // element, which leaves it free to be pinned to the viewport by hand.
+
+      /**
+       * The CSS3D layer's outermost element, which is a direct child of the
+       * stage and so the dock's sibling. Found by walking rather than counting
+       * parents, because how many wrappers CSS3DRenderer nests is its business.
+       */
+      function cssLayerRoot(): HTMLElement | null {
+        let el: HTMLElement | null = page.parentElement;
+        while (el && el.parentElement !== stage) el = el.parentElement;
+        return el;
+      }
 
       /** Puts the page back exactly where CSS3D expects it. */
       function restoreInBook() {
+        page.style.position = '';
+        page.style.inset = '';
         page.style.transform = '';
         page.style.transformOrigin = '';
         page.style.width = page.dataset.pageWidth ?? '';
         page.style.height = page.dataset.pageHeight ?? '';
+        // Cleared rather than restored: the next CSS3D render stamps it back.
+        const layer = page.parentElement;
+        if (layer) layer.style.transform = '';
+        const layerRoot = cssLayerRoot();
+        if (layerRoot) layerRoot.style.zIndex = '';
       }
 
-      /** Lifts the page out of the book to fill the window. */
+      /** Pins the page over the window, still parented to the 3D layer. */
+      function pinToWindow() {
+        // A fixed element resolves against its nearest transformed ancestor, so
+        // the layer's matrix has to come off or the pin inherits the shelf's
+        // perspective. Only the layer is transformed; nothing above it is.
+        const layer = page.parentElement;
+        if (layer) layer.style.transform = 'none';
+        // The dock's plaster is what hides the shelf behind the page, and it is
+        // the 3D layer's sibling. Ordering has to be settled between those two:
+        // a z-index on the page itself only sorts it inside the layer, which
+        // leaves the plaster painting straight over the site.
+        const layerRoot = cssLayerRoot();
+        if (layerRoot) layerRoot.style.zIndex = '71';
+        page.style.position = 'fixed';
+        page.style.inset = '0';
+        page.style.width = '100%';
+        page.style.height = '100%';
+        page.style.transformOrigin = 'top left';
+        page.style.transform = 'none';
+      }
+
+      /** Grows the page off the book until it fills the window. */
       function openFull(animated = true) {
         if (docked) return;
-        home = page.parentElement;
-        if (!home) return;
+        if (!page.parentElement) return;
         const from = page.getBoundingClientRect();
         docked = true;
         shelf.setPageDocked(true);
         shelfRoot.dataset.docked = 'true';
 
         dock.hidden = false;
-        dock.appendChild(page);
-        page.style.width = '';
-        page.style.height = '';
-        page.style.transformOrigin = 'top left';
-        // The 3D layer left its own matrix on the element. Clear it before
-        // measuring, or the destination box is the transformed one.
-        page.style.transform = 'none';
+        pinToWindow();
         if (!animated) return;
 
         const to = page.getBoundingClientRect();
@@ -243,27 +279,26 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         page.style.transform = 'none';
         page.addEventListener('transitionend', () => {
           page.classList.remove('is-settling');
-          page.style.transform = '';
         }, { once: true });
       }
 
       /**
        * The same move backwards: the page shrinks out of the window and back
        * onto the notebook's inner page. The destination is measured by briefly
-       * returning it to the 3D layer and rendering one frame, which is
-       * invisible because it happens inside a single task.
+       * handing it back to CSS3D and rendering one frame, which is invisible
+       * because it happens inside a single task.
        */
       function closeFull(animated = false, done?: () => void) {
-        if (!docked || !home) return;
+        if (!docked) return;
         docked = false;
-        shelfRoot.removeAttribute('data-docked');
 
         if (!animated) {
           shelf.setPageDocked(false);
           restoreInBook();
-          home.appendChild(page);
+          shelfRoot.removeAttribute('data-docked');
+          dock.hidden = true;
           // The element carries no transform of its own once returned; CSS3D
-          // has to stamp its matrix back on or it inherits the layer's scale.
+          // has to stamp its matrix back on or it keeps the pinned box.
           shelf.render();
           done?.();
           return;
@@ -271,18 +306,13 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
 
         // Where does it need to land?
         shelf.setPageDocked(false);
-        home.appendChild(page);
         restoreInBook();
         shelf.render();
         const to = page.getBoundingClientRect();
 
-        // Back to full window, then travel to that box.
+        // Back over the window, then travel to that box.
         shelf.setPageDocked(true);
-        dock.appendChild(page);
-        page.style.width = '';
-        page.style.height = '';
-        page.style.transformOrigin = 'top left';
-        page.style.transform = 'none';
+        pinToWindow();
         const from = page.getBoundingClientRect();
         void page.offsetWidth;
         page.classList.add('is-settling');
@@ -297,9 +327,9 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
           page.classList.remove('is-settling');
           shelf.setPageDocked(false);
           restoreInBook();
-          home?.appendChild(page);
+          shelfRoot.removeAttribute('data-docked');
           dock.hidden = true;
-          // Same as above: without a render the page keeps the layer's scale.
+          // Same as above: without a render the page keeps the pinned box.
           shelf.render();
           done?.();
         };
@@ -327,12 +357,23 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
           if (shelf.isPageOpen()) {
             window.clearInterval(watch);
             watch = 0;
-            // The notebook stands for the site, so opening it goes there. It
-            // used to dock a live copy instead, which left you browsing the
-            // site while the address bar still said /library.
-            window.location.assign('/');
+            // The site is read through the book rather than instead of it. The
+            // page grows off the open notebook to fill the window and the scene
+            // stays live behind it, so leaving is a fold, not a page load.
+            openFull(true);
           }
         }, 80);
+      });
+
+      // The site on that page has no shelf of its own - the shelf is one layer
+      // behind it - so its Library link asks for the fold instead of navigating.
+      // Exactly the move that opened it, reversed: the page shrinks onto the
+      // notebook, and the notebook closes onto the shelf.
+      window.addEventListener('message', event => {
+        if (event.origin !== window.location.origin) return;
+        if ((event.data as { type?: string } | null)?.type !== 'shelf:close') return;
+        if (!docked) return;
+        closeFull(true, () => store.dispatch({ type: 'dismiss' }));
       });
 
       // Arriving from the rest of the site: open on that notebook held open,

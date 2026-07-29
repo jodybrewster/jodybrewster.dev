@@ -1599,11 +1599,15 @@ export class LibraryScene {
   #updatePage(): void {
     const page = this.#page;
     if (!page) return;
-    // Visibility goes through the object, not the element: CSS3DRenderer
-    // rewrites element.style.display and the element's transform on every
-    // render, so anything set directly on the element is overwritten.
-    page.object.visible = this.isPageOpen();
-    if (this.#docked) page.element.style.display = '';
+    // The object is left visible so CSS3DRenderer never writes display:none on
+    // the element. The page is an iframe holding the live site, and Blink drops
+    // a display:none iframe's document and loads it again when display returns
+    // - the site would be reloading at the exact moment the book opened, which
+    // is why it was never actually seen on the page. visibility keeps the
+    // document alive and is enough to keep the page off a shut book.
+    page.object.visible = true;
+    page.element.style.visibility =
+      this.#docked || this.isPageOpen() ? 'visible' : 'hidden';
   }
 
   /** While docked the page has left the book and covers the viewport. */

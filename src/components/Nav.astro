@@ -14,19 +14,19 @@ const links = [
   { href: '/research', label: 'Research', icon: 'i-compass',  hidden: false },
   { href: '/chat',     label: 'Chat',     icon: 'i-chat',     hidden: !flags.chat },
   { href: '/agent',    label: 'Agent',    icon: 'i-terminal', hidden: false },
-  { href: '/library',  label: 'Library',  icon: 'i-layers',   hidden: false },
+  { href: '/',         label: 'Library',  icon: 'i-layers',   hidden: false },
   { href: '/about',    label: 'About',    icon: 'i-user',     hidden: false },
 ];
 
 function isActive(href: string): boolean {
   if (href === '/writing') {
-    return pathname === '/' || pathname === '/writing' || pathname.startsWith('/writing/');
+    return pathname === '/home' || pathname === '/writing' || pathname.startsWith('/writing/');
   }
   return pathname === href || pathname.startsWith(href + '/');
 }
 ---
 <header class="mast">
-  <a href="/" class="mark">
+  <a href="/home" class="mark">
     <span class="glyph">
       <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
         <rect x="6" y="6" width="52" height="52" rx="14" style="fill:var(--paper)" stroke="#86B39C" stroke-width="3"/>
@@ -44,8 +44,8 @@ function isActive(href: string): boolean {
         <a
           href={href}
           class={isActive(href) ? 'active' : undefined}
-          data-astro-prefetch={href === '/library' ? 'hover' : undefined}
-          {...href === '/library' ? { 'data-astro-reload': true } : {}}
+          data-astro-prefetch={href === '/' ? 'hover' : undefined}
+          {...href === '/' ? { 'data-astro-reload': true } : {}}
         >
           <svg class="icon sm"><use href={`#${icon}`}/></svg>{label}
         </a>
@@ -202,8 +202,34 @@ function isActive(href: string): boolean {
     if (e.key === 'Escape') setMenu(false);
   });
 
+  // Delegated: view transitions swap the nav out, taking element-bound
+  // listeners with it. pointerover and focusin both bubble; pointerenter does not.
+  const wantsLibrary = (e: Event) =>
+    (e.target as Element | null)?.closest?.('a[href="/"]') != null;
+
+  // This page is also read inside the shelf, as live markup on the open
+  // notebook's page. There the shelf is one layer behind the reader already, so
+  // the Library link folds the notebook shut instead of loading anything.
+  // Capture, because the router is also listening for this click.
+  let insideShelf = false;
+  try {
+    insideShelf = window.parent !== window
+      && window.parent.location.origin === location.origin;
+  } catch {
+    insideShelf = false;
+  }
+
+  if (insideShelf) {
+    document.addEventListener('click', (e) => {
+      if (!wantsLibrary(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      window.parent.postMessage({ type: 'shelf:close' }, location.origin);
+    }, { capture: true });
+  }
+
   // The shelf carries ~150KB gzipped of Three.js. Astro's prefetch pulls the
-  // /library document on hover, but the document is not the slow part, so read
+  // shelf document on hover, but the document is not the slow part, so read
   // the module URLs out of it and pull those into the cache as well. They are
   // content-hashed, hence parsing rather than a hardcoded path.
   let warmed = false;
@@ -217,7 +243,7 @@ function isActive(href: string): boolean {
     try {
       // force-cache: Astro's hover prefetch has usually just fetched this, and
       // the point is to read its script tags, not to fetch the page again.
-      const res = await fetch('/library', { cache: 'force-cache' });
+      const res = await fetch('/', { cache: 'force-cache' });
       if (!res.ok) return;
       const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
       for (const script of doc.querySelectorAll('script[type="module"][src]')) {
@@ -234,11 +260,9 @@ function isActive(href: string): boolean {
     }
   }
 
-  // Delegated: view transitions swap the nav out, taking element-bound
-  // listeners with it. pointerover and focusin both bubble; pointerenter does not.
-  const wantsLibrary = (e: Event) =>
-    (e.target as Element | null)?.closest?.('a[href="/library"]') != null;
-
-  document.addEventListener('pointerover', (e) => { if (wantsLibrary(e)) warmLibrary(); });
-  document.addEventListener('focusin', (e) => { if (wantsLibrary(e)) warmLibrary(); });
+  // Inside the shelf the bundle is already running, so there is nothing to warm.
+  if (!insideShelf) {
+    document.addEventListener('pointerover', (e) => { if (wantsLibrary(e)) warmLibrary(); });
+    document.addEventListener('focusin', (e) => { if (wantsLibrary(e)) warmLibrary(); });
+  }
 </script>

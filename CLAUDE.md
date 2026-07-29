@@ -57,21 +57,29 @@ Content lives in two places:
 
 ### Pages
 
-Routes: `/` (home), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`, `/library`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
+Routes: `/` (the shelf), `/home` (the editorial home page), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
-`/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below.
+`/` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points. `/library` 301s to `/` for links published before the swap.
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
 
-### The /library shelf
+### The shelf
 
-A Three.js shelving unit at `/library`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
+A Three.js shelving unit at `/`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
 
 - `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
 - `src/lib/shelf/textures.ts` draws wood, spines, plaques, and ruled notebook pages on canvas. Only real jackets and album art come from files.
 - `src/lib/shelf/scene.ts` owns the renderer, procedural geometry, raycasting, and the scroll-driven camera.
 - `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing shelf in HTML. Three.js progressively enhances it; that markup is the whole experience on phones, without WebGL, and for assistive tech.
+
+The `jodybrewster.dev` notebook is the way into the rest of the site. It holds a live iframe of `/home`, loaded once when the shelf boots and kept alive for the whole session. Opening the notebook grows that iframe until it fills the window; the scene stays live behind it and the URL never changes. The `Library` link inside the iframe posts `shelf:close` to the parent instead of navigating, which folds the page back onto the notebook and closes it onto the shelf.
+
+Three rules keep that iframe alive, and breaking any one of them silently reloads the site every time the book opens:
+
+1. Never move it in the DOM. Reparenting an iframe tears its document down. Docking is done in place, by pinning it to the viewport with its own styles while CSS3D stops stamping it.
+2. Never hide it with `display: none`. Blink drops a `display:none` iframe's document and loads it again when display returns, which is why the page always looked blank at the moment the book opened. `#updatePage` keeps the CSS3D object visible and gates the element on `visibility` instead.
+3. The `.library__dock` plaster is the 3D layer's sibling, so a `z-index` on the page alone cannot lift it above the dock - the whole CSS3D layer has to be raised while docked.
 
 Gotchas: book covers load only when a book is opened (89 jackets at once is too much texture memory); the scene must not be booted on coarse pointers or under 861px; and the page must stay on the light palette because the birch and plaster are baked into the textures.
 

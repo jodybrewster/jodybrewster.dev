@@ -1,9 +1,9 @@
 /**
  * Builds the shelf's data payload at build time.
  *
- * Shared by the /library page, which renders the semantic shelf from it, and by
+ * Shared by the shelf at /, which renders the semantic shelf from it, and by
  * the static /library-data.json endpoint, which lets the scene be warmed from
- * anywhere on the site without loading the library page first.
+ * anywhere on the site without loading the shelf first.
  *
  * Server side only: reads the content directory.
  */
@@ -107,7 +107,7 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   // The site itself sits on the shelf as a notebook. Opening it is the way home.
   const siteNotebook = {
     title: 'jodybrewster.dev',
-    href: '/',
+    href: '/home',
     section: 'Site',
     excerpt: 'The rest of the site: writing, briefs, research, and lab notes.',
   };

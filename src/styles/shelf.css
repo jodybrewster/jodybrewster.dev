@@ -102,6 +102,15 @@ html:has(> .library-page) {
   transition: transform 620ms cubic-bezier(0.16, 0.84, 0.44, 1);
 }
 
+/* Folding back wants motion the whole way in. Opening can afford to leap and
+   then ease down, but on the way back that long tail spends its last third
+   nearly stationary, which read as the page stopping and the book closing
+   afterwards - two moves instead of one. Keep these in step with FOLD_MS. */
+.library__page.is-settling.is-folding {
+  transition-duration: 520ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .library__page.is-settling { transition: none; }
 }

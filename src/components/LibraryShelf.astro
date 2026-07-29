@@ -203,6 +203,9 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
 
       let docked = false;
 
+      /** Kept in step with .library__page.is-folding in shelf.css. */
+      const FOLD_MS = 520;
+
       // The page never leaves the 3D layer. Moving an iframe in the DOM tears
       // its document down and navigates it again, so lifting it into a dock
       // element would drop the site on every open and every close - the fold
@@ -266,9 +269,11 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         shelf.setPageDocked(true);
         shelfRoot.dataset.docked = 'true';
 
-        dock.hidden = false;
         pinToWindow();
-        if (!animated) return;
+        if (!animated) {
+          dock.hidden = false;
+          return;
+        }
 
         const to = page.getBoundingClientRect();
         page.style.transform =
@@ -279,6 +284,10 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         page.style.transform = 'none';
         page.addEventListener('transitionend', () => {
           page.classList.remove('is-settling');
+          // Only now, with the page over the whole window and the plaster
+          // behind it invisible. Raising it any earlier would blank the shelf
+          // out from under a page that has not covered it yet.
+          dock.hidden = false;
         }, { once: true });
       }
 
@@ -292,7 +301,10 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         if (!docked) return;
         docked = false;
 
-        if (!animated) {
+        // Reduced motion takes the instant path rather than the animated one:
+        // the transition is off there, so transitionend never arrives and the
+        // travel would be a wait rather than a move.
+        if (!animated || reducedMotion) {
           shelf.setPageDocked(false);
           restoreInBook();
           shelfRoot.removeAttribute('data-docked');
@@ -313,25 +325,41 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         // Back over the window, then travel to that box.
         shelf.setPageDocked(true);
         pinToWindow();
+        // Dropped now rather than on landing. The page still covers the window
+        // at this instant, so the plaster is not on screen to be missed - and
+        // taking it away here is what lets the page shrink onto a shelf that is
+        // already there, instead of onto a blank field that turns into one.
+        dock.hidden = true;
         const from = page.getBoundingClientRect();
         void page.offsetWidth;
-        page.classList.add('is-settling');
+        page.classList.add('is-settling', 'is-folding');
         page.style.transform =
           `translate(${to.left - from.left}px, ${to.top - from.top}px) ` +
           `scale(${to.width / from.width}, ${to.height / from.height})`;
+
+        // The notebook is let go before the page has quite landed. By that
+        // point the page has covered most of its distance, so the book starting
+        // to close underneath reads as the back half of one move. Waiting for
+        // the landing put a stop between the two instead.
+        let handedOff = false;
+        const handOff = () => {
+          if (handedOff) return;
+          handedOff = true;
+          done?.();
+        };
+        window.setTimeout(handOff, FOLD_MS * 0.7);
 
         let landed = false;
         const land = () => {
           if (landed) return;
           landed = true;
-          page.classList.remove('is-settling');
+          page.classList.remove('is-settling', 'is-folding');
           shelf.setPageDocked(false);
           restoreInBook();
           shelfRoot.removeAttribute('data-docked');
-          dock.hidden = true;
           // Same as above: without a render the page keeps the pinned box.
           shelf.render();
-          done?.();
+          handOff();
         };
         page.addEventListener('transitionend', land, { once: true });
         // The transition does not run in a tab that is not being composited.

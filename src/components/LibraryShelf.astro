@@ -203,8 +203,9 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
 
       let docked = false;
 
-      /** Kept in step with .library__page.is-folding in shelf.css. */
+      /** Both kept in step with .library__page.is-folding in shelf.css. */
       const FOLD_MS = 520;
+      const FADE_MS = 260;
 
       // The page never leaves the 3D layer. Moving an iframe in the DOM tears
       // its document down and navigates it again, so lifting it into a dock
@@ -228,6 +229,7 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
       function restoreInBook() {
         page.style.position = '';
         page.style.inset = '';
+        page.style.opacity = '';
         page.style.transform = '';
         page.style.transformOrigin = '';
         page.style.width = page.dataset.pageWidth ?? '';
@@ -254,6 +256,8 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         if (layerRoot) layerRoot.style.zIndex = '71';
         page.style.position = 'fixed';
         page.style.inset = '0';
+        // Opaque again, in case this is a reopen over a fold that was cut short.
+        page.style.opacity = '';
         page.style.width = '100%';
         page.style.height = '100%';
         page.style.transformOrigin = 'top left';
@@ -336,23 +340,29 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         page.style.transform =
           `translate(${to.left - from.left}px, ${to.top - from.top}px) ` +
           `scale(${to.width / from.width}, ${to.height / from.height})`;
+        // The page is on its way out from the first frame. It still travels the
+        // whole distance underneath, which is what keeps the movement reading as
+        // the page returning to the book rather than merely vanishing, but it is
+        // gone well before it gets there.
+        page.style.opacity = '0';
 
-        // The notebook is let go before the page has quite landed. By that
-        // point the page has covered most of its distance, so the book starting
-        // to close underneath reads as the back half of one move. Waiting for
-        // the landing put a stop between the two instead.
+        // The notebook is let go as the page finishes fading, not when it lands.
+        // By then there is nothing left to watch on the page, so the book
+        // closing is the front of the next move rather than a wait after this
+        // one. Holding it to the landing put a dead beat between the two.
         let handedOff = false;
         const handOff = () => {
           if (handedOff) return;
           handedOff = true;
           done?.();
         };
-        window.setTimeout(handOff, FOLD_MS * 0.7);
+        window.setTimeout(handOff, FADE_MS);
 
         let landed = false;
         const land = () => {
           if (landed) return;
           landed = true;
+          page.removeEventListener('transitionend', onEnd);
           page.classList.remove('is-settling', 'is-folding');
           shelf.setPageDocked(false);
           restoreInBook();
@@ -361,9 +371,17 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
           shelf.render();
           handOff();
         };
-        page.addEventListener('transitionend', land, { once: true });
+        // Two properties are in flight and the shorter one ends first, so this
+        // cannot be a once-listener: the fade would be mistaken for the landing
+        // and cut the travel in half.
+        const onEnd = (event: TransitionEvent) => {
+          if (event.propertyName === 'transform') land();
+        };
+        page.addEventListener('transitionend', onEnd);
         // The transition does not run in a tab that is not being composited.
-        window.setTimeout(land, 900);
+        // Comfortably past the travel, so it only ever fires when there was no
+        // transition to end.
+        window.setTimeout(land, FOLD_MS + 380);
       }
 
       store.subscribe(state => {

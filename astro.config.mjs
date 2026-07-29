@@ -20,6 +20,10 @@ export default defineConfig({
   site: SITE,
   output: 'static',
   adapter: vercel(),
+  // The site opens on the home page. It is served from /home rather than the
+  // root, so the root sends you there; the Vercel adapter turns this into a
+  // real redirect at the edge, and it still resolves under `astro dev`.
+  redirects: { '/': '/home' },
   // The shelf is a heavy route. Warming it on hover means the fold has
   // something to land on instead of a blank frame.
   prefetch: { prefetchAll: false, defaultStrategy: 'hover' },

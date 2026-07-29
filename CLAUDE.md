@@ -57,15 +57,15 @@ Content lives in two places:
 
 ### Pages
 
-Routes: `/` (the shelf), `/home` (the editorial home page), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
+Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
-`/` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points. `/library` 301s to `/` for links published before the swap.
+The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
 
-### The shelf
+### The /library shelf
 
-A Three.js shelving unit at `/`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
+A Three.js shelving unit at `/library`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
 
 - `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.

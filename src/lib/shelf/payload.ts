@@ -1,7 +1,7 @@
 /**
  * Builds the shelf's data payload at build time.
  *
- * Shared by the shelf at /, which renders the semantic shelf from it, and by
+ * Shared by the /library page, which renders the semantic shelf from it, and by
  * the static /library-data.json endpoint, which lets the scene be warmed from
  * anywhere on the site without loading the shelf first.
  *

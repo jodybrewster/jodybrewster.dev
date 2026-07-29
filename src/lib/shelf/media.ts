@@ -1,5 +1,5 @@
 /**
- * Media normalization for the shelf at /.
+ * Media normalization for the /library shelf.
  *
  * Everything here is pure and framework-free: Astro calls it at build time to
  * serialize the shelf payload, and the Three.js scene consumes the same output

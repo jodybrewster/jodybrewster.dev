@@ -60,7 +60,7 @@ export async function searchVectors(query: string, topK = 5, filter?: { type?: S
   return results.map(r => ({
     id: String(r.id),
     score: r.score,
-    metadata: r.metadata as SourceMetadata,
+    metadata: r.metadata as unknown as SourceMetadata,
   }));
 }
 

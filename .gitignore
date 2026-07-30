@@ -3,3 +3,5 @@ dist/
 .env
 node_modules/
 .vercel
+.worktrees/
+.astro/data-store.json

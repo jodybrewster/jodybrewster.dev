@@ -196,6 +196,14 @@ Border: 1px ash-rule. Radius: 4px. Top accent bar: `::before` pseudo-element, 2p
 - **Primary** (send, submit): quiet-forest background, ash-paper text, 3–4px radius, Inter 13px wght 500. Hover: deep-ink background.
 - **Ghost / secondary**: transparent background, rule border, current text color. Hover: accent border and text, warm-ash background, translateY(-1px).
 
+### Library shelf overlay (`/library`)
+
+The shelf is its own surface: a full-bleed document with no masthead or footer, pinned to the light palette because the birch and plaster are baked into the textures. Only three pieces of flat UI sit over the scene, and all three are pills so they read as labels resting on the room rather than a layer laid across it.
+
+- **Hint pill.** Bottom centre, mono 10px uppercase, `rgb(244 241 232 / 0.82)`, 99px radius. Says how to move; disappears once something is selected.
+- **Back to the site.** Top left, same mono treatment at `rgb(244 241 232 / 0.28)` with a 7px backdrop blur, so the grain reads through it. Comes to `0.7` and full ink on hover and focus. It is the only navigation on the page. Hidden while the notebook is open and filling the window, since the site showing there carries its own nav.
+- **Selection card.** Bottom right, ash-paper on a 1px rule, 4px radius. Sized to its own text (`width: max-content`), never to a share of the viewport — an earlier `46vw` made it a half-width column that broke titles over five lines on a phone. Below 640px it takes both edges and sits across the foot of the screen. The notebook variant inverts to quiet-forest.
+
 ## 6. Do's and Don'ts
 
 ### Do:
@@ -226,6 +234,12 @@ Single breakpoint: `720px`. Below it, multi-column layouts collapse to single co
 - Below 720px: Note grids collapse to a single column.
 - Content containers remain centered at all viewport widths.
 - Navigation condenses but retains the pill-shaped item treatment.
+
+**The shelf is the exception, and responds to aspect rather than width.** `/library` is a camera looking at a room, so it cannot reflow. Framing follows the viewport's proportions: the camera is placed to fit the unit's height, and is allowed to pull back for its width only up to a ceiling. Past that ceiling — which is where a portrait phone lands — the width is no longer fitted at all, and the shelf is walked sideways by dragging instead. Without the ceiling a 390×844 screen put the camera 52.8 units back against a desktop's 13.9, which is the whole unit on screen at once and nothing on it legible.
+
+This is the one surface that scrolls horizontally, and it does so by drag rather than by overflow: the canvas takes `touch-action: pan-y`, so sideways drags pan the camera while vertical ones stay an ordinary page scroll. On a desktop the width already fits, the pan limit computes to zero, and dragging does nothing.
+
+Items opened up close are framed by height and then pushed back if the frame is too narrow to take their width, or a book fills a portrait screen edge to edge.
 
 ## 8. Agent Prompt Guide
 

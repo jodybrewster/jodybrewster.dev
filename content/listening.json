@@ -1,0 +1,201 @@
+{
+  "updated": "2026-07-28",
+  "artists": [
+    {
+      "name": "Beach House",
+      "url": "https://open.spotify.com/artist/56ZTgzPBDge0OvCGgMO3OY"
+    },
+    {
+      "name": "Bring Me The Horizon",
+      "url": "https://open.spotify.com/artist/1Ffb6ejR6Fe5IamqA5oRUF"
+    },
+    {
+      "name": "Nirvana",
+      "url": "https://open.spotify.com/artist/6olE6TJLqED3rqDCT0FyPh"
+    },
+    {
+      "name": "Frost Children",
+      "url": "https://open.spotify.com/artist/6R1kfr0GIWnwxY4zW11Vag"
+    },
+    {
+      "name": "Wavves",
+      "url": "https://open.spotify.com/artist/6bUJpbekaIlq2fT5FMV2mQ"
+    },
+    {
+      "name": "Death Cab for Cutie",
+      "url": "https://open.spotify.com/artist/0YrtvWJMgSdVrk3SfNjTbx"
+    },
+    {
+      "name": "Das Racist",
+      "url": "https://open.spotify.com/artist/4iqAeIP1ynbt71G0Oi8VIt"
+    },
+    {
+      "name": "Muse",
+      "url": "https://open.spotify.com/artist/12Chz98pHFMPJEknJQMWvI"
+    },
+    {
+      "name": "Ludwig Göransson",
+      "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
+    },
+    {
+      "name": "Fabian Mazur",
+      "url": "https://open.spotify.com/artist/5BBBDm18Y0TCRXZggaOnZG"
+    },
+    {
+      "name": "Ty Segall",
+      "url": "https://open.spotify.com/artist/58XGUNsRNu3cVOIOYk5chx"
+    }
+  ],
+  "albums": [
+    {
+      "name": "Bloom",
+      "artist": "Beach House",
+      "url": "https://open.spotify.com/album/6w84G1JaQPqbf8RzS48tPf",
+      "image": "https://i.scdn.co/image/ab67616d00001e020ac131b9488447476f7406b5"
+    },
+    {
+      "name": "Tweaker Poem",
+      "artist": "Frost Children",
+      "url": "https://open.spotify.com/album/2fzKiP2hfzKll1QlXNzojx",
+      "image": "https://i.scdn.co/image/ab67616d00001e02557318ccf401251fe5efa334"
+    },
+    {
+      "name": "I Built You A Tower",
+      "artist": "Death Cab for Cutie",
+      "url": "https://open.spotify.com/album/4D1zUsXw30DbfOqY1gVsfT",
+      "image": "https://i.scdn.co/image/ab67616d00001e021356b24d48cbabc44384e753"
+    },
+    {
+      "name": "Shut Up, Dude",
+      "artist": "Das Racist",
+      "url": "https://open.spotify.com/album/0WLZ8fN0sZn9Qoux0MUrND",
+      "image": "https://i.scdn.co/image/ab67616d00001e029e18bd5f311401dee24516de"
+    },
+    {
+      "name": "7",
+      "artist": "Beach House",
+      "url": "https://open.spotify.com/album/1zN85Ep8w2JORfCe0RHLDP",
+      "image": "https://i.scdn.co/image/ab67616d00001e020af2276ae66a42e73eb07683"
+    },
+    {
+      "name": "Bleach",
+      "artist": "Nirvana",
+      "url": "https://open.spotify.com/album/1KVGLuPtrMrLlyy4Je6df7",
+      "image": "https://i.scdn.co/image/ab67616d00001e0297507fd22fb690cb9085a864"
+    },
+    {
+      "name": "Count Your Blessings | Repented",
+      "artist": "Bring Me The Horizon",
+      "url": "https://open.spotify.com/album/1v47s2Z5kdloRlVkxHcTWO",
+      "image": "https://i.scdn.co/image/ab67616d00001e02f71b9303698be44cdede2ac8"
+    },
+    {
+      "name": "imellem",
+      "artist": "Fabian Mazur",
+      "url": "https://open.spotify.com/album/5PxIYxaG1LM2DmuNmZSJOw",
+      "image": "https://i.scdn.co/image/ab67616d00001e02bec0f0c03b7e3a34cf3b8938"
+    },
+    {
+      "name": "Satellites",
+      "artist": "Frost Children",
+      "url": "https://open.spotify.com/album/1lwDEmZ3j69Wrh0AycrCCU",
+      "image": "https://i.scdn.co/image/ab67616d00001e0216c3c79d1a782cf1635ee148"
+    },
+    {
+      "name": "U",
+      "artist": "underscores",
+      "url": "https://open.spotify.com/album/1qSS0T6Ffrb3rFVpizzOuk",
+      "image": "https://i.scdn.co/image/ab67616d00001e02cab898cdda3ee7d1e9b25646"
+    },
+    {
+      "name": "Depression Cherry",
+      "artist": "Beach House",
+      "url": "https://open.spotify.com/album/194CqC2Zi0kUFEPWedb3qr",
+      "image": "https://i.scdn.co/image/ab67616d00001e029b7190e673e46271b2754aab"
+    },
+    {
+      "name": "You Aint Got It",
+      "artist": "Know Good",
+      "url": "https://open.spotify.com/album/7kigpraGoahgBPjlpo4Onc",
+      "image": "https://i.scdn.co/image/ab67616d00001e027cc4c13313fa0fd17fa4eda1"
+    },
+    {
+      "name": "The Wow! Signal",
+      "artist": "Muse",
+      "url": "https://open.spotify.com/album/6TObgE5QDLYzA3Exu5vGhS",
+      "image": "https://i.scdn.co/image/ab67616d00001e02b295bd39e098e7b68d57aacf"
+    },
+    {
+      "name": "Kings Of Crunk",
+      "artist": "Lil Jon & The East Side Boyz",
+      "url": "https://open.spotify.com/album/4htcOW08TqINNLbcSf9esI",
+      "image": "https://i.scdn.co/image/ab67616d00001e023ba0e7112f965bfda72b1c5b"
+    },
+    {
+      "name": "Attack on Memory",
+      "artist": "Cloud Nothings",
+      "url": "https://open.spotify.com/album/5WXkhXajktSjUJxN2S50qo",
+      "image": "https://i.scdn.co/image/ab67616d00001e02bc83535dd797ff3b21d3a665"
+    },
+    {
+      "name": "Hurry Up, We're Dreaming",
+      "artist": "M83",
+      "url": "https://open.spotify.com/album/6R0ynY7RF20ofs9GJR5TXR",
+      "image": "https://i.scdn.co/image/ab67616d00001e0290e9adff5f77dd1ff6d24e47"
+    },
+    {
+      "name": "Kim Wilde",
+      "artist": "Kim Wilde",
+      "url": "https://open.spotify.com/album/4gKzPDy0qNi3fjvpXDQTST",
+      "image": "https://i.scdn.co/image/ab67616d00001e021233a7885e76b74d0b2a9473"
+    },
+    {
+      "name": "Transatlanticism (10th Anniversary Edition)",
+      "artist": "Death Cab for Cutie",
+      "url": "https://open.spotify.com/album/5UKAhD2VmFAuThgq4OQyEe",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c988bbfb15aca7928323d2ff"
+    },
+    {
+      "name": "The Resistance",
+      "artist": "Muse",
+      "url": "https://open.spotify.com/album/0eFHYz8NmK75zSplL5qlfM",
+      "image": "https://i.scdn.co/image/ab67616d00001e02b6d4566db0d12894a1a3b7a2"
+    },
+    {
+      "name": "Nevermind (Deluxe Edition)",
+      "artist": "Nirvana",
+      "url": "https://open.spotify.com/album/1ySR0W1hHxPDKCBWdvzRvc",
+      "image": "https://i.scdn.co/image/ab67616d00001e029882599a8bed4658b11b9f1a"
+    },
+    {
+      "name": "No Life for Me",
+      "artist": "Wavves",
+      "url": "https://open.spotify.com/album/4YXtgZunaJyWZifBp0pNa1",
+      "image": "https://i.scdn.co/image/ab67616d00001e02e8a25b2bd0524c4497b32223"
+    },
+    {
+      "name": "In Utero",
+      "artist": "Nirvana",
+      "url": "https://open.spotify.com/album/7wOOA7l306K8HfBKfPoafr",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c4f52ef8782f0e8ede4c1aaf"
+    },
+    {
+      "name": "The Window",
+      "artist": "Ratboys",
+      "url": "https://open.spotify.com/album/07h9Qsx40cCp1h0ykxuqU1",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c44a4eca1e25517c5b9ad297"
+    },
+    {
+      "name": "SISTER",
+      "artist": "Frost Children",
+      "url": "https://open.spotify.com/album/0IojfyxFQMggZW9aNCeaV7",
+      "image": "https://i.scdn.co/image/ab67616d00001e02de825e6f087f44e3b2297645"
+    },
+    {
+      "name": "Freedom's Goblin",
+      "artist": "Ty Segall",
+      "url": "https://open.spotify.com/album/5BInay8c4KClHpYL94IBed",
+      "image": "https://i.scdn.co/image/ab67616d00001e023f0c6b55d1dbd64cba26bd5a"
+    }
+  ]
+}

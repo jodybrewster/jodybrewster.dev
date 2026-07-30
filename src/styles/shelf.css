@@ -1,0 +1,529 @@
+/* /library - full-bleed shelf.
+ *
+ * Two views live in this file. The Three.js stage is the desktop experience;
+ * the semantic shelf underneath it is the phone experience, the no-WebGL
+ * fallback, and the keyboard path all at once. Only one is visible at a time,
+ * but the semantic one always exists in the document.
+ */
+
+/* The document root, not just the body. Mid-transition the body can be turned
+   out of the way, and without this the browser's white shows through. */
+html:has(> .library-page) {
+  background: #ece4d6;
+}
+
+.library-page {
+  --birch: #e2caa1;
+  --birch-shade: #c8ab7e;
+  --birch-deep: #a98a5d;
+  --plaster: #ece4d6;
+
+  /* The shelf is a lit interior: birch, warm plaster, paper. Those surfaces are
+     baked into the geometry and textures, so this page stays on the light
+     palette in both themes. Without this, dark mode hands it near-white ink on
+     a cream background and the labels disappear. */
+  color-scheme: light;
+  --ink: #14181d;
+  --ink-soft: #3d444d;
+  --ink-faint: #828a93;
+  --paper: #f1f2f0;
+  --paper-warm: #e6e8e4;
+  --rule: #cbcec9;
+  --accent: #2d5d4f;
+  --accent-soft: #cfdcd6;
+
+  margin: 0;
+  background: var(--plaster);
+  color: var(--ink);
+  font-family: var(--sans);
+  /* `clip`, not `hidden`: `overflow-x: hidden` computes `overflow-y: auto`,
+     which makes the body its own scroll container and silently breaks
+     window.scrollTo, and with it the scroll-driven camera. */
+  overflow-x: clip;
+}
+
+/* The page title exists for documents and screen readers; the shelf rail
+   carries the visible wordmark. */
+.library__h1,
+.library__skip {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.library__skip:focus {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 40;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 10px 14px;
+  clip-path: none;
+  background: var(--accent);
+  color: #f6f7f5;
+  border-radius: 4px;
+  font-size: var(--t-meta-lg);
+  text-decoration: none;
+}
+
+/* The live site, set into the notebook's page by CSS3DRenderer. It sits on a
+   layer above the canvas, so it carries its own paper and edge shading rather
+   than picking up the scene's. */
+.library__page {
+  display: block;
+  border: 0;
+  background: var(--paper);
+  box-shadow: inset 22px 0 26px -22px rgb(40 30 16 / 0.5);
+}
+
+/* Where the page goes once it has left the book and taken the window. */
+.library__dock {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  background: var(--plaster);
+}
+
+/* Docking never moves the page - moving an iframe in the DOM would reload the
+   site inside it - so the fullscreen state is addressed off the shelf's own
+   flag rather than off a new parent. */
+.library[data-docked] .library__page {
+  box-shadow: none;
+}
+
+.library__page.is-settling {
+  transition: transform 620ms cubic-bezier(0.16, 0.84, 0.44, 1);
+}
+
+/* Folding back wants motion the whole way in. Opening can afford to leap and
+   then ease down, but on the way back that long tail spends its last third
+   nearly stationary, which read as the page stopping and the book closing
+   afterwards - two moves instead of one.
+   The page also goes before it lands: it fades over the first stretch of the
+   travel, so what remains to watch is the book closing rather than a shrinking
+   rectangle of website. Keep these in step with FOLD_MS and FADE_MS. */
+.library__page.is-settling.is-folding {
+  transition:
+    transform 520ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 260ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library__page.is-settling { transition: none; }
+}
+
+/* -- Back to the site ------------------------------------------------------ */
+
+/* The only chrome on this page. It sits over the shelf, so it is kept faint
+   enough to read as a label resting on the room rather than a bar laid across
+   it, and comes up to full strength on hover. */
+.library__back {
+  position: fixed;
+  top: clamp(14px, 2.4vh, 26px);
+  left: clamp(14px, 2.4vw, 30px);
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px 8px 11px;
+  border-radius: 99px;
+  background: rgb(244 241 232 / 0.28);
+  backdrop-filter: blur(7px);
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: rgb(38 30 20 / 0.62);
+  text-decoration: none;
+  transition: background-color .18s ease, color .18s ease;
+}
+
+.library__back:hover {
+  background: rgb(244 241 232 / 0.7);
+  color: var(--ink);
+}
+
+.library__back:focus-visible {
+  background: rgb(244 241 232 / 0.7);
+  color: var(--ink);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Out of the way once the notebook has taken the window. The page docks above
+   the stage but below this, so without it the button floats over the site -
+   which carries its own nav. */
+body:has(.library[data-docked]) .library__back {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* -- Stage ---------------------------------------------------------------- */
+
+.library {
+  position: relative;
+}
+
+.library[data-scene='live'] {
+  /* Set by the scene once it knows how tall the unit is. */
+  height: calc(100vh + var(--shelf-travel, 0vh));
+}
+
+.library__stage {
+  display: none;
+}
+
+.library[data-scene='live'] .library__stage {
+  display: block;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  /* The semantic shelf is what was on screen a frame ago. Fading in over it
+     reads as the shelf resolving rather than as the page changing its mind. */
+  animation: library-stage-in 380ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+@keyframes library-stage-in {
+  from { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library[data-scene='live'] .library__stage { animation: none; }
+}
+
+.library__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Sideways drags belong to the shelf, which walks the camera along the unit.
+     Vertical ones stay a page scroll: that already drives the camera, with the
+     browser's own momentum behind it. */
+  touch-action: pan-y;
+}
+
+/* -- Hint and selection card ---------------------------------------------- */
+
+.library__card-link:focus-visible,
+.library__card-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.library__hint {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: 99px;
+  background: rgb(244 241 232 / 0.82);
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: rgb(60 48 32 / 0.72);
+  pointer-events: none;
+}
+
+/* Sized to its text, not to the viewport. Tying the width to 46vw made the
+   card half the screen at every size, which on a phone left a column narrow
+   enough to break titles over five lines. */
+.library__card {
+  position: absolute;
+  right: clamp(24px, 5vw, 72px);
+  bottom: clamp(24px, 5vh, 64px);
+  width: max-content;
+  max-width: min(560px, calc(100vw - 2 * clamp(24px, 5vw, 72px)));
+  padding: 22px 24px 20px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: 0 18px 44px rgb(40 30 16 / 0.22);
+  animation: library-card-in 260ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Narrow enough that a card floating in one corner reads as debris: give it
+   both edges and let it sit across the foot of the screen. */
+@media (max-width: 640px) {
+  .library__card {
+    left: clamp(24px, 5vw, 72px);
+    width: auto;
+    max-width: none;
+  }
+}
+
+.library__card[data-kind='notebook'] {
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 80%, #000);
+  color: #eef2ef;
+}
+
+.library__card-kind {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.library__card[data-kind='notebook'] .library__card-kind {
+  color: color-mix(in srgb, #eef2ef 72%, transparent);
+}
+
+.library__card-title {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-variation-settings: 'opsz' 48;
+  font-weight: 450;
+  font-size: var(--t-h3);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-h3);
+}
+
+.library__card-credit {
+  margin: 0;
+  font-size: var(--t-ui);
+  color: var(--ink-soft);
+}
+
+.library__card[data-kind='notebook'] .library__card-credit,
+.library__card[data-kind='notebook'] .library__card-excerpt {
+  color: color-mix(in srgb, #eef2ef 78%, transparent);
+}
+
+.library__card-excerpt {
+  margin: 12px 0 0;
+  font-size: var(--t-ui);
+  line-height: var(--lh-snug);
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+.library__card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: var(--t-meta-lg);
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.library__card[data-kind='notebook'] .library__card-link {
+  color: #eef2ef;
+  border-bottom-color: rgb(238 242 239 / 0.45);
+}
+
+.library__card-link::after {
+  content: '\2192';
+}
+
+.library__card-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0 16px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--t-meta);
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.library__card[data-kind='notebook'] .library__card-close {
+  color: color-mix(in srgb, #eef2ef 60%, transparent);
+}
+
+.library__kbd {
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.7;
+}
+
+@keyframes library-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* -- Semantic shelf: phones, no-WebGL, and the keyboard path --------------- */
+
+.library__semantic {
+  padding: clamp(28px, 6vw, 64px) 0 96px;
+}
+
+/* Held back on devices getting the scene, so the reader never sees this design
+   and the 3D one in the same visit. Its covers are lazy, so keeping it clipped
+   also keeps ~90 image requests off the boot. */
+[data-shelf-pending] .library__semantic {
+  /* `display: none`, not the clipped treatment used once the scene is live: a
+     clipped shelf still counts as rendered, so its ~85 lazy covers all fetch
+     and compete with the scene for the boot. This stops them dead. */
+  display: none;
+}
+
+/* Plaster, full height, rather than a short page that jumps when the scene
+   sets its own. Same colour the shelf sits in, so the canvas fades up out of
+   it instead of replacing it. */
+[data-shelf-pending] .library {
+  min-height: 100vh;
+}
+
+/* With the canvas live this stays reachable by keyboard but out of the way. */
+.library[data-scene='live'] .library__semantic {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.shelf {
+  position: relative;
+  margin: 0 0 clamp(28px, 5vw, 52px);
+  padding: 20px 0 0;
+  background:
+    linear-gradient(180deg, var(--birch) 0 10px, transparent 10px),
+    linear-gradient(180deg, transparent calc(100% - 14px), var(--birch) calc(100% - 14px) 100%);
+  border-left: 12px solid var(--birch-shade);
+  border-right: 12px solid var(--birch-shade);
+}
+
+.shelf__label {
+  margin: 0 0 14px;
+  padding: 5px 12px;
+  width: fit-content;
+  margin-inline: auto;
+  background: #1b2026;
+  color: #efe7d8;
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.shelf__rail {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  padding: 0 16px 24px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.shelf__slot {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.shelf__item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 148px;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 4px;
+}
+
+.shelf__item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.shelf__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 2 / 3;
+  background: var(--cloth, var(--paper-warm));
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgb(40 30 16 / 0.24);
+}
+
+.shelf__item--album .shelf__art {
+  aspect-ratio: 1 / 1;
+}
+
+.shelf__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shelf__art-fallback {
+  font-family: var(--display);
+  font-variation-settings: 'opsz' 72;
+  font-size: 44px;
+  color: rgb(255 248 236 / 0.85);
+}
+
+.shelf__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+}
+
+.shelf__title {
+  font-size: var(--t-meta-lg);
+  font-weight: 500;
+  line-height: var(--lh-snug);
+}
+
+.shelf__credit {
+  font-size: var(--t-meta);
+  color: var(--ink-faint);
+}
+
+.shelf__item:hover .shelf__title {
+  color: var(--accent);
+}
+
+@media (min-width: 861px) {
+  .shelf__rail {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .library__card {
+    animation: none;
+  }
+
+  .shelf__rail {
+    scroll-behavior: auto;
+  }
+}

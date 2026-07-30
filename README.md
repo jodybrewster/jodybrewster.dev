@@ -22,6 +22,20 @@ npm run preview    # preview production build
 npm run sync       # sync content from Obsidian vault → content/
 ```
 
+## Routes
+
+The site opens on `/home`, not on `/`. The root is a redirect (declared in `astro.config.mjs`, so it resolves under `astro dev` as well as at the edge on Vercel).
+
+| Route | What it is |
+|---|---|
+| `/` | Redirects to `/home` |
+| `/home` | The editorial home page — the site's front door |
+| `/library` | A Three.js shelf of books, albums, and notebooks. Its own full-bleed document, no masthead or footer, pinned to the light palette, and the only page that loads Three.js |
+| `/writing`, `/notes`, `/work`, `/portfolio`, `/research` | Index and `[slug]` pages per collection |
+| `/now`, `/about`, `/agent`, `/chat`, `/search` | Standalone pages |
+
+The `jodybrewster.dev` notebook on the shelf holds a live iframe of `/home` and opens into it, so the shelf stays running behind the site rather than unloading. See `CLAUDE.md` for the rules that keep that iframe alive.
+
 ## Content
 
 Content lives in two places:

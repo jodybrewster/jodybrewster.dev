@@ -8,7 +8,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 
 - **Framework:** Astro 5 (SSR via `@astrojs/vercel`)
 - **Content:** Markdown files synced from an Obsidian vault
-- **Fonts:** Fraunces (display), Inter (body), JetBrains Mono (mono)
+- **Fonts:** Source Serif 4 (display), Plus Jakarta Sans (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
 - **AI/Chat:** Anthropic Claude API + Upstash Vector (RAG over site content)
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card

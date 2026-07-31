@@ -59,6 +59,8 @@ Content lives in two places:
 
 Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
+`/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
+
 The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
@@ -91,7 +93,7 @@ Gotchas: book covers load only when a book is opened (89 jackets at once is too 
 
 `index.html` is a **living prototype** for the full Astro build, not a throwaway file. Design tokens are extracted from it into `src/styles/global.css` (marked with `/* Extracted from prototype index.html — do not manually edit design tokens */`). When updating the visual design, update `index.html` first and re-extract to `global.css`.
 
-Fonts: **Fraunces** (display/editorial serif), **Inter** (body/UI sans), **JetBrains Mono** (mono). Accent color: `#2d5d4f` (forest green).
+Fonts: **Source Serif 4** (display/editorial serif, opsz 8-60, wght 200-900), **Plus Jakarta Sans** (body/UI sans, wght 200-800, base weight 200), **JetBrains Mono** (mono). Accent color: `#2d5d4f` (forest green).
 
 Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via `remark-wiki-link`.
 
@@ -113,7 +115,8 @@ Copy `.env.example` to `.env` and fill in keys to use these features locally.
 ## Common Pitfalls
 
 - Design tokens live in `global.css` but are **extracted from `index.html`** — update the prototype first, then re-extract. Never manually edit the `/* Extracted from prototype */` block in `global.css`.
-- Fraunces must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size — visually wrong at display scale.
+- Source Serif 4 must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size, which is visually wrong at display scale.
+- The opsz axis stops at 60. Values above it are clamped by the browser, so writing `"opsz" 120` renders identically to `"opsz" 60` and just misleads the next reader. The ramp was originally built against Fraunces, which went to 144; every value was capped when the face changed.
 - `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.
 - Don't add new npm packages without first checking if the dependency already exists in `package.json`.
 - Don't commit `.env` or any secrets file. Don't push to `main` without confirming with the user.

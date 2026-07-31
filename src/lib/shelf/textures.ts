@@ -21,7 +21,7 @@ import {
 import type { ShelfAlbum, ShelfBook, ShelfNotebook } from './media';
 import { seededUnit } from './media';
 
-const DISPLAY = '"Fraunces", "Iowan Old Style", Georgia, serif';
+const DISPLAY = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
 const SANS = '"Inter", -apple-system, system-ui, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 
@@ -781,7 +781,7 @@ export function loadCoverTexture(url: string): Promise<Texture | null> {
   });
 }
 
-/** Text textures pick up Fraunces and Inter only once the webfonts land. */
+/** Text textures pick up the display and sans faces only once the webfonts land. */
 export async function fontsReady(): Promise<void> {
   if (!('fonts' in document)) return;
   try {

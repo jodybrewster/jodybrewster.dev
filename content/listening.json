@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-28",
+  "updated": "2026-07-30",
   "artists": [
     {
       "name": "Beach House",
@@ -34,12 +34,16 @@
       "url": "https://open.spotify.com/artist/12Chz98pHFMPJEknJQMWvI"
     },
     {
-      "name": "Ludwig Göransson",
-      "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
+      "name": "Token",
+      "url": "https://open.spotify.com/artist/4cUfFbVZGSsJWdbfmkdxYq"
     },
     {
-      "name": "Fabian Mazur",
-      "url": "https://open.spotify.com/artist/5BBBDm18Y0TCRXZggaOnZG"
+      "name": "The Strokes",
+      "url": "https://open.spotify.com/artist/0epOFNiUfyON9EYx7Tpr6V"
+    },
+    {
+      "name": "Ludwig Göransson",
+      "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
     },
     {
       "name": "Ty Segall",
@@ -90,10 +94,10 @@
       "image": "https://i.scdn.co/image/ab67616d00001e02f71b9303698be44cdede2ac8"
     },
     {
-      "name": "imellem",
-      "artist": "Fabian Mazur",
-      "url": "https://open.spotify.com/album/5PxIYxaG1LM2DmuNmZSJOw",
-      "image": "https://i.scdn.co/image/ab67616d00001e02bec0f0c03b7e3a34cf3b8938"
+      "name": "I'm Leaving Soon",
+      "artist": "Token",
+      "url": "https://open.spotify.com/album/1yina9uQXAX3Gc7q4Mf4Kv",
+      "image": "https://i.scdn.co/image/ab67616d00001e020b6bcbaa3d1e3879d210a884"
     },
     {
       "name": "Satellites",
@@ -114,16 +118,16 @@
       "image": "https://i.scdn.co/image/ab67616d00001e029b7190e673e46271b2754aab"
     },
     {
-      "name": "You Aint Got It",
-      "artist": "Know Good",
-      "url": "https://open.spotify.com/album/7kigpraGoahgBPjlpo4Onc",
-      "image": "https://i.scdn.co/image/ab67616d00001e027cc4c13313fa0fd17fa4eda1"
-    },
-    {
       "name": "The Wow! Signal",
       "artist": "Muse",
       "url": "https://open.spotify.com/album/6TObgE5QDLYzA3Exu5vGhS",
       "image": "https://i.scdn.co/image/ab67616d00001e02b295bd39e098e7b68d57aacf"
+    },
+    {
+      "name": "imellem",
+      "artist": "Fabian Mazur",
+      "url": "https://open.spotify.com/album/5PxIYxaG1LM2DmuNmZSJOw",
+      "image": "https://i.scdn.co/image/ab67616d00001e02bec0f0c03b7e3a34cf3b8938"
     },
     {
       "name": "Kings Of Crunk",
@@ -136,6 +140,12 @@
       "artist": "Cloud Nothings",
       "url": "https://open.spotify.com/album/5WXkhXajktSjUJxN2S50qo",
       "image": "https://i.scdn.co/image/ab67616d00001e02bc83535dd797ff3b21d3a665"
+    },
+    {
+      "name": "Reality Awaits",
+      "artist": "The Strokes",
+      "url": "https://open.spotify.com/album/6x0nmCMjHeuN3rYBmI5Bor",
+      "image": "https://i.scdn.co/image/ab67616d00001e026b458d1409d938dad4e3ba2c"
     },
     {
       "name": "Hurry Up, We're Dreaming",
@@ -190,12 +200,6 @@
       "artist": "Frost Children",
       "url": "https://open.spotify.com/album/0IojfyxFQMggZW9aNCeaV7",
       "image": "https://i.scdn.co/image/ab67616d00001e02de825e6f087f44e3b2297645"
-    },
-    {
-      "name": "Freedom's Goblin",
-      "artist": "Ty Segall",
-      "url": "https://open.spotify.com/album/5BInay8c4KClHpYL94IBed",
-      "image": "https://i.scdn.co/image/ab67616d00001e023f0c6b55d1dbd64cba26bd5a"
     }
   ]
 }

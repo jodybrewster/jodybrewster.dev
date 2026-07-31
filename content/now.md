@@ -1,4 +1,4 @@
 ---
-updated: 2026-05-22
+updated: 2026-07-30
 ---
-Just testing out my new skill that updates what I'm doing right now. Will it work?
+just added a library section to the site holding 86 books, 25 albums pulled from the last few weeks of Spotify listening, and the newest writing and lab notes as spiral notebooks.

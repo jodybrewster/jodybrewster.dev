@@ -125,6 +125,16 @@ The chat page and search features use:
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
 
+### Analytics
+
+Google Tag Manager, container `GTM-WH8C4NVF`, with GA4 configured inside the container rather than in this repo.
+The id is public by design, so it sits in `src/lib/analytics.ts` rather than the environment; `analyticsEnabled` gates it on `import.meta.env.PROD`, so the dev server never reports traffic.
+`Analytics.astro` is the head half and `AnalyticsNoscript.astro` the first-thing-in-body half, and both belong in each of the two HTML documents - `Base.astro` and `library.astro` - since the shelf does not use the shared layout.
+
+GTM fires its own page view on container load only, and `Base.astro` uses `<ClientRouter />`, so every navigation after the first is a soft one that GTM cannot see.
+`Analytics.astro` pushes a `virtual_page_view` event to the dataLayer on `astro:after-swap` to cover them.
+That push is inert until the container has a Custom Event trigger on `virtual_page_view` driving a GA4 page view tag - without it, the site reports one page view per session instead of one per page.
+
 ## Common Pitfalls
 
 - Design tokens live in `global.css` but are **extracted from `index.html`** — update the prototype first, then re-extract. Never manually edit the `/* Extracted from prototype */` block in `global.css`.

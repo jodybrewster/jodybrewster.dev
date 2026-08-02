@@ -1,0 +1,38 @@
+---
+/**
+ * The Google Tag Manager container, for the head of every document.
+ * <AnalyticsNoscript /> is the other half and belongs at the top of the body.
+ *
+ * Two things follow from Base.astro using <ClientRouter />. The snippet is
+ * guarded so it cannot boot twice if the router ever re-executes it, and
+ * because GTM's own page view fires on container load only, a soft navigation
+ * has to announce itself: the astro:after-swap push is that announcement. It
+ * does nothing until the container has a Custom Event trigger on
+ * `virtual_page_view` feeding a GA4 page view tag.
+ */
+import { GTM_ID, analyticsEnabled } from '../lib/analytics';
+---
+{analyticsEnabled && (
+  <script define:vars={{ GTM_ID }}>
+    window.dataLayer = window.dataLayer || [];
+
+    if (!window.__gtmBooted) {
+      window.__gtmBooted = true;
+
+      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+      var f = document.getElementsByTagName('script')[0];
+      var j = document.createElement('script');
+      j.async = true;
+      j.src = 'https://www.googletagmanager.com/gtm.js?id=' + GTM_ID;
+      f.parentNode.insertBefore(j, f);
+
+      document.addEventListener('astro:after-swap', function () {
+        window.dataLayer.push({
+          event: 'virtual_page_view',
+          page_location: location.href,
+          page_title: document.title,
+        });
+      });
+    }
+  </script>
+)}

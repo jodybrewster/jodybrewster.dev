@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## What this site is for
+
+Everything here serves one goal: conveying what it is like to work with Jody, and who he is. It is not a portfolio that lists what he has done, and not a blog that happens to carry his name. A reader should come away with a sense of how he thinks, what he notices, and what having him on a team would actually be like.
+
+That goal settles the decisions that would otherwise come down to taste. When a call is genuinely close, take the option that reveals more of the person:
+
+- Specific over general. One real constraint from real work says more than a well-phrased principle.
+- Working over finished. The research notes, the annotated drafts, the numbered briefs, the visible seedling and draft states: these exist because how the work happens is the point, not a byproduct of it.
+- Voice over polish. A page that reads like a person wrote it beats one that reads like a template, even when the template is tidier.
+- Nothing that could sit unchanged on someone else's site.
+
+This is also why the anti-references in `PRODUCT.md` are what they are. The generic portfolio, the SaaS landing page and the AI startup aesthetic all fail the same test: each one would describe anybody.
+
 ## Behavioral Guidelines
 
 **Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask rather than guessing.

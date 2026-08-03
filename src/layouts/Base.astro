@@ -6,7 +6,6 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import ChatDock from '../components/ChatDock.astro';
 import Analytics from '../components/Analytics.astro';
-import AnalyticsNoscript from '../components/AnalyticsNoscript.astro';
 import { flags } from '../lib/flags';
 
 interface Props {
@@ -88,7 +87,6 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
   <ClientRouter />
 </head>
 <body class={bodyClass}>
-  <AnalyticsNoscript />
   <IconSprite />
   <div class="shell">
     <Nav />

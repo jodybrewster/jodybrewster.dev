@@ -12,26 +12,26 @@ colors:
   ash-rule: "#cbcec9"
 typography:
   display:
-    fontFamily: "Fraunces, 'Iowan Old Style', 'Apple Garamond', Georgia, serif"
+    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
     fontWeight: 400
     lineHeight: 1.05
     letterSpacing: "-0.025em"
-    fontVariation: "\"opsz\" 120"
+    fontVariation: "\"opsz\" 60"
   headline:
-    fontFamily: "Fraunces, 'Iowan Old Style', 'Apple Garamond', Georgia, serif"
+    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
     fontWeight: 450
     fontSize: "clamp(40px, 5.5vw, 60px)"
     lineHeight: 1.08
     letterSpacing: "-0.022em"
-    fontVariation: "\"opsz\" 120"
+    fontVariation: "\"opsz\" 60"
   title:
-    fontFamily: "Fraunces, 'Iowan Old Style', 'Apple Garamond', Georgia, serif"
+    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
     fontWeight: 450
     fontSize: "28px"
     lineHeight: 1.2
     letterSpacing: "-0.012em"
   body:
-    fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
     fontSize: "16px"
     fontWeight: 400
     lineHeight: 1.6
@@ -97,14 +97,14 @@ components:
 
 **Creative North Star: "The Quiet Practitioner"**
 
-The design communicates expertise by not announcing it. Fraunces at full optical weight does the heavy lifting; color appears rarely enough to carry meaning when it does; layout exists only to get the reader to the text and out of the way once they are there. There are no decorative motifs, no gratuitous shadows, no visual moves made for their own sake. The craft is in what is absent.
+The design communicates expertise by not announcing it. Source Serif 4 at full optical weight does the heavy lifting; color appears rarely enough to carry meaning when it does; layout exists only to get the reader to the text and out of the way once they are there. There are no decorative motifs, no gratuitous shadows, no visual moves made for their own sake. The craft is in what is absent.
 
-The palette is near-monochromatic: warm ash tones, gradated ink, and one quiet forest green that appears at most twice per screen. Three voices handle the full register: Fraunces for ideas, Inter for interface, JetBrains Mono for system metadata. They do not cross-dress. The states visible in the UI (seedling, budding, evergreen; draft, published; brief numbers) are part of the design, not incidental labels.
+The palette is near-monochromatic: warm ash tones, gradated ink, and one quiet forest green that appears at most twice per screen. Three voices handle the full register: Source Serif 4 for ideas, Plus Jakarta Sans for interface, JetBrains Mono for system metadata. They do not cross-dress. The states visible in the UI (seedling, budding, evergreen; draft, published; brief numbers) are part of the design, not incidental labels.
 
 The site also argues by doing. It exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class surfaces. Design decisions on those surfaces are held to the same standard as the typography.
 
 **Key Characteristics:**
-- Typography-led: Fraunces at optical scale is the primary design element on every long-form page
+- Typography-led: Source Serif 4 at optical scale is the primary design element on every long-form page
 - Near-monochromatic: forest green is the only saturated color; it appears sparingly
 - Three-register type system: display serif (ideas), UI sans (interface), system mono (metadata)
 - Flat by default: depth via tonal layering (warm-ash over ash-paper), not shadow
@@ -133,26 +133,28 @@ A near-monochromatic warm-neutral field with one saturated accent. The field doe
 
 ## 3. Typography
 
-**Display Font:** Fraunces (variable: opsz 9–144, wght 300–600, SOFT axis 0–100) with Iowan Old Style, Apple Garamond, Georgia as fallbacks.
-**Body/UI Font:** Inter with system-ui fallback stack.
+**Display Font:** Source Serif 4 (variable: opsz 8-60, wght 200-900) with Iowan Old Style and Georgia as fallbacks.
+**Body/UI Font:** Plus Jakarta Sans (variable: wght 200-800) with system-ui fallback stack.
 **Mono Font:** JetBrains Mono with ui-monospace fallback stack.
 
-**Character:** Fraunces is the editorial voice: optically sized, weightlessly elegant at headline scale, readable as body on long-form writing pages. Inter is the functional voice: neutral, precise, never decorative. JetBrains Mono is the system voice: present only when the interface is speaking about itself (timestamps, labels, code, section markers).
+**Character:** Source Serif 4 is the editorial voice: optically sized, weightlessly elegant at headline scale, readable as body on long-form writing pages. Plus Jakarta Sans is the functional voice: neutral, precise, never decorative. JetBrains Mono is the system voice: present only when the interface is speaking about itself (timestamps, labels, code, section markers).
 
 ### Hierarchy
 
-- **Hero** (wght 350, clamp(44px, 6.8vw, 78px), opsz 120, SOFT 50, lh 1.02): Fraunces. Home page headline, maximum one per page. The SOFT axis rounds the serifs at this size; always set it.
-- **Display / h1** (wght 400, clamp(40px, 5.5vw, 60px), opsz 120–144, lh 1.05–1.08, ls -0.022–0.025em): Fraunces. Essay and brief page titles. opsz should match render size; 120 for brief titles, 144 for essay titles at largest.
-- **Title / h2** (wght 450, 28–30px, lh 1.2, ls -0.012–0.015em): Fraunces. Section headings within long-form pages. Section labels above use the eyebrow style, not this.
-- **Subhead / h3** (wght 450, 22–25px, lh 1.2, ls -0.012em): Fraunces. Essay subheadings, listing item titles.
-- **Body** (wght 400, 16–16.5px Inter, lh 1.6–1.65, max 64–75ch): UI and short-form reading. Essay body uses Fraunces at 18.5px with opsz 14 for the optical texture of long-form reading.
-- **Lede** (wght 400, 18–19px Inter, lh 1.5–1.55): Introduction paragraphs and subheadline decks. Also expressed in Fraunces italic at 22px for essay decks.
+- **Hero** (wght 350, clamp(44px, 6.8vw, 78px), opsz 60, lh 1.02): Source Serif 4. Home page headline, maximum one per page. opsz 60 is the axis ceiling, so display sizes above it all resolve to the same optical cut.
+- **Display / h1** (wght 400, clamp(40px, 5.5vw, 60px), opsz 60, lh 1.05-1.08, ls -0.022--0.025em): Source Serif 4. Essay and brief page titles. opsz should match render size wherever the size is 60px or below; above that it pins to 60.
+- **Title / h2** (wght 450, 28–30px, lh 1.2, ls -0.012–0.015em): Source Serif 4. Section headings within long-form pages. Section labels above use the eyebrow style, not this.
+- **Subhead / h3** (wght 450, 22–25px, lh 1.2, ls -0.012em): Source Serif 4. Essay subheadings, listing item titles.
+- **Body** (wght 200, 16-16.5px Plus Jakarta Sans, lh 1.6-1.65, max 64-75ch): UI and short-form reading. The base weight is deliberately light; components that need to hold their own against it (nav, meta, badges, buttons) set 500 or 600 explicitly. Essay body uses Source Serif 4 at 18.5px with opsz 14 for the optical texture of long-form reading.
+- **Lede** (wght 400, 18–19px Plus Jakarta Sans, lh 1.5–1.55): Introduction paragraphs and subheadline decks. Also expressed in Source Serif 4 italic at 22px for essay decks.
 - **Eyebrow / Label** (wght 500–600, 11px JetBrains Mono, uppercase, ls 0.06em): Section markers (§ 01 — CONTEXT), timestamps, content-state badges, all metadata. Always mono. Always uppercase.
-- **Meta** (wght 500, 12px Inter, ls 0.03–0.05em): Navigation, captions, UI chrome.
+- **Meta** (wght 500, 12px Plus Jakarta Sans, ls 0.03–0.05em): Navigation, captions, UI chrome.
 
-**The Optical Sizing Rule.** Fraunces must always carry a `font-variation-settings` value that includes `"opsz"` tuned to its render size. Hero text at opsz 120 reads differently from the same weight at opsz 14. A Fraunces element without explicit opsz is a mistake, not a default.
+**The Optical Sizing Rule.** Source Serif 4 must always carry a `font-variation-settings` value that includes `"opsz"` tuned to its render size. Display text at opsz 60 reads differently from the same weight at opsz 14. A display element without explicit opsz is a mistake, not a default.
 
-**The Three Voices Rule.** Fraunces speaks for ideas. Inter speaks for interface. JetBrains Mono speaks for the system. A section label is always mono; a headline is always Fraunces; a button label is always Inter. They cross only when register demands it (essay body text is Fraunces; essay metadata is mono). Do not mix within a single semantic role.
+The axis runs 8 to 60, narrower than the 9 to 144 the system was originally built on, so every value above 60 pins to the ceiling. Do not write a number larger than 60; it is silently clamped and reads as an error to whoever edits it next.
+
+**The Three Voices Rule.** Source Serif 4 speaks for ideas. Plus Jakarta Sans speaks for interface. JetBrains Mono speaks for the system. A section label is always mono; a headline is always Source Serif 4; a button label is always Plus Jakarta Sans. They cross only when register demands it (essay body text is Source Serif 4; essay metadata is mono). Do not mix within a single semantic role.
 
 ## 4. Elevation
 
@@ -169,23 +171,23 @@ The system is flat by default. Depth is communicated through tonal layering (war
 
 ### Navigation
 
-The site mark (logo) is a small circle glyph (28px, 1px forest accent border) alongside a Fraunces weight-500 wordmark. Nav items are Inter 13px weight-500, displayed as pill-shaped items (99px radius) with transparent backgrounds at rest. On hover: accent text color, warm-ash background. On active: quiet-forest text, forest-mist background. The nav is low-contrast by design; it recedes behind the content it serves.
+The site mark (logo) is a small circle glyph (28px, 1px forest accent border) alongside a Source Serif 4 weight-500 wordmark. Nav items are Plus Jakarta Sans 13px weight-500, displayed as pill-shaped items (99px radius) with transparent backgrounds at rest. On hover: accent text color, warm-ash background. On active: quiet-forest text, forest-mist background. The nav is low-contrast by design; it recedes behind the content it serves.
 
 ### Essay / Brief list items
 
-Row layout: a 60px-wide column for a timestamp or number stamp (mono, 10px, uppercase), a flex content column for the title and dek, and a trailing metadata column. Title: Fraunces 25px wght 450 ls -0.012em. Dek: Inter 15px ink-soft max 64ch. Hover state: warm-ash background on the row with a slight negative margin bleed to the container edge (not a card; the hover is the card).
+Row layout: a 60px-wide column for a timestamp or number stamp (mono, 10px, uppercase), a flex content column for the title and dek, and a trailing metadata column. Title: Source Serif 4 25px wght 450 ls -0.012em. Dek: Plus Jakarta Sans 15px ink-soft max 64ch. Hover state: warm-ash background on the row with a slight negative margin bleed to the container edge (not a card; the hover is the card).
 
 ### Note cards
 
-Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Body text: Inter 14.5px lh 1.55. State badge (seedling/budding/evergreen): 10px mono, 1px rule border, 3px 9px padding, 99px radius. Evergreen state uses quiet-forest text and forest-mist background. Hover: border shifts to quiet-forest, `translateY(-2px)`, ambient shadow.
+Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Body text: Plus Jakarta Sans 14.5px lh 1.55. State badge (seedling/budding/evergreen): 10px mono, 1px rule border, 3px 9px padding, 99px radius. Evergreen state uses quiet-forest text and forest-mist background. Hover: border shifts to quiet-forest, `translateY(-2px)`, ambient shadow.
 
 ### Chat input
 
-Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, forest-mist box-shadow ring (3px). Input: Inter 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background. The probe suggestion buttons (pre-conversation prompts): transparent background, rule border, 4px radius; hover shifts border and text to accent, adds translateY(-1px).
+Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, forest-mist box-shadow ring (3px). Input: Plus Jakarta Sans 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background. The probe suggestion buttons (pre-conversation prompts): transparent background, rule border, 4px radius; hover shifts border and text to accent, adds translateY(-1px).
 
 ### Brief bar
 
-Four-column metadata grid. Each cell: an 11px mono uppercase label in receding-ink, and a 16px Fraunces wght-450 value. The pillar cell uses quiet-forest for the value text. The grid collapses to two columns below 720px.
+Four-column metadata grid. Each cell: an 11px mono uppercase label in receding-ink, and a 16px Source Serif 4 wght-450 value. The pillar cell uses quiet-forest for the value text. The grid collapses to two columns below 720px.
 
 ### Endpoint cards (agent page)
 
@@ -193,7 +195,7 @@ Border: 1px ash-rule. Radius: 4px. Top accent bar: `::before` pseudo-element, 2p
 
 ### Buttons
 
-- **Primary** (send, submit): quiet-forest background, ash-paper text, 3–4px radius, Inter 13px wght 500. Hover: deep-ink background.
+- **Primary** (send, submit): quiet-forest background, ash-paper text, 3–4px radius, Plus Jakarta Sans 13px wght 500. Hover: deep-ink background.
 - **Ghost / secondary**: transparent background, rule border, current text color. Hover: accent border and text, warm-ash background, translateY(-1px).
 
 ### Library shelf overlay (`/library`)
@@ -207,7 +209,7 @@ The shelf is its own surface: a full-bleed document with no masthead or footer, 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** set `font-variation-settings: "opsz"` on every Fraunces element, tuned to the rendered size (hero: 120, essay body: 14, brief headline: 120, display: 144).
+- **Do** set `font-variation-settings: "opsz"` on every Source Serif 4 element, tuned to the rendered size and never above 60 (hero: 60, essay body: 14, brief headline: 60, display: 60).
 - **Do** use warm-ash as the alternative surface for all card, sidebar, and inset contexts rather than introducing new background colors.
 - **Do** treat the system state labels (seedling/budding/evergreen, brief numbers, the Now page) as design elements — they should be visible and styled, not hidden or minimized.
 - **Do** keep quiet-forest to one prominent use per viewport. Its rarity is the signal.
@@ -223,7 +225,7 @@ The shelf is its own surface: a full-bleed document with no masthead or footer, 
 - **Don't** use SaaS landing page patterns: no gradient hero, no big-number metric with glowing accent, no feature icon-heading-text card grid, no sticky CTA.
 - **Don't** use `border-left` or `border-right` greater than 1px as a colored decorative stripe on cards or list items. The metric-row component uses a 2px left border as a data affordance, not decoration; don't generalize it.
 - **Don't** animate layout properties (width, height, padding, margin). Animate only transform and opacity.
-- **Don't** render Fraunces without an opsz value. A missing opsz is not a neutral default; it renders at opsz 14 regardless of size, which is visibly wrong at display scale.
+- **Don't** render Source Serif 4 without an opsz value. A missing opsz is not a neutral default; it renders at opsz 14 regardless of size, which is visibly wrong at display scale.
 - **Don't** place accent color on more than one element simultaneously in the same viewport. If the nav is active-forest AND a link is forest AND a label is forest, one of those uses is wrong.
 
 ## 7. Responsive Behavior
@@ -246,9 +248,9 @@ Items opened up close are framed by height and then pushed back if the frame is 
 Pre-written single-sentence constraints encoding the highest-stakes rules. Use these verbatim when generating or reviewing UI for this site:
 
 - "Use Quiet Forest (`#2d5d4f`) on at most one element per viewport — its rarity is the signal."
-- "Every Fraunces element must carry `font-variation-settings: 'opsz' <n>` where n matches the render size. A Fraunces element without explicit opsz is a visual mistake."
+- "Every Source Serif 4 element must carry `font-variation-settings: 'opsz' <n>` where n matches the render size, capped at 60. A display element without explicit opsz is a visual mistake."
 - "Depth is tonal (warm-ash `#e6e8e4` over ash-paper `#f1f2f0`), not shadowed. A surface at rest has no box-shadow."
-- "JetBrains Mono for timestamps, section labels, badges, and code. Fraunces for ideas. Inter for interface. They do not cross roles."
+- "JetBrains Mono for timestamps, section labels, badges, and code. Source Serif 4 for ideas. Plus Jakarta Sans for interface. They do not cross roles."
 - "Hover states use `translateY(-2px)` and a border-color shift to `#2d5d4f`. Shadows appear only at hover or focus, never at rest."
 - "No pure white (#ffffff) backgrounds. No pure black text. No gradient fills. No glassmorphism."
 - "This is not a portfolio: no headshot hero, no tech-stack badge grid, no three-up feature card layout, no sticky CTA banner."

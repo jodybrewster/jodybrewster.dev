@@ -12,11 +12,11 @@
     --accent-soft:#cfdcd6;
 
     /* type system */
-    --display:    "Fraunces", "Iowan Old Style", "Apple Garamond", Georgia, serif;
-    --sans:       "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --display:    "Source Serif 4", "Iowan Old Style", Georgia, serif;
+    --sans:       "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono:       "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-    /* type scale — sans/UI ramp (Inter) */
+    /* type scale - sans/UI ramp (Plus Jakarta Sans) */
     --t-micro:    10px;   /* mono, smallest stamp */
     --t-eyebrow:  11px;   /* mono, all-caps labels */
     --t-meta:     12px;   /* sans, ui chrome */
@@ -28,7 +28,7 @@
     --t-body-lg:  16.5px; /* sans, long-form prose */
     --t-lede:     19px;   /* sans, intro paragraphs */
 
-    /* type scale — display ramp (Fraunces) */
+    /* type scale - display ramp (Source Serif 4, opsz 8-60) */
     --t-h4:       19px;
     --t-h3:       22px;
     --t-h3-lg:    25px;   /* essay list titles */
@@ -90,13 +90,14 @@
     margin: 0;
     font-family: var(--sans);
     font-size: var(--t-body);
+    font-weight: 200;
     line-height: var(--lh-body);
     color: var(--ink);
     background: var(--paper);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     font-kerning: normal;
-    font-feature-settings: "ss01", "cv11";  /* Inter character variants; Fraunces/Mono ignore unknown features */
+    font-feature-settings: "ss01", "cv11";  /* character variants; faces without these features ignore them */
   }
 
   /* paper grain */
@@ -188,7 +189,7 @@
   .page-header h1 {
     font-family: var(--display);
     font-weight: 400;
-    font-variation-settings: "opsz" 120, "SOFT" 40;
+    font-variation-settings: "opsz" 60;
     font-size: var(--t-page-title);
     line-height: 1.04;
     letter-spacing: -0.025em;
@@ -278,7 +279,7 @@
   .hero h1 {
     font-family: var(--display);
     font-weight: 350;
-    font-variation-settings: "opsz" 120, "SOFT" 50;
+    font-variation-settings: "opsz" 60;
     font-size: var(--t-hero);
     line-height: 1.02;
     letter-spacing: var(--ls-hero);
@@ -289,7 +290,7 @@
   .hero h1 em {
     font-style: italic;
     font-family: var(--display);
-    font-variation-settings: "opsz" 120, "SOFT" 50;
+    font-variation-settings: "opsz" 60;
     color: var(--accent);
     font-weight: 350;
   }
@@ -337,7 +338,7 @@
   .section-h h2 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 36, "SOFT" 20;
+    font-variation-settings: "opsz" 36;
     font-size: 26px;
     letter-spacing: var(--ls-h3);
     margin: 0;
@@ -383,7 +384,7 @@
   .essay-list .body h3 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 36, "SOFT" 20;
+    font-variation-settings: "opsz" 36;
     font-size: var(--t-h3-lg);
     line-height: 1.2;
     letter-spacing: var(--ls-h3);
@@ -489,7 +490,7 @@
   .now-panel h4 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 30, "SOFT" 20;
+    font-variation-settings: "opsz" 30;
     font-size: var(--t-h3);
     margin: 0 0 18px;
     letter-spacing: var(--ls-h3);
@@ -555,7 +556,7 @@
   .essay-shell h1 {
     font-family: var(--display);
     font-weight: 400;
-    font-variation-settings: "opsz" 144, "SOFT" 40;
+    font-variation-settings: "opsz" 60;
     font-size: var(--t-h1);
     line-height: 1.05;
     letter-spacing: var(--ls-h1-lg);
@@ -565,12 +566,12 @@
     font-style: italic;
     color: var(--accent);
     font-family: var(--display);
-    font-variation-settings: "opsz" 144, "SOFT" 40;
+    font-variation-settings: "opsz" 60;
     font-weight: 400;
   }
   .essay-shell .dek {
     font-family: var(--display);
-    font-variation-settings: "opsz" 24, "SOFT" 20;
+    font-variation-settings: "opsz" 24;
     font-size: var(--t-h3);
     line-height: 1.4;
     color: var(--ink-soft);
@@ -588,7 +589,7 @@
   .essay-body > p:first-of-type::first-letter {
     font-family: var(--display);
     font-weight: 400;
-    font-variation-settings: "opsz" 120, "SOFT" 50;
+    font-variation-settings: "opsz" 60;
     font-size: 72px;
     float: left;
     line-height: 0.85;
@@ -601,7 +602,7 @@
     padding: 4px 0 4px 26px;
     border-left: 2px solid var(--accent);
     font-family: var(--display);
-    font-variation-settings: "opsz" 24, "SOFT" 20;
+    font-variation-settings: "opsz" 24;
     font-style: italic;
     font-size: var(--t-h3);
     line-height: 1.4;
@@ -611,7 +612,7 @@
   .essay-body h2 {
     font-family: var(--display);
     font-weight: 500;
-    font-variation-settings: "opsz" 40, "SOFT" 20;
+    font-variation-settings: "opsz" 40;
     font-size: var(--t-h2);
     letter-spacing: var(--ls-h3);
     margin: 56px 0 18px;
@@ -795,7 +796,7 @@
   .brief-head h1 {
     font-family: var(--display);
     font-weight: 400;
-    font-variation-settings: "opsz" 120, "SOFT" 30;
+    font-variation-settings: "opsz" 60;
     font-size: var(--t-h1-sm);
     line-height: 1.08;
     letter-spacing: var(--ls-h1);
@@ -854,7 +855,7 @@
   .brief-section h2 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 48, "SOFT" 20;
+    font-variation-settings: "opsz" 48;
     font-size: var(--t-h2-lg);
     letter-spacing: var(--ls-h2);
     margin: 0 0 20px;
@@ -885,7 +886,7 @@
   .brief-shell > h3 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 48, "SOFT" 20;
+    font-variation-settings: "opsz" 48;
     font-size: var(--t-h2-lg);
     letter-spacing: var(--ls-h2);
     margin: 0 0 20px;
@@ -929,7 +930,7 @@
   .brief-shell > table td strong {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 24, "SOFT" 20;
+    font-variation-settings: "opsz" 24;
     font-size: 20px;
     letter-spacing: var(--ls-h2);
     color: var(--ink);
@@ -984,7 +985,7 @@
   .metric .n {
     font-family: var(--display);
     font-weight: 400;
-    font-variation-settings: "opsz" 60, "SOFT" 20;
+    font-variation-settings: "opsz" 60;
     font-size: var(--t-display);
     letter-spacing: var(--ls-display);
     color: var(--ink);
@@ -1064,7 +1065,7 @@
   .endpoint-card h3 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 30, "SOFT" 20;
+    font-variation-settings: "opsz" 30;
     font-size: var(--t-h3);
     margin: 0 0 8px;
     letter-spacing: var(--ls-h3);
@@ -1181,7 +1182,7 @@
   .principle-list .pp h4 {
     font-family: var(--display);
     font-weight: 450;
-    font-variation-settings: "opsz" 24, "SOFT" 20;
+    font-variation-settings: "opsz" 24;
     font-size: var(--t-h4);
     margin: 0 0 6px;
     letter-spacing: var(--ls-h3);

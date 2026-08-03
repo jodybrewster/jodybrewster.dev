@@ -83,7 +83,7 @@ function isActive(href: string): boolean {
   .mark-text .name {
     font-family: var(--display);
     font-weight: 500;
-    font-variation-settings: "opsz" 30, "SOFT" 30;
+    font-variation-settings: "opsz" 30;
     font-size: 21px;
     letter-spacing: -0.01em;
     color: var(--ink);
@@ -161,43 +161,39 @@ function isActive(href: string): boolean {
 </style>
 
 <script>
-  const root = document.documentElement;
-  const btn = document.getElementById('theme-toggle');
+  // The theme lives in the inline script in Base.astro. A module here cannot
+  // hold it: this file's script runs once per URL, so after a view transition
+  // its listeners are still pointing at elements the swap threw away.
 
-  function getEffectiveTheme(): 'dark' | 'light' {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-
-  function applyTheme(theme: 'dark' | 'light') {
-    root.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }
-
-  btn?.addEventListener('click', () => {
-    applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  // Which is also why the menu is delegated and looks its elements up fresh
+  // each time. Holding a reference to the button across a swap is holding a
+  // reference to a discarded one.
+  const menuEls = () => ({
+    toggle: document.getElementById('nav-toggle'),
+    panel: document.getElementById('primary-nav'),
   });
-
-  const navToggle = document.getElementById('nav-toggle');
-  const primaryNav = document.getElementById('primary-nav');
 
   function setMenu(open: boolean) {
-    navToggle?.setAttribute('aria-expanded', String(open));
-    primaryNav?.classList.toggle('open', open);
+    const { toggle, panel } = menuEls();
+    toggle?.setAttribute('aria-expanded', String(open));
+    panel?.classList.toggle('open', open);
   }
 
-  navToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    setMenu(navToggle.getAttribute('aria-expanded') !== 'true');
-  });
-
-  // Dismiss on outside tap or Escape.
   document.addEventListener('click', (e) => {
-    if (primaryNav?.classList.contains('open') && !primaryNav.contains(e.target as Node)) {
+    const target = e.target as Element | null;
+
+    if (target?.closest?.('#nav-toggle')) {
+      setMenu(menuEls().toggle?.getAttribute('aria-expanded') !== 'true');
+      return;
+    }
+
+    // Dismiss on outside tap.
+    const { panel } = menuEls();
+    if (panel?.classList.contains('open') && !panel.contains(target as Node)) {
       setMenu(false);
     }
   });
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') setMenu(false);
   });

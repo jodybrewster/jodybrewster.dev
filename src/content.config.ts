@@ -68,4 +68,17 @@ const portfolio = defineCollection({
   }),
 });
 
-export const collections = { writing, notes, work, research, portfolio };
+// Drafts written by the /daily-post skill. They carry no frontmatter, so every
+// field is optional and the display values are derived from the body instead
+// (see src/lib/drafts.ts). Surfaced only by the dev-only /drafts route.
+const drafts = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './posts/drafts' }),
+  schema: z.object({
+    title: z.string().optional(),
+    date: z.coerce.date().optional(),
+    description: z.string().optional(),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { writing, notes, work, research, portfolio, drafts };

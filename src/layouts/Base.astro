@@ -5,6 +5,8 @@ import IconSprite from '../components/IconSprite.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import ChatDock from '../components/ChatDock.astro';
+import Analytics from '../components/Analytics.astro';
+import AnalyticsNoscript from '../components/AnalyticsNoscript.astro';
 import { flags } from '../lib/flags';
 
 interface Props {
@@ -24,13 +26,44 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>{title}</title>
-  <!-- Anti-FOUC: apply stored theme before first paint -->
+  <!--
+    Anti-FOUC: apply the stored theme before first paint. This script owns the
+    theme outright, rather than sharing it with a component, because it is the
+    only place that can: ClientRouter rebuilds <html>'s attributes from the
+    incoming document on every navigation, and the incoming document has no
+    data-theme. Being identical on every page, this script is carried across a
+    swap instead of re-running, so the listeners below survive with it.
+  -->
   <script is:inline>
-    (function() {
-      var stored = localStorage.getItem('theme');
-      if (stored === 'dark' || stored === 'light') {
-        document.documentElement.setAttribute('data-theme', stored);
+    (function () {
+      function apply() {
+        var stored = localStorage.getItem('theme');
+        if (stored === 'dark' || stored === 'light') {
+          document.documentElement.setAttribute('data-theme', stored);
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
       }
+
+      apply();
+
+      // The swap strips data-theme off <html>, which dropped the reader back to
+      // whatever the OS prefers. Put it back the moment the new document is in
+      // place, before it paints.
+      document.addEventListener('astro:after-swap', apply);
+
+      // Delegated: the swap replaces the button and takes any listener bound to
+      // it, which left the toggle dead after the first navigation. The document
+      // outlives every swap.
+      document.addEventListener('click', function (e) {
+        if (!(e.target instanceof Element) || !e.target.closest('#theme-toggle')) return;
+        var stored = localStorage.getItem('theme');
+        var current = stored === 'dark' || stored === 'light'
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        localStorage.setItem('theme', current === 'dark' ? 'light' : 'dark');
+        apply();
+      });
     })();
   </script>
   {description && <meta name="description" content={description} />}
@@ -39,8 +72,8 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Display: Fraunces (editorial serif w/ optical sizing). Body/UI: Inter (workhorse sans). Mono: JetBrains Mono. -->
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..600,30..100;1,9..144,300..600,30..100&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Display: Source Serif 4 (editorial serif w/ optical sizing). Body/UI: Plus Jakarta Sans. Mono: JetBrains Mono. -->
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   {markdownHref && (
     <link rel="alternate" type="text/markdown" href={markdownHref} />
@@ -50,9 +83,12 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   )}
 
+  <Analytics />
+
   <ClientRouter />
 </head>
 <body class={bodyClass}>
+  <AnalyticsNoscript />
   <IconSprite />
   <div class="shell">
     <Nav />

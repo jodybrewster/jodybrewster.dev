@@ -314,6 +314,17 @@ body:has(.library[data-docked]) .library__back {
   overflow: hidden;
 }
 
+/*
+ * Both elements below set display, which beats the hidden attribute's
+ * display:none from the UA sheet. Hiding them in script did nothing, so an
+ * album or a book kept showing whichever notebook excerpt was rendered last.
+ * Attribute plus class outranks the class alone, so no !important is needed.
+ */
+.library__card-excerpt[hidden],
+.library__card-link[hidden] {
+  display: none;
+}
+
 .library__card-link {
   display: inline-flex;
   align-items: center;

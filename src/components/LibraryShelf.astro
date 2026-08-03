@@ -481,15 +481,19 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
       card.hidden = false;
       card.dataset.kind = item.kind;
 
+      // Cleared rather than only hidden: the card is one element reused for
+      // every item, so text left behind is text the next item inherits.
       if (item.kind === 'album') {
         kindEl.textContent = 'Listening';
         creditEl.textContent = item.artist;
         excerptEl.hidden = true;
+        excerptEl.textContent = '';
         linkEl.textContent = 'Open in Spotify';
       } else if (item.kind === 'book') {
         kindEl.textContent = item.edition ? `Library / ${item.edition} edition` : 'Library';
         creditEl.textContent = item.author;
         excerptEl.hidden = true;
+        excerptEl.textContent = '';
         linkEl.textContent = 'View catalog entry';
       } else {
         kindEl.textContent = item.section;

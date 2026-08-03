@@ -195,16 +195,6 @@
       "author": "Ray Dalio"
     },
     {
-      "title": "The Obesity Code",
-      "author": "Jason Fung",
-      "url": "https://openlibrary.org/works/OL20027929W",
-      "cover": "/media/books/book-the-obesity-code.jpg"
-    },
-    {
-      "title": "They Call Me Baba Booey",
-      "author": "Gary Dell'Abate, Chad Millman"
-    },
-    {
       "title": "Life 3.0",
       "author": "Max Tegmark",
       "url": "https://openlibrary.org/works/OL19717530W",
@@ -413,12 +403,6 @@
       "cover": "/media/books/book-atomic-habits.jpg"
     },
     {
-      "title": "Girl, Stop Apologizing",
-      "author": "Rachel Hollis",
-      "url": "https://openlibrary.org/works/OL20155308W",
-      "cover": "/media/books/book-girl-stop-apologizing.jpg"
-    },
-    {
       "title": "The Design of Everyday Things",
       "author": "Don Norman",
       "edition": "revised",
@@ -508,6 +492,58 @@
       "author": "Jocko Willink, Leif Babin",
       "url": "https://openlibrary.org/works/OL20017105W",
       "cover": "/media/books/book-extreme-ownership.jpg"
+    },
+    {
+      "title": "Patterns of Enterprise Application Architecture",
+      "author": "Martin Fowler",
+      "url": "https://openlibrary.org/works/OL463952W",
+      "cover": "/media/books/book-patterns-of-enterprise-application-architecture.jpg"
+    },
+    {
+      "title": "Inspired: How to Create Tech Products Customers Love",
+      "author": "Marty Cagan",
+      "url": "https://openlibrary.org/works/OL16803591W",
+      "cover": "/media/books/book-inspired-how-to-create-tech-products-customers-love.jpg"
+    },
+    {
+      "title": "Don't Make Me Think",
+      "author": "Steve Krug",
+      "url": "https://openlibrary.org/works/OL8578577W",
+      "cover": "/media/books/book-dont-make-me-think.jpg"
+    },
+    {
+      "title": "Designing Interfaces",
+      "author": "Jenifer Tidwell, Charles Brewer, Aynne Valencia",
+      "url": "https://openlibrary.org/works/OL8167456W",
+      "cover": "/media/books/book-designing-interfaces.jpg"
+    },
+    {
+      "title": "Ship It!: A Practical Guide to Successful Software Projects",
+      "author": "Jared Richardson, William Gwaltney",
+      "url": "https://openlibrary.org/works/OL17946013W",
+      "cover": "/media/books/book-ship-it-a-practical-guide-to-successful-software-projects.jpg"
+    },
+    {
+      "title": "97 Things Every Software Architect Should Know",
+      "author": "Richard Monson-Haefel"
+    },
+    {
+      "title": "The Mythical Man-Month",
+      "author": "Frederick P. Brooks Jr.",
+      "url": "https://openlibrary.org/works/OL3510570W",
+      "cover": "/media/books/book-the-mythical-man-month.jpg"
+    },
+    {
+      "title": "The Unicorn Project",
+      "author": "Gene Kim",
+      "url": "https://openlibrary.org/works/OL20716769W",
+      "cover": "/media/books/book-the-unicorn-project.jpg"
+    },
+    {
+      "title": "Release It!: Design and Deploy Production-Ready Software",
+      "author": "Michael T. Nygard",
+      "url": "https://openlibrary.org/works/OL8848832W",
+      "cover": "/media/books/book-release-it-design-and-deploy-production-ready-software.jpg"
     }
   ]
 }

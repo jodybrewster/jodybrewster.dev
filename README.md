@@ -12,7 +12,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 - **Search:** Pagefind (static index, generated post-build)
 - **AI/Chat:** Anthropic Claude API + Upstash Vector (RAG over site content)
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
-- **Analytics:** Google Tag Manager (`GTM-WH8C4NVF`), production builds only. GA4 is configured inside the container, not in this repo
+- **Analytics:** Google Analytics 4 (`G-4DLGJN6CZ5`) loaded directly, production builds only
 
 ## Commands
 

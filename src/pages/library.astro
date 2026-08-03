@@ -9,7 +9,6 @@
  */
 import LibraryShelf from '../components/LibraryShelf.astro';
 import Analytics from '../components/Analytics.astro';
-import AnalyticsNoscript from '../components/AnalyticsNoscript.astro';
 import { buildShelfPayload } from '../lib/shelf/payload';
 import '../styles/global.css';
 import '../styles/shelf.css';
@@ -70,7 +69,6 @@ const jsonLd = {
   </script>
 </head>
 <body class="library-page">
-  <AnalyticsNoscript />
   <a class="library__back" href="/home">
     <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
       <path

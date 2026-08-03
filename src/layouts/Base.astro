@@ -26,13 +26,44 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>{title}</title>
-  <!-- Anti-FOUC: apply stored theme before first paint -->
+  <!--
+    Anti-FOUC: apply the stored theme before first paint. This script owns the
+    theme outright, rather than sharing it with a component, because it is the
+    only place that can: ClientRouter rebuilds <html>'s attributes from the
+    incoming document on every navigation, and the incoming document has no
+    data-theme. Being identical on every page, this script is carried across a
+    swap instead of re-running, so the listeners below survive with it.
+  -->
   <script is:inline>
-    (function() {
-      var stored = localStorage.getItem('theme');
-      if (stored === 'dark' || stored === 'light') {
-        document.documentElement.setAttribute('data-theme', stored);
+    (function () {
+      function apply() {
+        var stored = localStorage.getItem('theme');
+        if (stored === 'dark' || stored === 'light') {
+          document.documentElement.setAttribute('data-theme', stored);
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
       }
+
+      apply();
+
+      // The swap strips data-theme off <html>, which dropped the reader back to
+      // whatever the OS prefers. Put it back the moment the new document is in
+      // place, before it paints.
+      document.addEventListener('astro:after-swap', apply);
+
+      // Delegated: the swap replaces the button and takes any listener bound to
+      // it, which left the toggle dead after the first navigation. The document
+      // outlives every swap.
+      document.addEventListener('click', function (e) {
+        if (!(e.target instanceof Element) || !e.target.closest('#theme-toggle')) return;
+        var stored = localStorage.getItem('theme');
+        var current = stored === 'dark' || stored === 'light'
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        localStorage.setItem('theme', current === 'dark' ? 'light' : 'dark');
+        apply();
+      });
     })();
   </script>
   {description && <meta name="description" content={description} />}

@@ -2,6 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## What this site is for
+
+Everything here serves one goal: conveying what it is like to work with Jody, and who he is. It is not a portfolio that lists what he has done, and not a blog that happens to carry his name. A reader should come away with a sense of how he thinks, what he notices, and what having him on a team would actually be like.
+
+That goal settles the decisions that would otherwise come down to taste. When a call is genuinely close, take the option that reveals more of the person:
+
+- Specific over general. One real constraint from real work says more than a well-phrased principle.
+- Working over finished. The research notes, the annotated drafts, the numbered briefs, the visible seedling and draft states: these exist because how the work happens is the point, not a byproduct of it.
+- Voice over polish. A page that reads like a person wrote it beats one that reads like a template, even when the template is tidier.
+- Nothing that could sit unchanged on someone else's site.
+
+This is also why the anti-references in `PRODUCT.md` are what they are. The generic portfolio, the SaaS landing page and the AI startup aesthetic all fail the same test: each one would describe anybody.
+
 ## Behavioral Guidelines
 
 **Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask rather than guessing.
@@ -59,6 +72,8 @@ Content lives in two places:
 
 Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
+`/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
+
 The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
@@ -83,7 +98,7 @@ Gotchas: messages go to Telegram with **no `parse_mode`** - under Markdown an un
 
 ### The /library shelf
 
-A Three.js shelving unit at `/library`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
+A Three.js shelving unit at `/library`, built from `content/library.json` (92 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
 
 - `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
@@ -109,7 +124,7 @@ Gotchas: book covers load only when a book is opened (89 jackets at once is too 
 
 `index.html` is a **living prototype** for the full Astro build, not a throwaway file. Design tokens are extracted from it into `src/styles/global.css` (marked with `/* Extracted from prototype index.html — do not manually edit design tokens */`). When updating the visual design, update `index.html` first and re-extract to `global.css`.
 
-Fonts: **Fraunces** (display/editorial serif), **Inter** (body/UI sans), **JetBrains Mono** (mono). Accent color: `#2d5d4f` (forest green).
+Fonts: **Source Serif 4** (display/editorial serif, opsz 8-60, wght 200-900), **Plus Jakarta Sans** (body/UI sans, wght 200-800, base weight 200), **JetBrains Mono** (mono). Accent color: `#2d5d4f` (forest green).
 
 Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via `remark-wiki-link`.
 
@@ -128,10 +143,25 @@ The chat page and search features use:
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
 
+### Analytics
+
+Google Analytics 4, property `G-4DLGJN6CZ5`, loaded directly rather than through a tag manager.
+A container was tried first and removed: one tag and one person who would ever change it does not justify 100KB and a Google UI standing between the repo and a single measurement ID.
+The id is public by design, so it sits in `src/lib/analytics.ts` rather than the environment; `analyticsEnabled` gates it on `import.meta.env.PROD`, so the dev server never reports traffic.
+`Analytics.astro` goes in the head of each of the two HTML documents - `Base.astro` and `library.astro` - since the shelf does not use the shared layout.
+
+Page views are sent by hand. `Base.astro` uses `<ClientRouter />`, so every navigation after the first is a soft one and gtag's automatic page view would fire once per session rather than once per page.
+`send_page_view: false` turns that off; one call covers the landing page and an `astro:after-swap` listener covers the rest, reading title and URL after the swap rather than before.
+
+Two settings outside this repo can break the count, both in the GA4 data stream.
+**"Page changes based on browser history events"** must stay off under Enhanced measurement: the site navigates with `pushState`, so leaving it on double-counts every navigation, and it also counts the sentinel history entry `/library` pushes on load.
+Enhanced measurement's other toggles are harmless.
+
 ## Common Pitfalls
 
 - Design tokens live in `global.css` but are **extracted from `index.html`** — update the prototype first, then re-extract. Never manually edit the `/* Extracted from prototype */` block in `global.css`.
-- Fraunces must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size — visually wrong at display scale.
+- Source Serif 4 must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size, which is visually wrong at display scale.
+- The opsz axis stops at 60. Values above it are clamped by the browser, so writing `"opsz" 120` renders identically to `"opsz" 60` and just misleads the next reader. The ramp was originally built against Fraunces, which went to 144; every value was capped when the face changed.
 - `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.
 - Don't add new npm packages without first checking if the dependency already exists in `package.json`.
 - Don't commit `.env` or any secrets file. Don't push to `main` without confirming with the user.

@@ -8,10 +8,11 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 
 - **Framework:** Astro 5 (SSR via `@astrojs/vercel`)
 - **Content:** Markdown files synced from an Obsidian vault
-- **Fonts:** Fraunces (display), Inter (body), JetBrains Mono (mono)
+- **Fonts:** Source Serif 4 (display), Plus Jakarta Sans (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
 - **AI/Chat:** Verso, the site's chat. Anthropic Claude API + Upstash Vector (RAG over site content), with an optional human handoff: when Jody is present, a question reaches him on Telegram and his reply goes back on the same stream. Verso asks a first-time visitor their name so he knows who he is answering; it is stored in the visitor's browser, sent to Telegram, and never shown to the model. See `CLAUDE.md` for how the race between the two answers is settled.
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
+- **Analytics:** Google Analytics 4 (`G-4DLGJN6CZ5`) loaded directly, production builds only
 
 ## Commands
 

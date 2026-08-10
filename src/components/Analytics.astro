@@ -1,0 +1,46 @@
+---
+/**
+ * The GA4 tag, for the head of every document.
+ *
+ * Page views are sent by hand. Base.astro uses <ClientRouter />, so every
+ * navigation after the first is a soft one, and gtag's automatic page view
+ * would fire once per session rather than once per page. `send_page_view:
+ * false` turns that off; the call below covers the landing page and the
+ * astro:after-swap listener covers every navigation after it, reading the title
+ * and URL once the new document is in place rather than before.
+ *
+ * The script is identical on every page, so the router carries it across a swap
+ * instead of re-running it, and the listener survives with it. The guard makes
+ * the count right either way: if the swap ever did re-execute this, the initial
+ * send is skipped and after-swap still fires exactly once.
+ *
+ * GA4's own "page changes based on browser history events" setting must stay
+ * off in the data stream, or it counts these navigations a second time - and
+ * counts the sentinel history entry the shelf pushes on load as a page view.
+ */
+import { GA_ID, analyticsEnabled } from '../lib/analytics';
+---
+{analyticsEnabled && (
+  <>
+    <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+    <script define:vars={{ GA_ID }}>
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+
+      function sendPageView() {
+        window.gtag('event', 'page_view', {
+          page_title: document.title,
+          page_location: location.href,
+        });
+      }
+
+      if (!window.__gaBooted) {
+        window.__gaBooted = true;
+        window.gtag('js', new Date());
+        window.gtag('config', GA_ID, { send_page_view: false });
+        document.addEventListener('astro:after-swap', sendPageView);
+        sendPageView();
+      }
+    </script>
+  </>
+)}

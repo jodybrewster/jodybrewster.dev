@@ -1,0 +1,119 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import EssayCard from '../../components/EssayCard.astro';
+import {
+  draftTitle,
+  draftDescription,
+  draftDate,
+  draftReadTime,
+  draftTakeCount,
+  formatDraftDate,
+} from '../../lib/drafts';
+
+// One rest-param route covers both /drafts and /drafts/<slug> on purpose. A
+// plain index.astro would still emit an HTML file in a static build, which is
+// how an unreviewed draft ends up publicly readable. Returning no paths at all
+// in production means nothing is written to dist/ and both URLs 404 at the CDN.
+export async function getStaticPaths() {
+  if (!import.meta.env.DEV) return [];
+  const entries = await getCollection('drafts');
+  return [
+    { params: { slug: undefined } },
+    ...entries.map(entry => ({ params: { slug: entry.id } })),
+  ];
+}
+
+const { slug } = Astro.params;
+const entry = slug ? await getEntry('drafts', slug) : undefined;
+const rendered = entry ? await render(entry) : null;
+const Content = rendered?.Content;
+
+const all = (await getCollection('drafts'))
+  .map(d => ({
+    id: d.id,
+    body: d.body ?? '',
+    title: d.data.title ?? draftTitle(d.body ?? '', d.id),
+    date: d.data.date ?? draftDate(d.id),
+  }))
+  .sort((a, b) => b.date.valueOf() - a.date.valueOf());
+
+const takes = entry ? draftTakeCount(entry.body ?? '') : 0;
+const pageTitle = entry
+  ? `${entry.data.title ?? draftTitle(entry.body ?? '', entry.id)} — draft`
+  : 'Drafts — local only';
+---
+<Base title={pageTitle} description="Unpublished drafts, visible only on the dev server.">
+  <main class="page active" style="padding: 72px 0 100px;">
+    {entry && Content ? (
+      <article class="essay-shell">
+        <a href="/drafts" class="back">
+          <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to drafts
+        </a>
+
+        <p class="draft-flag">
+          Draft &middot; not published &middot; {takes} {takes === 1 ? 'take' : 'takes'} pending
+        </p>
+
+        <div class="essay-meta">
+          <span><svg class="icon sm"><use href="#i-calendar"/></svg> {formatDraftDate(entry.data.date ?? draftDate(entry.id))}</span>
+          <span><svg class="icon sm"><use href="#i-clock"/></svg> {draftReadTime(entry.body ?? '')}</span>
+        </div>
+
+        <div class="essay-body">
+          <Content />
+        </div>
+
+        <div class="essay-footer">
+          <span>posts/drafts/{entry.id}.md</span>
+          <a href="/drafts">
+            <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to drafts
+          </a>
+        </div>
+      </article>
+    ) : (
+      <Fragment>
+        <PageHeader
+          icon="i-book"
+          eyebrow={`${all.length} ${all.length === 1 ? 'draft' : 'drafts'}`}
+          title="Drafts"
+          description="Written by the daily-post skill, waiting on annotations. This page exists only on the dev server."
+        />
+
+        <ul class="essay-list">
+          {all.map((d, i) => (
+            <EssayCard
+              basePath="/drafts"
+              title={d.title}
+              date={formatDraftDate(d.date)}
+              description={draftDescription(d.body)}
+              tags={[`${draftTakeCount(d.body)} pending`]}
+              slug={d.id}
+              index={`№ ${String(all.length - i).padStart(3, '0')}`}
+              readTime={draftReadTime(d.body)}
+            />
+          ))}
+        </ul>
+      </Fragment>
+    )}
+  </main>
+</Base>
+
+<style>
+  /* The interface speaking about itself, so: mono, faint, no accent. The one
+     accent moment on this page belongs to the back link. */
+  .draft-flag {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--paper-warm);
+    border: 1px solid var(--rule);
+    border-radius: 99px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin: 0 0 18px;
+  }
+</style>

@@ -447,6 +447,25 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
         }, 500);
       }
 
+      // Back opens the site notebook instead of leaving. The shelf is the front
+      // door and the site is read through the book, so the way back out of the
+      // shelf is into the notebook - the same move as clicking it, down to the
+      // dispatch. One sentinel entry is pushed for the gesture to consume, and
+      // it is deliberately not replaced afterwards: a second Back leaves, rather
+      // than penning the reader in on a page whose back button never works.
+      //
+      // While docked the gesture belongs to the page inside the notebook, which
+      // has a history of its own.
+      const wiring = window as unknown as { __shelfBackWired?: boolean };
+      if (!wiring.__shelfBackWired) {
+        wiring.__shelfBackWired = true;
+        history.pushState({ shelfBack: true }, '');
+        window.addEventListener('popstate', () => {
+          if (docked) return;
+          store.dispatch({ type: 'activate', id: siteId });
+        });
+      }
+
     }
 
     if (import.meta.env.DEV) {
@@ -481,15 +500,19 @@ function credit(item: ShelfAlbum | ShelfBook | ShelfNotebook): string {
       card.hidden = false;
       card.dataset.kind = item.kind;
 
+      // Cleared rather than only hidden: the card is one element reused for
+      // every item, so text left behind is text the next item inherits.
       if (item.kind === 'album') {
         kindEl.textContent = 'Listening';
         creditEl.textContent = item.artist;
         excerptEl.hidden = true;
+        excerptEl.textContent = '';
         linkEl.textContent = 'Open in Spotify';
       } else if (item.kind === 'book') {
         kindEl.textContent = item.edition ? `Library / ${item.edition} edition` : 'Library';
         creditEl.textContent = item.author;
         excerptEl.hidden = true;
+        excerptEl.textContent = '';
         linkEl.textContent = 'View catalog entry';
       } else {
         kindEl.textContent = item.section;

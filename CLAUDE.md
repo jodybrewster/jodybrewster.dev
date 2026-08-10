@@ -63,6 +63,20 @@ The site opens on `/home`; the root redirects there (`redirects` in `astro.confi
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
 
+### Verso (the chat)
+
+The chat persona is named Verso and it has two authors. Most of the time `/api/chat` answers from the corpus. When the operator is present, the visitor's question is pushed to Telegram and **the same request holds its SSE response open**, polling Redis for a human reply. Vercel has no background jobs, so the wait has to be the request itself; `maxDuration: 90` in `astro.config.mjs` covers the 40s window plus a model stream after it, and it is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
+
+The visitor is never told which author answered. That is deliberate, and three things hold it together:
+
+1. **The claim key is the whole concurrency design.** `SET chat:msg:<mid>:claim <who> NX EX 3600` is the only arbiter of the race. The webhook claims `human` when a reply lands; the route claims `llm` at the deadline; the loser reads what the winner wrote. No locks, no doubled answers, no lost ones.
+2. **A human reply is word-chunked and paced** (`chunkForTyping` / `typingDelayMs` in `src/lib/verso.ts`) so it types out like the model. A verbatim reply landing as one instant block next to a model reply that types for eight seconds is the tell.
+3. **Copy must stay true on both paths.** Nothing user-facing may claim answers come only from the corpus, because that is false whenever Jody is typing. The ask-bar placeholder is the one deliberate exception, chosen by him.
+
+Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly, typing cadence). `src/lib/handoff.ts` is the Redis state layer under a `chat:` namespace, distinct from the `rl:chat:*` prefix that `@upstash/ratelimit` owns. `src/lib/telegram.ts` is the Bot API client plus pure formatters. The two routes are deliberately thin so the decisions stay unit-testable.
+
+Gotchas: messages go to Telegram with **no `parse_mode`** - under Markdown an unbalanced `*` in a visitor's question makes Telegram 400 and the question vanishes silently. Conversation history is read server-side from Redis and never accepted from the client, or a caller could fabricate assistant turns into the prompt. An *unreachable* Redis is not the same as an absent one: a deleted database throws a DNS error out of the rate limiter, which is why those calls are wrapped and answer 503 in production rather than a bare 500. If two visitors are waiting, a bare Telegram message (not a reply) falls back to the newest open question and can misdeliver.
+
 ### The /library shelf
 
 A Three.js shelving unit at `/library`, built from `content/library.json` (89 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.

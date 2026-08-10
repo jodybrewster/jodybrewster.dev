@@ -4,3 +4,5 @@ dist/
 node_modules/
 .vercel
 .astro/data-store.json
+.env.local
+.env.*.local

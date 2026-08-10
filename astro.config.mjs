@@ -19,7 +19,12 @@ const wikiLinkPlugin = [remarkWikiLink, {
 export default defineConfig({
   site: SITE,
   output: 'static',
-  adapter: vercel(),
+  // The chat holds its response open while a question waits on a human reply
+  // (see src/lib/handoff.ts), so the function needs room for the handoff window
+  // plus a model stream after it. This is a ceiling, not a reservation, and it
+  // applies to every on-demand route because the adapter emits a single
+  // function - Astro has no per-route maxDuration.
+  adapter: vercel({ maxDuration: 90 }),
   // The site opens on the home page. It is served from /home rather than the
   // root, so the root sends you there; the Vercel adapter turns this into a
   // real redirect at the edge, and it still resolves under `astro dev`.

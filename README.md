@@ -64,6 +64,6 @@ ANTHROPIC_API_KEY=     # Claude API — chat interface
 VOYAGE_API_KEY=        # Embeddings for RAG
 UPSTASH_VECTOR_*=      # Vector store
 UPSTASH_REDIS_*=       # Rate limiting / caching
-PUSHOVER_*=            # Push notifications on chat use
+TELEGRAM_*=            # Verso handoff: bot token, owner id, webhook secret
 PREVIEW_PASSWORD=      # Basic auth gate (remove for public launch)
 ```

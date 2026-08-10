@@ -183,6 +183,18 @@ Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Bod
 
 Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, forest-mist box-shadow ring (3px). Input: Inter 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background. The probe suggestion buttons (pre-conversation prompts): transparent background, rule border, 4px radius; hover shifts border and text to accent, adds translateY(-1px).
 
+### Thinking indicator
+
+Three 5px dots (99px radius, 4px gaps) sitting where the first line of the answer will be, replaced by the text the moment it starts arriving. They fade between 0.22 and full opacity on a 1200ms loop, staggered 160ms apart so the pulse travels left to right. Opacity is the only property animated; nothing about the dots moves or resizes, so the line the answer lands on never shifts.
+
+The 1200ms sits outside the 150/250/400ms scale on purpose. That scale governs state transitions, a thing becoming another thing, and is tuned to be over before the eye follows it. This is an ambient loop that has to hold attention for as long as the wait lasts, which can be the better part of a minute, and at 400ms it would read as agitated.
+
+The dots are receding-ink, not quiet-forest. The One Note Rule allows the accent one element per viewport and the chat dock has already spent it; a pulsing accent would also be the most insistent thing on screen while the interface is doing nothing visible.
+
+Past twelve seconds a `still thinking` caption appears beside the dots: 11px mono, uppercase, receding-ink, per the Three Voices Rule: the interface reporting on its own state is the system speaking, not the assistant.
+
+Under `prefers-reduced-motion: reduce` the animation is dropped and the dots hold at 0.5 opacity. The waiting state stays legible; it just stops moving.
+
 ### Brief bar
 
 Four-column metadata grid. Each cell: an 11px mono uppercase label in receding-ink, and a 16px Fraunces wght-450 value. The pillar cell uses quiet-forest for the value text. The grid collapses to two columns below 720px.

@@ -4,6 +4,6 @@
  * nav links, pages, docks, API routes, and prose mentions.
  */
 export const flags = {
-  /** The chat feature: /chat page, site-wide ask bar, /api/chat, nav link. */
-  chat: false,
+  /** Verso: /chat page, site-wide ask bar, /api/chat, /api/telegram, nav link. */
+  chat: true,
 } as const;

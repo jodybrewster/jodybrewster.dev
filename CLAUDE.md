@@ -106,7 +106,7 @@ The chat page and search features use:
 - `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
 - `UPSTASH_VECTOR_*` — vector store for semantic search over content
 - `UPSTASH_REDIS_*` — caching/rate limiting
-- `PUSHOVER_*` — push notifications when someone uses the chat
+- `TELEGRAM_*` — the Verso handoff: bot token, owner id, webhook secret. Questions arrive on Jody's phone; his reply goes back to the visitor as Verso. Without these the chat degrades to model-only.
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
 

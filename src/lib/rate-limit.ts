@@ -1,30 +1,25 @@
-import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { getRedis } from './redis';
 import { env } from './env';
 
-// Per-IP: 3 requests / minute. A real human asking follow-ups will not notice;
-// scripted abuse hits the wall fast.
+// Per-IP: 5 requests / minute. The chat is multi-turn, so a real conversation
+// burns several requests in quick succession; scripted abuse still hits the
+// wall fast.
 let _ipLimiter: Ratelimit | null = null;
 
 // Site-wide: 75 chats / day across everyone. Sized so we run out of our quota
 // before the Anthropic monthly spend cap kicks in, giving users a graceful
 // 429 ("daily limit, try tomorrow") instead of an opaque upstream failure.
+// Only the model path spends this; a question Jody answers himself is free.
 let _globalLimiter: Ratelimit | null = null;
-
-function makeRedis(): Redis | null {
-  const url = env('UPSTASH_REDIS_REST_URL');
-  const token = env('UPSTASH_REDIS_REST_TOKEN');
-  if (!url || !token) return null;
-  return new Redis({ url, token });
-}
 
 export function getIpLimiter(): Ratelimit | null {
   if (_ipLimiter) return _ipLimiter;
-  const redis = makeRedis();
+  const redis = getRedis();
   if (!redis) return null;
   _ipLimiter = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(3, '1 m'),
+    limiter: Ratelimit.slidingWindow(5, '1 m'),
     analytics: false,
     prefix: 'rl:chat:ip',
   });
@@ -33,7 +28,7 @@ export function getIpLimiter(): Ratelimit | null {
 
 export function getGlobalLimiter(): Ratelimit | null {
   if (_globalLimiter) return _globalLimiter;
-  const redis = makeRedis();
+  const redis = getRedis();
   if (!redis) return null;
   _globalLimiter = new Ratelimit({
     redis,

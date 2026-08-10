@@ -675,7 +675,6 @@
   }
   .input-row:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
   }
   .input-row .input-icon {
     display: flex; align-items: center; padding: 0 4px 0 16px;

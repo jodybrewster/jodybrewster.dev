@@ -1,17 +1,13 @@
 {
-  "updated": "2026-07-30",
+  "updated": "2026-08-10",
   "artists": [
     {
-      "name": "Beach House",
-      "url": "https://open.spotify.com/artist/56ZTgzPBDge0OvCGgMO3OY"
+      "name": "The Avalanches",
+      "url": "https://open.spotify.com/artist/3C8RpaI3Go0yFF9whvKoED"
     },
     {
       "name": "Bring Me The Horizon",
       "url": "https://open.spotify.com/artist/1Ffb6ejR6Fe5IamqA5oRUF"
-    },
-    {
-      "name": "Nirvana",
-      "url": "https://open.spotify.com/artist/6olE6TJLqED3rqDCT0FyPh"
     },
     {
       "name": "Frost Children",
@@ -22,16 +18,28 @@
       "url": "https://open.spotify.com/artist/6bUJpbekaIlq2fT5FMV2mQ"
     },
     {
-      "name": "Death Cab for Cutie",
-      "url": "https://open.spotify.com/artist/0YrtvWJMgSdVrk3SfNjTbx"
+      "name": "Beach House",
+      "url": "https://open.spotify.com/artist/56ZTgzPBDge0OvCGgMO3OY"
+    },
+    {
+      "name": "Fleshwater",
+      "url": "https://open.spotify.com/artist/6P5ccCJCe8A4s9tDSTNFzF"
     },
     {
       "name": "Das Racist",
       "url": "https://open.spotify.com/artist/4iqAeIP1ynbt71G0Oi8VIt"
     },
     {
-      "name": "Muse",
-      "url": "https://open.spotify.com/artist/12Chz98pHFMPJEknJQMWvI"
+      "name": "Death Cab for Cutie",
+      "url": "https://open.spotify.com/artist/0YrtvWJMgSdVrk3SfNjTbx"
+    },
+    {
+      "name": "Bleed",
+      "url": "https://open.spotify.com/artist/15DYcBNS0c6bfsoezOIzT3"
+    },
+    {
+      "name": "Charli xcx",
+      "url": "https://open.spotify.com/artist/25uiPmTg16RbhZWAqwLBy5"
     },
     {
       "name": "Token",
@@ -46,16 +54,20 @@
       "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
     },
     {
+      "name": "Steve Lacy",
+      "url": "https://open.spotify.com/artist/57vWImR43h4CaDao012Ofp"
+    },
+    {
       "name": "Ty Segall",
       "url": "https://open.spotify.com/artist/58XGUNsRNu3cVOIOYk5chx"
     }
   ],
   "albums": [
     {
-      "name": "Bloom",
-      "artist": "Beach House",
-      "url": "https://open.spotify.com/album/6w84G1JaQPqbf8RzS48tPf",
-      "image": "https://i.scdn.co/image/ab67616d00001e020ac131b9488447476f7406b5"
+      "name": "Since I Left You (20th Anniversary Deluxe Edition)",
+      "artist": "The Avalanches",
+      "url": "https://open.spotify.com/album/0YtYaaO0aipyeQl0xhAWTO",
+      "image": "https://i.scdn.co/image/ab67616d00001e024cc65c5ce55234c548a79d9d"
     },
     {
       "name": "Tweaker Poem",
@@ -64,28 +76,28 @@
       "image": "https://i.scdn.co/image/ab67616d00001e02557318ccf401251fe5efa334"
     },
     {
-      "name": "I Built You A Tower",
-      "artist": "Death Cab for Cutie",
-      "url": "https://open.spotify.com/album/4D1zUsXw30DbfOqY1gVsfT",
-      "image": "https://i.scdn.co/image/ab67616d00001e021356b24d48cbabc44384e753"
-    },
-    {
       "name": "Shut Up, Dude",
       "artist": "Das Racist",
       "url": "https://open.spotify.com/album/0WLZ8fN0sZn9Qoux0MUrND",
       "image": "https://i.scdn.co/image/ab67616d00001e029e18bd5f311401dee24516de"
     },
     {
-      "name": "7",
-      "artist": "Beach House",
-      "url": "https://open.spotify.com/album/1zN85Ep8w2JORfCe0RHLDP",
-      "image": "https://i.scdn.co/image/ab67616d00001e020af2276ae66a42e73eb07683"
+      "name": "Music, Fashion, Film",
+      "artist": "Charli xcx",
+      "url": "https://open.spotify.com/album/4bR7pd6TVS53l24qFV4wI8",
+      "image": "https://i.scdn.co/image/ab67616d00001e02238e2ff91714a8db91b8a64d"
     },
     {
-      "name": "Bleach",
-      "artist": "Nirvana",
-      "url": "https://open.spotify.com/album/1KVGLuPtrMrLlyy4Je6df7",
-      "image": "https://i.scdn.co/image/ab67616d00001e0297507fd22fb690cb9085a864"
+      "name": "I'm Leaving Soon",
+      "artist": "Token",
+      "url": "https://open.spotify.com/album/1yina9uQXAX3Gc7q4Mf4Kv",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c1f4319ec360bb15cda45827"
+    },
+    {
+      "name": "Bloom",
+      "artist": "Beach House",
+      "url": "https://open.spotify.com/album/6w84G1JaQPqbf8RzS48tPf",
+      "image": "https://i.scdn.co/image/ab67616d00001e020ac131b9488447476f7406b5"
     },
     {
       "name": "Count Your Blessings | Repented",
@@ -94,40 +106,34 @@
       "image": "https://i.scdn.co/image/ab67616d00001e02f71b9303698be44cdede2ac8"
     },
     {
-      "name": "I'm Leaving Soon",
-      "artist": "Token",
-      "url": "https://open.spotify.com/album/1yina9uQXAX3Gc7q4Mf4Kv",
-      "image": "https://i.scdn.co/image/ab67616d00001e020b6bcbaa3d1e3879d210a884"
-    },
-    {
       "name": "Satellites",
       "artist": "Frost Children",
       "url": "https://open.spotify.com/album/1lwDEmZ3j69Wrh0AycrCCU",
       "image": "https://i.scdn.co/image/ab67616d00001e0216c3c79d1a782cf1635ee148"
     },
     {
-      "name": "U",
-      "artist": "underscores",
-      "url": "https://open.spotify.com/album/1qSS0T6Ffrb3rFVpizzOuk",
-      "image": "https://i.scdn.co/image/ab67616d00001e02cab898cdda3ee7d1e9b25646"
+      "name": "Bleed",
+      "artist": "Bleed",
+      "url": "https://open.spotify.com/album/4kQKFJ8RTpXtWP7t97uul5",
+      "image": "https://i.scdn.co/image/ab67616d00001e02a08f9c3143699910238a7bda"
     },
     {
-      "name": "Depression Cherry",
-      "artist": "Beach House",
-      "url": "https://open.spotify.com/album/194CqC2Zi0kUFEPWedb3qr",
-      "image": "https://i.scdn.co/image/ab67616d00001e029b7190e673e46271b2754aab"
+      "name": "The Thread",
+      "artist": "WILLOW",
+      "url": "https://open.spotify.com/album/6x9IdAz7Br6NnlK7BBJubL",
+      "image": "https://i.scdn.co/image/ab67616d00001e025b1ac8071f6142875c398cca"
     },
     {
-      "name": "The Wow! Signal",
-      "artist": "Muse",
-      "url": "https://open.spotify.com/album/6TObgE5QDLYzA3Exu5vGhS",
-      "image": "https://i.scdn.co/image/ab67616d00001e02b295bd39e098e7b68d57aacf"
+      "name": "Every Single Weekend (feat. Jamie xx)",
+      "artist": "The Avalanches",
+      "url": "https://open.spotify.com/album/0bDV16KDFYNix2fGuUQ6cw",
+      "image": "https://i.scdn.co/image/ab67616d00001e0296a50b86881f30743f92f223"
     },
     {
-      "name": "imellem",
-      "artist": "Fabian Mazur",
-      "url": "https://open.spotify.com/album/5PxIYxaG1LM2DmuNmZSJOw",
-      "image": "https://i.scdn.co/image/ab67616d00001e02bec0f0c03b7e3a34cf3b8938"
+      "name": "Oh yeah?",
+      "artist": "Steve Lacy",
+      "url": "https://open.spotify.com/album/289GZwycrFReuNB706obBx",
+      "image": "https://i.scdn.co/image/ab67616d00001e024ea9ba86cd9506a004bab042"
     },
     {
       "name": "Kings Of Crunk",
@@ -154,28 +160,10 @@
       "image": "https://i.scdn.co/image/ab67616d00001e0290e9adff5f77dd1ff6d24e47"
     },
     {
-      "name": "Kim Wilde",
-      "artist": "Kim Wilde",
-      "url": "https://open.spotify.com/album/4gKzPDy0qNi3fjvpXDQTST",
-      "image": "https://i.scdn.co/image/ab67616d00001e021233a7885e76b74d0b2a9473"
-    },
-    {
       "name": "Transatlanticism (10th Anniversary Edition)",
       "artist": "Death Cab for Cutie",
       "url": "https://open.spotify.com/album/5UKAhD2VmFAuThgq4OQyEe",
       "image": "https://i.scdn.co/image/ab67616d00001e02c988bbfb15aca7928323d2ff"
-    },
-    {
-      "name": "The Resistance",
-      "artist": "Muse",
-      "url": "https://open.spotify.com/album/0eFHYz8NmK75zSplL5qlfM",
-      "image": "https://i.scdn.co/image/ab67616d00001e02b6d4566db0d12894a1a3b7a2"
-    },
-    {
-      "name": "Nevermind (Deluxe Edition)",
-      "artist": "Nirvana",
-      "url": "https://open.spotify.com/album/1ySR0W1hHxPDKCBWdvzRvc",
-      "image": "https://i.scdn.co/image/ab67616d00001e029882599a8bed4658b11b9f1a"
     },
     {
       "name": "No Life for Me",
@@ -184,10 +172,10 @@
       "image": "https://i.scdn.co/image/ab67616d00001e02e8a25b2bd0524c4497b32223"
     },
     {
-      "name": "In Utero",
-      "artist": "Nirvana",
-      "url": "https://open.spotify.com/album/7wOOA7l306K8HfBKfPoafr",
-      "image": "https://i.scdn.co/image/ab67616d00001e02c4f52ef8782f0e8ede4c1aaf"
+      "name": "I Built You A Tower",
+      "artist": "Death Cab for Cutie",
+      "url": "https://open.spotify.com/album/4D1zUsXw30DbfOqY1gVsfT",
+      "image": "https://i.scdn.co/image/ab67616d00001e021356b24d48cbabc44384e753"
     },
     {
       "name": "The Window",
@@ -200,6 +188,30 @@
       "artist": "Frost Children",
       "url": "https://open.spotify.com/album/0IojfyxFQMggZW9aNCeaV7",
       "image": "https://i.scdn.co/image/ab67616d00001e02de825e6f087f44e3b2297645"
+    },
+    {
+      "name": "We're Not Here to Be Loved",
+      "artist": "Fleshwater",
+      "url": "https://open.spotify.com/album/0hm7PiBu72tRliLqLfiKy1",
+      "image": "https://i.scdn.co/image/ab67616d00001e025e6a9cd045fa8da9ba2fe81a"
+    },
+    {
+      "name": "Freedom's Goblin",
+      "artist": "Ty Segall",
+      "url": "https://open.spotify.com/album/5BInay8c4KClHpYL94IBed",
+      "image": "https://i.scdn.co/image/ab67616d00001e023f0c6b55d1dbd64cba26bd5a"
+    },
+    {
+      "name": "Afraid Of Heights",
+      "artist": "Wavves",
+      "url": "https://open.spotify.com/album/7tbCuIt9zm1fRQyH2berwK",
+      "image": "https://i.scdn.co/image/ab67616d00001e02394277bc3187a9742ea2a764"
+    },
+    {
+      "name": "7",
+      "artist": "Beach House",
+      "url": "https://open.spotify.com/album/1zN85Ep8w2JORfCe0RHLDP",
+      "image": "https://i.scdn.co/image/ab67616d00001e020af2276ae66a42e73eb07683"
     }
   ]
 }

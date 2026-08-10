@@ -78,6 +78,24 @@ The site opens on `/home`; the root redirects there (`redirects` in `astro.confi
 
 The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
 
+### Verso (the chat)
+
+The chat persona is named Verso and it has two authors. Most of the time `/api/chat` answers from the corpus. When the operator is present, the visitor's question is pushed to Telegram and **the same request holds its SSE response open**, polling Redis for a human reply. Vercel has no background jobs, so the wait has to be the request itself; `maxDuration: 90` in `astro.config.mjs` covers the 40s window plus a model stream after it, and it is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
+
+The visitor is never told which author answered. That is deliberate, and three things hold it together:
+
+1. **The claim key is the whole concurrency design.** `SET chat:msg:<mid>:claim <who> NX EX 3600` is the only arbiter of the race. The webhook claims `human` when a reply lands; the route claims `llm` at the deadline; the loser reads what the winner wrote. No locks, no doubled answers, no lost ones.
+2. **A human reply is word-chunked and paced** (`chunkForTyping` / `typingDelayMs` in `src/lib/verso.ts`) so it types out like the model. A verbatim reply landing as one instant block next to a model reply that types for eight seconds is the tell.
+3. **Copy must stay true on both paths.** Nothing user-facing may claim answers come only from the corpus, because that is false whenever Jody is typing. The ask-bar placeholder is the one deliberate exception, chosen by him.
+
+Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly, typing cadence). `src/lib/handoff.ts` is the Redis state layer under a `chat:` namespace, distinct from the `rl:chat:*` prefix that `@upstash/ratelimit` owns. `src/lib/telegram.ts` is the Bot API client plus pure formatters. The two routes are deliberately thin so the decisions stay unit-testable.
+
+Verso asks a first-time visitor their name before their first question is sent, holds the question back rather than making them retype it, and remembers the answer in `localStorage` under `verso:name` (the conversation id is `sessionStorage` under `verso:cid` - a conversation is a visit, a person is not). The name reaches the Telegram header and stops there: it is deliberately kept out of the system prompt, the messages, and the Redis history, so the model can neither personalise on it nor echo it back.
+
+Replies are routed by `reply_to_message.message_id`. A bare message names no target, so `chat:pending` - a sorted set of questions still waiting, scored by ask time - decides what happens: exactly one open question keeps the convenience, two or more are refused with the list of who is waiting. Claiming removes the entry whichever side won, and the set is pruned by score on read, because a request that dies mid-flight never removes itself.
+
+Gotchas: messages go to Telegram with **no `parse_mode`** - under Markdown an unbalanced `*` in a visitor's question makes Telegram 400 and the question vanishes silently. Conversation history is read server-side from Redis and never accepted from the client, or a caller could fabricate assistant turns into the prompt. An *unreachable* Redis is not the same as an absent one: a deleted database throws a DNS error out of the rate limiter, which is why those calls are wrapped and answer 503 in production rather than a bare 500.
+
 ### The /library shelf
 
 A Three.js shelving unit at `/library`, built from `content/library.json` (92 books), `content/listening.json` (the rolling album snapshot), and the newest `writing`/`research`/`notes` entries as spiral notebooks.
@@ -121,7 +139,7 @@ The chat page and search features use:
 - `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
 - `UPSTASH_VECTOR_*` — vector store for semantic search over content
 - `UPSTASH_REDIS_*` — caching/rate limiting
-- `PUSHOVER_*` — push notifications when someone uses the chat
+- `TELEGRAM_*` — the Verso handoff: bot token, owner id, webhook secret. Questions arrive on Jody's phone; his reply goes back to the visitor as Verso. Without these the chat degrades to model-only.
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
 

@@ -183,7 +183,33 @@ Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Bod
 
 ### Chat input
 
-Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, forest-mist box-shadow ring (3px). Input: Plus Jakarta Sans 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background. The probe suggestion buttons (pre-conversation prompts): transparent background, rule border, 4px radius; hover shifts border and text to accent, adds translateY(-1px).
+Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, and nothing else. There was a 3px accent-soft box-shadow ring; it read as a halo on the dark palette and was removed. The border shift is the focus indicator now, and it is the accessibility floor - do not remove it too. Input: Plus Jakarta Sans 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background.
+
+### Name gate
+
+A first-time visitor's opening question is held rather than sent, and Verso asks "Before we start - who am I talking to?" as an ordinary Verso turn: same speaker label, same type, no thinking dots and no sources, because it is not waiting on anything. No "You" bubble appears for the question yet, since it has not been asked.
+
+The ask bar carries the mode: placeholder becomes "Your first name…" and the submit label becomes "Send", then both revert. The label is its own `<span>` so the word can change without disturbing the icon beside it. Nothing is disabled during name entry - there is no request in flight to wait on.
+
+Once the name is given, the held question sends itself and appears as a normal "You" turn, so the visitor never retypes. Returning visitors see none of this and are never told they were remembered.
+
+No new colour, no new component, no new CSS. It is the existing turn template with different text, which is the point: an interruption that looks like a form reads as lead capture, and this has to read as Verso talking.
+
+### Chat empty state
+
+The empty state is one line of prose and nothing else. It used to carry four probe suggestion buttons; they were removed because a probe that returns a refusal is worse than no probe, and every one of them named work that is not in the index. The `.probe` rules survive in `global.css` since that file is extracted from the prototype and is not hand-edited - treat them as available, not current.
+
+### Thinking indicator
+
+Three 5px dots (99px radius, 4px gaps) sitting where the first line of the answer will be, replaced by the text the moment it starts arriving. They fade between 0.22 and full opacity on a 1200ms loop, staggered 160ms apart so the pulse travels left to right. Opacity is the only property animated; nothing about the dots moves or resizes, so the line the answer lands on never shifts.
+
+The 1200ms sits outside the 150/250/400ms scale on purpose. That scale governs state transitions, a thing becoming another thing, and is tuned to be over before the eye follows it. This is an ambient loop that has to hold attention for as long as the wait lasts, which can be the better part of a minute, and at 400ms it would read as agitated.
+
+The dots are receding-ink, not quiet-forest. The One Note Rule allows the accent one element per viewport and the chat dock has already spent it; a pulsing accent would also be the most insistent thing on screen while the interface is doing nothing visible.
+
+Past twelve seconds a `still thinking` caption appears beside the dots: 11px mono, uppercase, receding-ink, per the Three Voices Rule: the interface reporting on its own state is the system speaking, not the assistant.
+
+Under `prefers-reduced-motion: reduce` the animation is dropped and the dots hold at 0.5 opacity. The waiting state stays legible; it just stops moving.
 
 ### Brief bar
 

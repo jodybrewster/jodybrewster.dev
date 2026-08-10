@@ -1,16 +1,18 @@
 ---
 /**
- * Site-wide chat dock: fixed to the bottom of the browser on every page.
+ * Verso: the site's chat, fixed to the bottom of the browser on every page.
  * Collapsed, it's just the ask bar. Focus or submit expands a panel above it
  * with the conversation. Persists across dynamic (View Transitions) navigation.
+ *
+ * A reply arrives on the same stream whether the model wrote it or Jody typed
+ * it himself, and a typed reply can take the better part of a minute. So the
+ * client holds one turn at a time and has a waiting state built to survive a
+ * 40-second silence without reading as a dead page.
+ *
+ * Before the very first question goes out, Verso asks who is asking. The
+ * question is held back rather than sent, the name is remembered, and nobody
+ * is ever asked twice.
  */
-const probes = [
-  'What has Jody written about evaluation as a design discipline?',
-  'Show me his work on voice interfaces.',
-  "What's an opinion he's changed his mind on?",
-  'How does he think about agent handoffs to humans?',
-];
-
 const iconForType: Record<string, string> = {
   writing: 'i-book',
   notes: 'i-note',
@@ -20,21 +22,14 @@ const iconForType: Record<string, string> = {
 <div class="chat-dock" id="chat-dock" transition:persist>
   <div class="dock-panel" id="dock-panel">
     <div class="dock-panel-head">
-      <span class="dock-title"><svg class="icon sm"><use href="#i-sparkle"/></svg> Ask the site</span>
+      <span class="dock-title"><svg class="icon sm"><use href="#i-sparkle"/></svg> Verso</span>
       <button class="dock-close" id="dock-close" type="button" aria-label="Close chat">
         <svg class="icon sm"><use href="#i-arrow-right"/></svg>
       </button>
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p>It answers from Jody's published essays, notes, and briefs, in the third person, with sources. It refuses what he hasn't written about.</p>
-        <div class="probes" id="probes">
-          {probes.map(q => (
-            <button class="probe" type="button" data-q={q}>
-              <svg class="icon sm"><use href="#i-arrow-right"/></svg>{q}
-            </button>
-          ))}
-        </div>
+        <p>Verso is Jody's chat assistant. Ask about his essays, his case briefs, or how he thinks about designing for AI. Where an answer comes from the writing, it'll show you the source.</p>
       </div>
       <div class="conversation" id="conversation"></div>
     </div>
@@ -43,8 +38,10 @@ const iconForType: Record<string, string> = {
   <div class="dock-bar">
     <form class="input-row" id="chat-form">
       <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
-      <input type="text" id="chat-q" autocomplete="off" placeholder="Ask the site a question…" />
-      <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+      <input type="text" id="chat-q" autocomplete="off" placeholder="Ask Verso, Jody's AI Assistant…" />
+      <!-- The label is its own element so name-entry mode can swap the word
+           without disturbing the icon beside it. -->
+      <button type="submit"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
     </form>
   </div>
 
@@ -54,10 +51,22 @@ const iconForType: Record<string, string> = {
       <div class="said"></div>
     </div>
   </template>
+  <!--
+    The thinking indicator is authored here rather than built in the script so
+    the scoped-style hash is compiled onto it; cloneNode carries the hash with
+    it, where createElement would produce an unstyled span.
+  -->
   <template id="tpl-site">
     <div class="turn site">
-      <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> The site</span>
-      <div class="said"><div class="answer"></div></div>
+      <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> Verso</span>
+      <div class="said">
+        <div class="answer">
+          <span class="thinking" aria-live="polite">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="waited" hidden>still thinking</span>
+          </span>
+        </div>
+      </div>
     </div>
   </template>
 </div>
@@ -138,6 +147,54 @@ const iconForType: Record<string, string> = {
     max-width: 60ch;
   }
 
+  /* Waiting state. Ink-faint rather than accent: the dock already spends the
+     accent on the title, the speaker label, the submit button and the source
+     tags, and a pulsing fifth use would be the loudest thing on the page. */
+  .thinking {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 0;
+  }
+  .thinking .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 99px;
+    background: var(--ink-faint);
+    opacity: 0.22;
+    animation: thinking-pulse 1200ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  .thinking .dot:nth-child(2) { animation-delay: 160ms; }
+  .thinking .dot:nth-child(3) { animation-delay: 320ms; }
+  @keyframes thinking-pulse {
+    0%, 70%, 100% { opacity: 0.22; }
+    35% { opacity: 1; }
+  }
+  /* Shown only once the wait is long enough to read as a stall. Mono, because
+     this is the interface reporting on itself, not Verso speaking. No display
+     property: the `hidden` attribute has to keep winning until the script
+     drops it. */
+  .thinking .waited {
+    font-family: var(--mono);
+    font-size: var(--t-eyebrow);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-left: 8px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Still legible as three dots, just not moving. */
+    .thinking .dot { animation: none; opacity: 0.5; }
+  }
+
+  /* One turn at a time, so the bar reads as unavailable while it runs. */
+  .input-row input:disabled,
+  .input-row button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .input-row button:disabled:hover { background: var(--accent); }
+
   @media (max-width: 720px) {
     .dock-bar { padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); }
     .dock-panel-head { padding: 14px 20px 4px; }
@@ -155,10 +212,11 @@ const iconForType: Record<string, string> = {
     const dock = document.getElementById('chat-dock');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('chat-q');
+    const submit = form.querySelector('button[type="submit"]');
+    const submitLabel = submit.querySelector('.submit-label');
     const conv = document.getElementById('conversation');
     const empty = document.getElementById('dock-empty');
     const scroll = document.getElementById('dock-scroll');
-    const probes = document.getElementById('probes');
     const closeBtn = document.getElementById('dock-close');
     const tplYou = document.getElementById('tpl-you');
     const tplSite = document.getElementById('tpl-site');
@@ -166,10 +224,96 @@ const iconForType: Record<string, string> = {
     function openDock() { dock.classList.add('open'); }
     function closeDock() { dock.classList.remove('open'); input.blur(); }
 
+    // A conversation is a visit, so it lives in sessionStorage: close the tab
+    // and the next one starts clean. Safari's private mode throws on both
+    // reads and writes, in which case every turn is simply a first turn.
+    const CID_KEY = 'verso:cid';
+    function readCid() {
+      try { return sessionStorage.getItem(CID_KEY); } catch { return null; }
+    }
+    function writeCid(cid) {
+      try { sessionStorage.setItem(CID_KEY, cid); } catch { /* no storage; carry on */ }
+    }
+
+    // The name goes in localStorage, not sessionStorage, and the split from
+    // the conversation id above is deliberate: a conversation is a visit, a
+    // person is not. Come back next week and the thread starts clean while
+    // Verso still knows who you are.
+    const NAME_KEY = 'verso:name';
+    const NAME_MAX = 40;
+    function normalizeName(value) {
+      return (value || '').trim().slice(0, NAME_MAX);
+    }
+    function readName() {
+      try { return normalizeName(localStorage.getItem(NAME_KEY)); } catch { return ''; }
+    }
+    function writeName(name) {
+      try { localStorage.setItem(NAME_KEY, name); } catch { /* no storage; asked again next visit */ }
+    }
+    // Held in memory as well as in storage, so a browser that refuses the
+    // write still only asks once instead of gating every question.
+    let visitorName = readName();
+
+    // A reply can be the model's or Jody's own, typed in, so a turn may run to
+    // 40 seconds. Firing three questions into that window produces three
+    // notifications and a thread nobody can follow, so turns are serialised.
+    let inFlight = false;
+    function setBusy(busy) {
+      inFlight = busy;
+      input.disabled = busy;
+      submit.disabled = busy;
+      if (!busy && dock.classList.contains('open')) input.focus();
+    }
+
     function append(template) {
       const node = template.content.firstElementChild.cloneNode(true);
       conv.appendChild(node);
       return node;
+    }
+
+    // The ask, and the bar's two placeholders. The resting one is read off the
+    // markup rather than repeated here, so there is one copy of that wording.
+    const NAME_PROMPT = 'Before we start - who am I talking to?';
+    const NAME_PLACEHOLDER = 'Your first name…';
+    const ASK_PLACEHOLDER = input.placeholder;
+
+    // No network call is involved in answering this one, so it never touches
+    // inFlight: the bar stays live and the visitor types straight on.
+    let awaitingName = false;
+    let stashedQuery = '';
+
+    function requestName(query) {
+      stashedQuery = query;
+      awaitingName = true;
+      openDock();
+      if (empty) empty.style.display = 'none';
+
+      // A normal Verso turn, minus the wait: writing to .answer replaces the
+      // thinking indicator and its caption outright, and nothing else in the
+      // template needs suppressing.
+      const siteTurn = append(tplSite);
+      siteTurn.querySelector('.answer').textContent = NAME_PROMPT;
+      input.value = '';
+      input.placeholder = NAME_PLACEHOLDER;
+      submitLabel.textContent = 'Send';
+      input.focus();
+      siteTurn.querySelector('.said').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function acceptName(raw) {
+      const name = normalizeName(raw);
+      if (!name) return;
+      visitorName = name;
+      writeName(name);
+      awaitingName = false;
+      input.value = '';
+      input.placeholder = ASK_PLACEHOLDER;
+      submitLabel.textContent = 'Ask';
+      // The question was typed once already; asking for it again would make
+      // the gate cost something.
+      const query = stashedQuery;
+      stashedQuery = '';
+      if (query) ask(query);
     }
 
     function paragraphize(text) {
@@ -202,7 +346,11 @@ const iconForType: Record<string, string> = {
 
     async function ask(query) {
       const trimmed = query.trim();
-      if (!trimmed) return;
+      if (!trimmed || inFlight) return;
+      // Held back rather than sent: the question is stashed, and goes out on
+      // its own the moment the name lands. Only ever true once per visitor.
+      if (!visitorName) { requestName(trimmed); return; }
+      setBusy(true);
       openDock();
       if (empty) empty.style.display = 'none';
 
@@ -211,22 +359,31 @@ const iconForType: Record<string, string> = {
       const siteTurn = append(tplSite);
       const answerEl = siteTurn.querySelector('.answer');
       const saidEl = siteTurn.querySelector('.said');
-      answerEl.textContent = '…';
+      const waitedEl = siteTurn.querySelector('.waited');
       input.value = '';
       saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+      // Past a dozen seconds the dots alone stop reassuring anyone, so the
+      // wait says so in words.
+      let waitTimer = setTimeout(() => { waitedEl.hidden = false; }, 12000);
+      const stopWaiting = () => clearTimeout(waitTimer);
+
       try {
+        const body = { query: trimmed };
+        const cid = readCid();
+        if (cid) body.cid = cid;
+        if (visitorName) body.name = visitorName;
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: trimmed }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) {
           if (res.status === 429 || res.status === 403) {
             try { answerEl.textContent = (await res.text()) || 'Rate limit hit.'; }
             catch { answerEl.textContent = 'Rate limit hit.'; }
           } else if (res.status === 503) {
-            answerEl.textContent = 'Upstream service is busy — try again in a moment.';
+            answerEl.textContent = 'Upstream service is busy. Try again in a moment.';
           } else {
             answerEl.textContent = `Error: ${res.status}.`;
           }
@@ -246,8 +403,14 @@ const iconForType: Record<string, string> = {
             if (!chunk.startsWith('data: ')) continue;
             let event;
             try { event = JSON.parse(chunk.slice(6)); } catch { continue; }
+            // The opening frame identifies the conversation and this turn
+            // within it. The id goes back on the next question so the server
+            // can thread it; the message id stays on the turn so a later
+            // frame can find the element it belongs to.
+            if (event.cid) writeCid(event.cid);
+            if (event.mid) siteTurn.dataset.mid = event.mid;
             if (event.text) {
-              if (!started) { answerEl.innerHTML = ''; started = true; }
+              if (!started) { stopWaiting(); answerEl.innerHTML = ''; started = true; }
               text += event.text;
               answerEl.innerHTML = paragraphize(text);
             }
@@ -255,19 +418,25 @@ const iconForType: Record<string, string> = {
             if (event.error) { answerEl.textContent = event.error; return; }
           }
         }
+        // A stream that closes without a word would otherwise leave the dots
+        // pulsing for good.
+        if (!started) answerEl.textContent = 'Nothing came back. Try again.';
         if (sources) saidEl.insertAdjacentHTML('beforeend', renderSources(sources));
         saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (e) {
         answerEl.textContent = 'Network error. Try again.';
+      } finally {
+        stopWaiting();
+        setBusy(false);
       }
     }
 
-    form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
-    input.addEventListener('focus', openDock);
-    probes.addEventListener('click', (e) => {
-      const btn = e.target.closest('.probe');
-      if (btn) ask(btn.dataset.q);
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (awaitingName) { acceptName(input.value); return; }
+      ask(input.value);
     });
+    input.addEventListener('focus', openDock);
     closeBtn.addEventListener('click', closeDock);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDock(); });
     document.addEventListener('click', (e) => {

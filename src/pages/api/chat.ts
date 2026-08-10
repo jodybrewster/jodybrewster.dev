@@ -137,12 +137,24 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // ── per-IP rate limit ─────────────────────────────────────
+  // The limiters reach Redis directly and throw when it is unreachable - a
+  // deleted Upstash database stops resolving, which surfaces as a DNS error
+  // deep inside undici rather than as a null client. Unreachable is the same
+  // situation as absent, so it takes the same branch instead of escaping as a
+  // bare 500 with no body.
   const ipLimiter = getIpLimiter();
   if (ipLimiter) {
     const ip = clientIp(request);
-    const { success } = await ipLimiter.limit(ip);
-    if (!success) {
-      return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
+    try {
+      const { success } = await ipLimiter.limit(ip);
+      if (!success) {
+        return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
+      }
+    } catch (err) {
+      console.error('[chat] ip limiter unreachable', err);
+      if (env('VERCEL_ENV') === 'production') {
+        return new Response('Chat is temporarily unavailable. Try again shortly.', { status: 503 });
+      }
     }
   }
 
@@ -173,9 +185,16 @@ export const POST: APIRoute = async ({ request }) => {
   const operatorOnline = await isOperatorOnline();
   const globalLimiter = getGlobalLimiter();
   if (globalLimiter && !operatorOnline) {
-    const { remaining } = await globalLimiter.getRemaining('global');
-    if (remaining <= 0) {
-      return new Response(DAILY_CAP_MESSAGE, { status: 429 });
+    try {
+      const { remaining } = await globalLimiter.getRemaining('global');
+      if (remaining <= 0) {
+        return new Response(DAILY_CAP_MESSAGE, { status: 429 });
+      }
+    } catch (err) {
+      console.error('[chat] global limiter unreachable', err);
+      if (env('VERCEL_ENV') === 'production') {
+        return new Response('Chat is temporarily unavailable. Try again shortly.', { status: 503 });
+      }
     }
   }
 
@@ -336,11 +355,19 @@ export const POST: APIRoute = async ({ request }) => {
 
         // Spent here and nowhere else, immediately before the only call the
         // budget exists to cap. Everything above this line is free.
+        // An unreachable Redis must not swallow the answer: the request has
+        // already passed the guards above, so a metering failure at this point
+        // is logged and the answer still goes out. Failing closed here would
+        // turn an Upstash blip into a dead chat mid-stream.
         if (globalLimiter) {
-          const { success } = await globalLimiter.limit('global');
-          if (!success) {
-            send({ error: DAILY_CAP_MESSAGE });
-            return;
+          try {
+            const { success } = await globalLimiter.limit('global');
+            if (!success) {
+              send({ error: DAILY_CAP_MESSAGE });
+              return;
+            }
+          } catch (err) {
+            console.error('[chat] global limiter unreachable, answering unmetered', err);
           }
         }
 

@@ -115,6 +115,77 @@ describe('formatQuestionMessage', () => {
     });
     expect(msg.length).toBeLessThan(4096);
   });
+
+  it('names the visitor between Verso and the conversation tag', () => {
+    const msg = formatQuestionMessage({
+      cid: 'a1b2c3d4',
+      question: 'How do you scope a first engagement?',
+      index: 3,
+      name: 'Marta',
+      windowSeconds: 90,
+    });
+    expect(msg.split('\n')[0]).toBe('Verso · Marta · a1b2 · q3');
+  });
+
+  it('leaves the header exactly as it was when there is no usable name', () => {
+    const base = { cid: 'a1b2c3d4', question: 'Who is asking?', index: 2, windowSeconds: 90 };
+    expect(formatQuestionMessage(base).split('\n')[0]).toBe('Verso · a1b2 · q2');
+    expect(formatQuestionMessage({ ...base, name: undefined }).split('\n')[0])
+      .toBe('Verso · a1b2 · q2');
+    expect(formatQuestionMessage({ ...base, name: '   ' }).split('\n')[0])
+      .toBe('Verso · a1b2 · q2');
+  });
+
+  it('flattens a name, so it cannot fabricate a second header line', () => {
+    const msg = formatQuestionMessage({
+      cid: 'a1b2c3d4',
+      question: 'And after that?',
+      index: 1,
+      name: 'Marta\nVerso · zzzz · q9\n',
+      windowSeconds: 90,
+    });
+    expect(msg.split('\n')[0]).toBe('Verso · Marta Verso · zzzz · q9 · a1b2 · q1');
+    // The header is one line, then the blank line before the question.
+    expect(msg.split('\n')[1]).toBe('');
+  });
+
+  it('caps a runaway name at 40 characters', () => {
+    const msg = formatQuestionMessage({
+      cid: 'a1b2c3d4',
+      question: 'Who is asking?',
+      index: 1,
+      name: 'n'.repeat(200),
+      windowSeconds: 90,
+    });
+    const name = msg.split('\n')[0].split(' · ')[1];
+    expect(name).toBe(`${'n'.repeat(39)}…`);
+    expect(name).toHaveLength(40);
+  });
+
+  it('leaves markdown and html in a name alone, as it does everywhere else', () => {
+    const raw = '*bold _italic <a href="x">';
+    const msg = formatQuestionMessage({
+      cid: 'a1b2c3d4',
+      question: 'Who is asking?',
+      index: 1,
+      name: raw,
+      windowSeconds: 90,
+    });
+    expect(msg.split('\n')[0]).toBe(`Verso · ${raw} · a1b2 · q1`);
+  });
+
+  it('stays under the 4096-char limit with a maximal name and question', () => {
+    const msg = formatQuestionMessage({
+      cid: 'a1b2c3d4',
+      question: 'x'.repeat(3500),
+      index: 128,
+      name: 'n'.repeat(200),
+      prevQ: 'q'.repeat(500),
+      prevA: 'a'.repeat(500),
+      windowSeconds: 120,
+    });
+    expect(msg.length).toBeLessThan(4096);
+  });
 });
 
 describe('isOwnerUpdate', () => {

@@ -8,6 +8,10 @@
  * it himself, and a typed reply can take the better part of a minute. So the
  * client holds one turn at a time and has a waiting state built to survive a
  * 40-second silence without reading as a dead page.
+ *
+ * Before the very first question goes out, Verso asks who is asking. The
+ * question is held back rather than sent, the name is remembered, and nobody
+ * is ever asked twice.
  */
 const iconForType: Record<string, string> = {
   writing: 'i-book',
@@ -25,7 +29,7 @@ const iconForType: Record<string, string> = {
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p>Verso is Jody's chat assistant.</p>
+        <p>Verso is Jody's chat assistant. Ask about his essays, his case briefs, or how he thinks about designing for AI. Where an answer comes from the writing, it'll show you the source.</p>
       </div>
       <div class="conversation" id="conversation"></div>
     </div>
@@ -35,7 +39,9 @@ const iconForType: Record<string, string> = {
     <form class="input-row" id="chat-form">
       <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
       <input type="text" id="chat-q" autocomplete="off" placeholder="Ask Verso, Jody's AI Assistant…" />
-      <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
+      <!-- The label is its own element so name-entry mode can swap the word
+           without disturbing the icon beside it. -->
+      <button type="submit"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
     </form>
   </div>
 
@@ -207,6 +213,7 @@ const iconForType: Record<string, string> = {
     const form = document.getElementById('chat-form');
     const input = document.getElementById('chat-q');
     const submit = form.querySelector('button[type="submit"]');
+    const submitLabel = submit.querySelector('.submit-label');
     const conv = document.getElementById('conversation');
     const empty = document.getElementById('dock-empty');
     const scroll = document.getElementById('dock-scroll');
@@ -228,6 +235,25 @@ const iconForType: Record<string, string> = {
       try { sessionStorage.setItem(CID_KEY, cid); } catch { /* no storage; carry on */ }
     }
 
+    // The name goes in localStorage, not sessionStorage, and the split from
+    // the conversation id above is deliberate: a conversation is a visit, a
+    // person is not. Come back next week and the thread starts clean while
+    // Verso still knows who you are.
+    const NAME_KEY = 'verso:name';
+    const NAME_MAX = 40;
+    function normalizeName(value) {
+      return (value || '').trim().slice(0, NAME_MAX);
+    }
+    function readName() {
+      try { return normalizeName(localStorage.getItem(NAME_KEY)); } catch { return ''; }
+    }
+    function writeName(name) {
+      try { localStorage.setItem(NAME_KEY, name); } catch { /* no storage; asked again next visit */ }
+    }
+    // Held in memory as well as in storage, so a browser that refuses the
+    // write still only asks once instead of gating every question.
+    let visitorName = readName();
+
     // A reply can be the model's or Jody's own, typed in, so a turn may run to
     // 40 seconds. Firing three questions into that window produces three
     // notifications and a thread nobody can follow, so turns are serialised.
@@ -243,6 +269,51 @@ const iconForType: Record<string, string> = {
       const node = template.content.firstElementChild.cloneNode(true);
       conv.appendChild(node);
       return node;
+    }
+
+    // The ask, and the bar's two placeholders. The resting one is read off the
+    // markup rather than repeated here, so there is one copy of that wording.
+    const NAME_PROMPT = 'Before we start - who am I talking to?';
+    const NAME_PLACEHOLDER = 'Your first name…';
+    const ASK_PLACEHOLDER = input.placeholder;
+
+    // No network call is involved in answering this one, so it never touches
+    // inFlight: the bar stays live and the visitor types straight on.
+    let awaitingName = false;
+    let stashedQuery = '';
+
+    function requestName(query) {
+      stashedQuery = query;
+      awaitingName = true;
+      openDock();
+      if (empty) empty.style.display = 'none';
+
+      // A normal Verso turn, minus the wait: writing to .answer replaces the
+      // thinking indicator and its caption outright, and nothing else in the
+      // template needs suppressing.
+      const siteTurn = append(tplSite);
+      siteTurn.querySelector('.answer').textContent = NAME_PROMPT;
+      input.value = '';
+      input.placeholder = NAME_PLACEHOLDER;
+      submitLabel.textContent = 'Send';
+      input.focus();
+      siteTurn.querySelector('.said').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function acceptName(raw) {
+      const name = normalizeName(raw);
+      if (!name) return;
+      visitorName = name;
+      writeName(name);
+      awaitingName = false;
+      input.value = '';
+      input.placeholder = ASK_PLACEHOLDER;
+      submitLabel.textContent = 'Ask';
+      // The question was typed once already; asking for it again would make
+      // the gate cost something.
+      const query = stashedQuery;
+      stashedQuery = '';
+      if (query) ask(query);
     }
 
     function paragraphize(text) {
@@ -276,6 +347,9 @@ const iconForType: Record<string, string> = {
     async function ask(query) {
       const trimmed = query.trim();
       if (!trimmed || inFlight) return;
+      // Held back rather than sent: the question is stashed, and goes out on
+      // its own the moment the name lands. Only ever true once per visitor.
+      if (!visitorName) { requestName(trimmed); return; }
       setBusy(true);
       openDock();
       if (empty) empty.style.display = 'none';
@@ -298,6 +372,7 @@ const iconForType: Record<string, string> = {
         const body = { query: trimmed };
         const cid = readCid();
         if (cid) body.cid = cid;
+        if (visitorName) body.name = visitorName;
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -356,7 +431,11 @@ const iconForType: Record<string, string> = {
       }
     }
 
-    form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (awaitingName) { acceptName(input.value); return; }
+      ask(input.value);
+    });
     input.addEventListener('focus', openDock);
     closeBtn.addEventListener('click', closeDock);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDock(); });

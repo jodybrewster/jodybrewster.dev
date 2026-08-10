@@ -66,6 +66,10 @@ const HEARTBEAT_MS = 10_000;
  *  deadline. Covers the gap between the webhook claiming and writing. */
 const REPLY_GRACE_MS = 3_000;
 
+/** The visitor's first name, for the operator's header. The client caps it too,
+ *  but a client cap is a courtesy, not a constraint. */
+const MAX_NAME_LEN = 40;
+
 const DAILY_CAP_MESSAGE =
   'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
 
@@ -84,6 +88,7 @@ interface CitedSource {
 interface ChatBody {
   query?: string;
   cid?: string;
+  name?: string;
 }
 
 /**
@@ -121,6 +126,19 @@ export const POST: APIRoute = async ({ request }) => {
   if (query.length > MAX_QUERY_LEN) {
     return new Response(`query too long (max ${MAX_QUERY_LEN} chars)`, { status: 413 });
   }
+
+  // ── visitor name ──────────────────────────────────────────
+  // Who is asking, for the header on Jody's phone. Anything that is not a
+  // usable string is dropped rather than refused: the name is a nicety and a
+  // malformed one must never cost someone their question.
+  //
+  // It travels to Telegram and nowhere else. Deliberately kept out of the
+  // system prompt, the messages, and the history written to Redis - the model
+  // has no reason to personalise an answer, and what it never reads it can
+  // never echo back or carry into a later turn.
+  const name = typeof body.name === 'string'
+    ? body.name.trim().slice(0, MAX_NAME_LEN) || undefined
+    : undefined;
 
   // ── origin check (prod only) ──────────────────────────────
   if (!isOriginAllowed(request)) {
@@ -246,6 +264,7 @@ export const POST: APIRoute = async ({ request }) => {
           cid,
           question: query,
           index,
+          name,
           prevQ,
           prevA,
           windowSeconds: Math.round(HANDOFF_WINDOW_MS / 1000),

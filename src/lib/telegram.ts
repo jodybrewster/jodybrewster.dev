@@ -39,6 +39,10 @@ const QUESTION_MAX = 3500;
 /** Enough of the previous exchange to recognize the thread on a phone. */
 const PREVIEW_MAX = 60;
 
+/** The visitor's name sits in the header, where length is the whole budget: a
+ *  long one wraps the line it is meant to label and buries the tag beside it. */
+const NAME_MAX = 40;
+
 /** C0 and C1 control characters, minus tab and newline. Telegram renders them
  *  as nothing useful and they are a cheap way to hide text in a question. */
 const CONTROL_CHARS = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g;
@@ -100,16 +104,25 @@ function oneLine(text: unknown, max: number): string {
  * The metadata header comes first and only the fixed footer follows the
  * visitor's text, so visitor text can append to the message but never reframe
  * what sits above it.
+ *
+ * The name is the one piece of visitor input that sits inside the header, so it
+ * goes through `oneLine`: unescaped like every other string here, but stripped
+ * of control characters, flattened, and cut at NAME_MAX. A name carrying
+ * newlines could otherwise print a second, invented header line above the real
+ * question.
  */
 export function formatQuestionMessage(opts: {
   cid: string;
   question: string;
   index: number;
+  name?: string;
   prevQ?: string;
   prevA?: string;
   windowSeconds: number;
 }): string {
-  const header = [`Verso · ${String(opts.cid).slice(0, 4)} · q${opts.index}`];
+  const tag = `${String(opts.cid).slice(0, 4)} · q${opts.index}`;
+  const name = oneLine(opts.name, NAME_MAX);
+  const header = [name ? `Verso · ${name} · ${tag}` : `Verso · ${tag}`];
 
   const prevQ = oneLine(opts.prevQ, PREVIEW_MAX);
   const prevA = oneLine(opts.prevA, PREVIEW_MAX);

@@ -164,10 +164,10 @@ function isActive(href: string): boolean {
   const root = document.documentElement;
   const btn = document.getElementById('theme-toggle');
 
+  // Dark unless a choice is stored. Must match the anti-FOUC script in
+  // Base.astro, or the first toggle click sends you the wrong way.
   function getEffectiveTheme(): 'dark' | 'light' {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
   }
 
   function applyTheme(theme: 'dark' | 'light') {

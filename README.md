@@ -10,7 +10,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 - **Content:** Markdown files synced from an Obsidian vault
 - **Fonts:** Fraunces (display), Inter (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
-- **AI/Chat:** Anthropic Claude API + Upstash Vector (RAG over site content)
+- **AI/Chat:** Verso, the site's chat. Anthropic Claude API + Upstash Vector (RAG over site content), with an optional human handoff: when Jody is present, a question reaches him on Telegram and his reply goes back on the same stream. See `CLAUDE.md` for how the race between the two is settled.
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
 
 ## Commands

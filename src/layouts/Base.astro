@@ -24,13 +24,17 @@ const { title, description, jsonLd, markdownHref, bodyClass } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>{title}</title>
-  <!-- Anti-FOUC: apply stored theme before first paint -->
+  <!-- Anti-FOUC: apply the theme before first paint. Dark is the default and
+       the OS preference is deliberately not consulted - the site has a look,
+       and a visitor on a light desktop should still see it. A stored choice
+       always wins, so anyone who picks light keeps light. -->
   <script is:inline>
     (function() {
       var stored = localStorage.getItem('theme');
-      if (stored === 'dark' || stored === 'light') {
-        document.documentElement.setAttribute('data-theme', stored);
-      }
+      document.documentElement.setAttribute(
+        'data-theme',
+        stored === 'light' ? 'light' : 'dark'
+      );
     })();
   </script>
   {description && <meta name="description" content={description} />}

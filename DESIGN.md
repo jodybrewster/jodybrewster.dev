@@ -181,7 +181,9 @@ Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Bod
 
 ### Chat input
 
-Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, forest-mist box-shadow ring (3px). Input: Inter 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background. The probe suggestion buttons (pre-conversation prompts): transparent background, rule border, 4px radius; hover shifts border and text to accent, adds translateY(-1px).
+Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, and nothing else. There was a 3px accent-soft box-shadow ring; it read as a halo on the dark palette and was removed. The border shift is the focus indicator now, and it is the accessibility floor - do not remove it too. Input: Inter 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background.
+
+The empty state is one line of prose and nothing else. It used to carry four probe suggestion buttons; they were removed because a probe that returns a refusal is worse than no probe, and every one of them named work that is not in the index. The `.probe` rules survive in `global.css` since that file is extracted from the prototype and is not hand-edited - treat them as available, not current.
 
 ### Thinking indicator
 

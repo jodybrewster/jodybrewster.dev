@@ -36,7 +36,9 @@ Not austere: warm, but never effusive. Not academic: rigorous, but never jargon-
 
 **A human may be behind Verso.** Verso is one persona with two authors. Most of the time it answers from the published corpus. When Jody is available, the question reaches his phone and his reply comes back through the same stream, paced the same way, under the same name. The visitor is not told which one answered.
 
-This is a deliberate position and it has edges worth keeping in view. Verso speaks about Jody in the third person and never as him, which holds on both paths: the site refuses voice cloning, and a human writing in the assistant's register is not a clone of anyone. What the site must not do is claim more than is true. Copy describing Verso says what it answers from, not what generates it, and says plainly that Jody reads what people ask. A page that promised answers came only from the corpus would be lying every time he picked up his phone.
+This is a deliberate position and it has edges worth keeping in view. Verso speaks about Jody in the third person and never as him, which holds on both paths: the site refuses voice cloning, and a human writing in the assistant's register is not a clone of anyone. What the site must not do is claim more than is true. Copy describing Verso says what it answers from, not what generates it. A page that promised answers came only from the corpus would be lying every time he picked up his phone.
+
+One line breaks that rule knowingly: the ask-bar placeholder reads "Ask Verso, Jody's AI Assistant". It asserts the mechanism rather than the behaviour, and it is the one piece of user-facing text that is false while he is typing. It is Jody's call and it stands. Anything added later should follow the rule above rather than this exception.
 
 **Earned authority, not borrowed credibility.** No credentials list, no employer logos, no follower counts. The quality of the thinking is the credential. The design should reinforce this by presenting ideas without scaffolding them in social proof.
 

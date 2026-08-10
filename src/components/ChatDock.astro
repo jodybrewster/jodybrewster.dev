@@ -9,13 +9,6 @@
  * client holds one turn at a time and has a waiting state built to survive a
  * 40-second silence without reading as a dead page.
  */
-const probes = [
-  'What has Jody written about evaluation as a design discipline?',
-  'Show me his work on voice interfaces.',
-  "What's an opinion he's changed his mind on?",
-  'How does he think about agent handoffs to humans?',
-];
-
 const iconForType: Record<string, string> = {
   writing: 'i-book',
   notes: 'i-note',
@@ -32,14 +25,7 @@ const iconForType: Record<string, string> = {
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p>Verso answers from Jody's published essays, notes, and briefs, with sources. It refuses what isn't in the writing. Jody reads everything people ask it.</p>
-        <div class="probes" id="probes">
-          {probes.map(q => (
-            <button class="probe" type="button" data-q={q}>
-              <svg class="icon sm"><use href="#i-arrow-right"/></svg>{q}
-            </button>
-          ))}
-        </div>
+        <p>Verso is Jody's chat assistant.</p>
       </div>
       <div class="conversation" id="conversation"></div>
     </div>
@@ -224,7 +210,6 @@ const iconForType: Record<string, string> = {
     const conv = document.getElementById('conversation');
     const empty = document.getElementById('dock-empty');
     const scroll = document.getElementById('dock-scroll');
-    const probes = document.getElementById('probes');
     const closeBtn = document.getElementById('dock-close');
     const tplYou = document.getElementById('tpl-you');
     const tplSite = document.getElementById('tpl-site');
@@ -373,10 +358,6 @@ const iconForType: Record<string, string> = {
 
     form.addEventListener('submit', (e) => { e.preventDefault(); ask(input.value); });
     input.addEventListener('focus', openDock);
-    probes.addEventListener('click', (e) => {
-      const btn = e.target.closest('.probe');
-      if (btn) ask(btn.dataset.q);
-    });
     closeBtn.addEventListener('click', closeDock);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDock(); });
     document.addEventListener('click', (e) => {

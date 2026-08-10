@@ -183,6 +183,18 @@ Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Bod
 
 Full-width input row: 1px ash-rule border, 4px radius. Focus-within: border shifts to quiet-forest, and nothing else. There was a 3px accent-soft box-shadow ring; it read as a halo on the dark palette and was removed. The border shift is the focus indicator now, and it is the accessibility floor - do not remove it too. Input: Inter 15px, 14px vertical padding. Submit button: quiet-forest background, ash-paper text, border-radius 0 3px 3px 0 (right side only). Hover on submit: ink background.
 
+### Name gate
+
+A first-time visitor's opening question is held rather than sent, and Verso asks "Before we start - who am I talking to?" as an ordinary Verso turn: same speaker label, same type, no thinking dots and no sources, because it is not waiting on anything. No "You" bubble appears for the question yet, since it has not been asked.
+
+The ask bar carries the mode: placeholder becomes "Your first name…" and the submit label becomes "Send", then both revert. The label is its own `<span>` so the word can change without disturbing the icon beside it. Nothing is disabled during name entry - there is no request in flight to wait on.
+
+Once the name is given, the held question sends itself and appears as a normal "You" turn, so the visitor never retypes. Returning visitors see none of this and are never told they were remembered.
+
+No new colour, no new component, no new CSS. It is the existing turn template with different text, which is the point: an interruption that looks like a form reads as lead capture, and this has to read as Verso talking.
+
+### Chat empty state
+
 The empty state is one line of prose and nothing else. It used to carry four probe suggestion buttons; they were removed because a probe that returns a refusal is worse than no probe, and every one of them named work that is not in the index. The `.probe` rules survive in `global.css` since that file is extracted from the prototype and is not hand-edited - treat them as available, not current.
 
 ### Thinking indicator

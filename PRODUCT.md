@@ -40,6 +40,8 @@ This is a deliberate position and it has edges worth keeping in view. Verso spea
 
 One line breaks that rule knowingly: the ask-bar placeholder reads "Ask Verso, Jody's AI Assistant". It asserts the mechanism rather than the behaviour, and it is the one piece of user-facing text that is false while he is typing. It is Jody's call and it stands. Anything added later should follow the rule above rather than this exception.
 
+Verso asks a first-time visitor for their name before their first question goes out, and remembers it. The reason is not personalisation - the model never sees it - but that Jody is sometimes the one answering, and answering well means knowing who is asking. The name reaches his phone and nowhere else. That makes it the only identifying thing the site collects, and the site has no privacy policy; that gap should close before the site carries real traffic.
+
 **Earned authority, not borrowed credibility.** No credentials list, no employer logos, no follower counts. The quality of the thinking is the credential. The design should reinforce this by presenting ideas without scaffolding them in social proof.
 
 **Precision over decoration.** Every typographic decision, spacing choice, and color appearance should be deliberate. Nothing is present to make the page feel richer or more designed. If a decorative element cannot be justified by what it communicates, it is removed.

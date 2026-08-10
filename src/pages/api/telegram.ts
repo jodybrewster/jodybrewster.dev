@@ -20,6 +20,7 @@ import {
   getFinal,
   getLastQuestion,
   isOperatorOnline,
+  listOutstanding,
   presenceTtlSeconds,
   putReply,
   resolveTelegramMessage,
@@ -40,6 +41,12 @@ export const prerender = false;
 /** Enough of the model's answer for the owner to recognize what the visitor
  *  actually saw, short enough to stay a single glance on a phone. */
 const FINAL_PREVIEW_CHARS = 120;
+
+/** Enough of a waiting question to tell two of them apart in a list. */
+const OPEN_PREVIEW_CHARS = 48;
+
+const oneLinePreview = (s: string) =>
+  sanitizeForTelegram(String(s ?? '').replace(/\s+/g, ' ').trim(), OPEN_PREVIEW_CHARS);
 
 const PRESENCE_HOURS = Math.round(PRESENCE_TTL_S / 3600);
 const WINDOW_SECONDS = Math.round(HANDOFF_WINDOW_MS / 1000);
@@ -100,9 +107,26 @@ async function statusMessage(): Promise<string> {
  */
 async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
   const quoted = msg.reply_to_message?.message_id;
-  const mid =
-    (typeof quoted === 'number' ? await resolveTelegramMessage(quoted) : null) ??
-    (await getLastQuestion());
+  let mid = typeof quoted === 'number' ? await resolveTelegramMessage(quoted) : null;
+
+  // A bare message names no target. Answering the newest open question is only
+  // safe when it is the only one open; with two visitors waiting, guessing
+  // delivers one person's answer to the other and reports success either way.
+  // So the guess survives for the common case and is refused when it would be
+  // a coin flip.
+  if (!mid) {
+    const open = await listOutstanding();
+    if (open.length > 1) {
+      const lines = open
+        .map(q => `  ${q.name ? `${q.name} · ` : ''}${q.cid.slice(0, 4)} - "${oneLinePreview(q.q)}"`)
+        .join('\n');
+      await sendNotice(
+        `${open.length} questions are open. Swipe right on the one you mean and reply to it, or I could send this to the wrong person.\n\n${lines}`,
+      );
+      return;
+    }
+    mid = open[0]?.mid ?? (await getLastQuestion());
+  }
 
   if (!mid) {
     await sendNotice('That question expired (older than an hour). Nothing sent.');

@@ -45,6 +45,10 @@ export interface RedisLike {
   lrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
   llen(key: string): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
+  zadd(key: string, entry: { score: number; member: string }): Promise<unknown>;
+  zrem(key: string, ...members: string[]): Promise<unknown>;
+  zrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
+  zremrangebyscore(key: string, min: number, max: number): Promise<unknown>;
 }
 
 export interface PendingQuestion {
@@ -53,6 +57,13 @@ export interface PendingQuestion {
   ts: number;
   /** Position in the conversation, so a late reply can be placed correctly. */
   index: number;
+  /** Who is asking, when they gave a name. Operator context only. */
+  name?: string;
+}
+
+/** A pending question with its id attached, for disambiguating a bare reply. */
+export interface OutstandingQuestion extends PendingQuestion {
+  mid: string;
 }
 
 export interface FinalAnswer {
@@ -68,6 +79,15 @@ export interface FinalAnswer {
  */
 const PRESENCE_KEY = 'chat:presence';
 const TG_LAST_KEY = 'chat:tg:last';
+
+/**
+ * Questions currently waiting on a human, scored by the moment they were
+ * asked. A bare Telegram reply carries no target, and answering the newest
+ * open question is only safe when it is the ONLY open question - with two
+ * visitors waiting, guessing sends one person's answer to the other and says
+ * "Sent as Verso." either way. This set is what makes that case detectable.
+ */
+const OUTSTANDING_KEY = 'chat:pending';
 
 const convKey = (cid: string) => `chat:conv:${cid}`;
 const msgKey = (mid: string) => `chat:msg:${mid}`;
@@ -194,6 +214,33 @@ export async function putPending(
   if (!redis) return;
   await guard<void>('pending write failed', undefined, async () => {
     await redis.set(msgKey(mid), JSON.stringify(p), { ex: MSG_TTL_S });
+    await redis.zadd(OUTSTANDING_KEY, { score: p.ts, member: mid });
+    // The set is pruned by score on read, but an expire keeps it from
+    // outliving the process entirely if every reader goes away.
+    await redis.expire(OUTSTANDING_KEY, MSG_TTL_S);
+  });
+}
+
+/**
+ * Questions still genuinely waiting, newest last. Anything older than the
+ * handoff window has already been answered by the model, so it is pruned on
+ * read rather than trusted - a request that died mid-flight never got to
+ * remove itself.
+ */
+export async function listOutstanding(
+  redis: RedisLike | null = getRedis(),
+): Promise<OutstandingQuestion[]> {
+  if (!redis) return [];
+  return guard<OutstandingQuestion[]>('outstanding read failed', [], async () => {
+    await redis.zremrangebyscore(OUTSTANDING_KEY, 0, Date.now() - HANDOFF_WINDOW_MS);
+    const mids = await redis.zrange<string>(OUTSTANDING_KEY, 0, -1);
+    const out: OutstandingQuestion[] = [];
+    for (const mid of mids) {
+      if (typeof mid !== 'string') continue;
+      const pending = coerce<PendingQuestion>(await redis.get(msgKey(mid)));
+      if (pending) out.push({ ...pending, mid });
+    }
+    return out;
   });
 }
 
@@ -224,7 +271,12 @@ export async function claim(
   return guard('claim failed', false, async () => {
     const res = await redis.set(claimKey(mid), who, { nx: true, ex: MSG_TTL_S });
     // Upstash returns 'OK' when the write landed and null when NX blocked it.
-    return Boolean(res);
+    const won = Boolean(res);
+    // Claimed by either side means no longer waiting, so it leaves the
+    // outstanding set whoever won. Removing only on a human claim would leave
+    // model-answered questions there to be miscounted as open.
+    if (won) await redis.zrem(OUTSTANDING_KEY, mid);
+    return won;
   });
 }
 

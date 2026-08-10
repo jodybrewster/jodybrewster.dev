@@ -249,7 +249,7 @@ export const POST: APIRoute = async ({ request }) => {
        */
       async function askOperator(): Promise<string | null> {
         const index = Math.floor(history.length / 2) + 1;
-        await putPending(mid, { cid, q: query, ts: Date.now(), index });
+        await putPending(mid, { cid, q: query, ts: Date.now(), index, name });
 
         // Retrieval runs about a second, and it is a second of dead air if it
         // waits for the window to close. Started now, thrown away if he

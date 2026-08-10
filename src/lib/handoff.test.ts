@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CONV_TTL_S,
   FINAL_TTL_S,
+  HANDOFF_WINDOW_MS,
   MAX_REPLY_CHARS,
   MSG_TTL_S,
   PRESENCE_TTL_S,
+  listOutstanding,
   appendTurn,
   claim,
   conversationLength,
@@ -94,6 +96,49 @@ class FakeRedis implements RedisLike {
     return 1;
   }
 
+  /** Sorted set, modelled as member -> score and sorted on read, which is all
+   *  the outstanding-question set needs. */
+  private zset(key: string): Map<string, number> {
+    const existing = this.store.get(key);
+    if (existing instanceof Map) return existing as Map<string, number>;
+    const fresh = new Map<string, number>();
+    this.store.set(key, fresh);
+    return fresh;
+  }
+
+  async zadd(key: string, entry: { score: number; member: string }): Promise<unknown> {
+    this.zset(key).set(entry.member, entry.score);
+    return 1;
+  }
+
+  async zrem(key: string, ...members: string[]): Promise<unknown> {
+    const set = this.zset(key);
+    let removed = 0;
+    for (const m of members) if (set.delete(m)) removed += 1;
+    return removed;
+  }
+
+  async zrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]> {
+    const sorted = [...this.zset(key).entries()]
+      .sort((a, b) => a[1] - b[1])
+      .map(([member]) => member);
+    const from = start < 0 ? sorted.length + start : start;
+    const to = stop < 0 ? sorted.length + stop : stop;
+    return sorted.slice(Math.max(from, 0), to + 1) as T[];
+  }
+
+  async zremrangebyscore(key: string, min: number, max: number): Promise<unknown> {
+    const set = this.zset(key);
+    let removed = 0;
+    for (const [member, score] of [...set.entries()]) {
+      if (score >= min && score <= max) {
+        set.delete(member);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
   /** Seed a list with raw values, including junk the module must survive. */
   seed(key: string, values: unknown[]): void {
     this.store.set(key, [...values]);
@@ -132,6 +177,18 @@ class BrokenRedis implements RedisLike {
     return this.fail();
   }
   async expire(_key: string, _seconds: number): Promise<number> {
+    return this.fail();
+  }
+  async zadd(_key: string, _entry: { score: number; member: string }): Promise<unknown> {
+    return this.fail();
+  }
+  async zrem(_key: string, ..._members: string[]): Promise<unknown> {
+    return this.fail();
+  }
+  async zrange<T = unknown>(_key: string, _start: number, _stop: number): Promise<T[]> {
+    return this.fail();
+  }
+  async zremrangebyscore(_key: string, _min: number, _max: number): Promise<unknown> {
     return this.fail();
   }
 }
@@ -386,6 +443,57 @@ describe('degradation', () => {
   });
 });
 
+describe('listOutstanding', () => {
+  const at = (ts: number) => ({ cid: 'c1', q: 'q', ts, index: 1 });
+
+  it('is empty with nothing pending', async () => {
+    expect(await listOutstanding(redis)).toEqual([]);
+  });
+
+  it('returns pending questions oldest first, carrying the name', async () => {
+    const now = Date.now();
+    await putPending('m1', { ...at(now - 2000), name: 'Sarah' }, redis);
+    await putPending('m2', { ...at(now - 1000), name: 'Dave' }, redis);
+
+    const open = await listOutstanding(redis);
+    expect(open.map(q => q.mid)).toEqual(['m1', 'm2']);
+    expect(open.map(q => q.name)).toEqual(['Sarah', 'Dave']);
+  });
+
+  it('drops a question once either side claims it', async () => {
+    const now = Date.now();
+    await putPending('m1', at(now), redis);
+    await putPending('m2', at(now), redis);
+
+    await claim('m1', 'human', redis);
+    expect((await listOutstanding(redis)).map(q => q.mid)).toEqual(['m2']);
+
+    // The model winning must clear it too, or a question the visitor already
+    // got an answer to would still count as open and block a bare reply.
+    await claim('m2', 'llm', redis);
+    expect(await listOutstanding(redis)).toEqual([]);
+  });
+
+  it('prunes anything older than the handoff window', async () => {
+    const now = Date.now();
+    await putPending('stale', at(now - HANDOFF_WINDOW_MS - 5000), redis);
+    await putPending('fresh', at(now), redis);
+
+    expect((await listOutstanding(redis)).map(q => q.mid)).toEqual(['fresh']);
+  });
+
+  it('skips members whose record has expired out from under the set', async () => {
+    await putPending('m1', at(Date.now()), redis);
+    await redis.del('chat:msg:m1');
+    expect(await listOutstanding(redis)).toEqual([]);
+  });
+
+  it('returns [] with no redis and on a broken client', async () => {
+    expect(await listOutstanding(null)).toEqual([]);
+    expect(await listOutstanding(new BrokenRedis())).toEqual([]);
+  });
+});
+
 describe('key names', () => {
   it('writes only under the chat: namespace it owns', async () => {
     await setPresence(true, redis);
@@ -403,6 +511,7 @@ describe('key names', () => {
       'chat:msg:m1:claim',
       'chat:msg:m1:final',
       'chat:msg:m1:reply',
+      'chat:pending',
       'chat:presence',
       'chat:tg:9876',
       'chat:tg:last',

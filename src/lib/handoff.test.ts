@@ -6,6 +6,7 @@ import {
   MAX_REPLY_CHARS,
   MSG_TTL_S,
   PRESENCE_TTL_S,
+  claimPresenceLapse,
   listOutstanding,
   appendTurn,
   claim,
@@ -96,6 +97,14 @@ class FakeRedis implements RedisLike {
     return 1;
   }
 
+  async getdel<T = unknown>(key: string): Promise<T | null> {
+    const had = this.store.has(key);
+    const v = this.store.get(key);
+    this.store.delete(key);
+    this.ttls.delete(key);
+    return had ? (v as T) : null;
+  }
+
   /** Sorted set, modelled as member -> score and sorted on read, which is all
    *  the outstanding-question set needs. */
   private zset(key: string): Map<string, number> {
@@ -177,6 +186,9 @@ class BrokenRedis implements RedisLike {
     return this.fail();
   }
   async expire(_key: string, _seconds: number): Promise<number> {
+    return this.fail();
+  }
+  async getdel<T = unknown>(_key: string): Promise<T | null> {
     return this.fail();
   }
   async zadd(_key: string, _entry: { score: number; member: string }): Promise<unknown> {
@@ -494,6 +506,65 @@ describe('listOutstanding', () => {
   });
 });
 
+describe('claimPresenceLapse', () => {
+  /** Put the window in the past without waiting ten hours for it. */
+  const expireWindow = () =>
+    redis.store.set('chat:presence:until', String(Date.now() - 60_000));
+
+  it('says nothing while the window is still open', async () => {
+    await setPresence(true, redis);
+    expect(await claimPresenceLapse(redis)).toBeNull();
+  });
+
+  it('says nothing when there was never a window', async () => {
+    expect(await claimPresenceLapse(redis)).toBeNull();
+  });
+
+  it('reports the lapse once the window has passed and presence is gone', async () => {
+    await setPresence(true, redis);
+    expireWindow();
+    await redis.del('chat:presence'); // what the TTL would have done
+
+    const endedAt = await claimPresenceLapse(redis);
+    expect(endedAt).toBeTypeOf('number');
+    expect(endedAt!).toBeLessThan(Date.now());
+  });
+
+  it('reports it exactly once, however many callers race', async () => {
+    await setPresence(true, redis);
+    expireWindow();
+    await redis.del('chat:presence');
+
+    const results = await Promise.all([
+      claimPresenceLapse(redis),
+      claimPresenceLapse(redis),
+      claimPresenceLapse(redis),
+    ]);
+    expect(results.filter(r => r !== null)).toHaveLength(1);
+  });
+
+  it('stays quiet after an explicit /off - he already knows', async () => {
+    await setPresence(true, redis);
+    await setPresence(false, redis);
+    expect(redis.store.has('chat:presence:until')).toBe(false);
+    expect(await claimPresenceLapse(redis)).toBeNull();
+  });
+
+  it('treats a fresh /on as an extension, not a lapse', async () => {
+    await setPresence(true, redis);
+    expireWindow();
+    await redis.del('chat:presence');
+    await setPresence(true, redis); // back on before anyone looked
+
+    expect(await claimPresenceLapse(redis)).toBeNull();
+  });
+
+  it('returns null with no redis and on a broken client', async () => {
+    expect(await claimPresenceLapse(null)).toBeNull();
+    expect(await claimPresenceLapse(new BrokenRedis())).toBeNull();
+  });
+});
+
 describe('key names', () => {
   it('writes only under the chat: namespace it owns', async () => {
     await setPresence(true, redis);
@@ -513,6 +584,7 @@ describe('key names', () => {
       'chat:msg:m1:reply',
       'chat:pending',
       'chat:presence',
+      'chat:presence:until',
       'chat:tg:9876',
       'chat:tg:last',
     ]);

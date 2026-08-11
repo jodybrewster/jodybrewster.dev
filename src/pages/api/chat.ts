@@ -18,6 +18,7 @@ import {
   setLastQuestion,
 } from '../../lib/handoff';
 import { telegramConfigured, formatQuestionMessage, sendQuestion } from '../../lib/telegram';
+import { announceLapse } from './telegram';
 import {
   SYSTEM_PROMPT,
   MAX_QUERY_LEN,
@@ -201,6 +202,16 @@ export const POST: APIRoute = async ({ request }) => {
   // Presence is read once here and reused for the handoff below - the two
   // decisions are a few milliseconds apart and share one answer.
   const operatorOnline = await isOperatorOnline();
+
+  // A window that ran out is invisible until something looks, and this is the
+  // look that matters: someone is asking right now and he does not know he
+  // stopped being the one answering. Fire-and-forget - the visitor waits on
+  // their answer, not on his notification, and the claim inside makes it fire
+  // once no matter how many requests arrive together.
+  if (!operatorOnline) {
+    void announceLapse().catch(err => console.error('[chat] lapse notice failed', err));
+  }
+
   const globalLimiter = getGlobalLimiter();
   if (globalLimiter && !operatorOnline) {
     try {

@@ -20,7 +20,7 @@ const DEFAULT_URL = 'https://jodybrewster.dev/api/telegram';
 
 /** Shown in Telegram's own command menu, so each one has to read on a phone. */
 const COMMANDS = [
-  { command: 'on', description: 'Take visitor questions here for 4h' },
+  { command: 'on', description: 'Take visitor questions here for 10h' },
   { command: 'off', description: 'Hand questions back to the model' },
   { command: 'status', description: "Presence, time left, today's model budget" },
   { command: 'help', description: 'List the commands' },

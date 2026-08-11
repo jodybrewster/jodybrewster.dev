@@ -232,6 +232,20 @@ The shelf is its own surface: a full-bleed document with no masthead or footer, 
 - **Back to the site.** Top left, same mono treatment at `rgb(244 241 232 / 0.28)` with a 7px backdrop blur, so the grain reads through it. Comes to `0.7` and full ink on hover and focus. It is the only navigation on the page. Hidden while the notebook is open and filling the window, since the site showing there carries its own nav.
 - **Selection card.** Bottom right, ash-paper on a 1px rule, 4px radius. Sized to its own text (`width: max-content`), never to a share of the viewport — an earlier `46vw` made it a half-width column that broke titles over five lines on a phone. Below 640px it takes both edges and sits across the foot of the screen. The notebook variant inverts to quiet-forest.
 
+### Operator surface (Telegram)
+
+Verso has a second interface with no visual system at all: the messages the bot sends Jody. It gets no colour, type, or spacing, so its only design surface is wording, and that needs to be as deliberate as anything on the site. The site's own conventions do not transfer - there is no accent to spend and no hierarchy to lean on.
+
+Four rules hold across every bot message.
+
+**One glance, on a phone, mid-something-else.** The first line carries the whole message; anything after it is detail he can skip. A question header is `Verso · Sarah · a3f1 · q2` because that ordering answers "who" before "which conversation".
+
+**State what happened, then what it means for him.** "Handoff expired 20m ago - the 10h window ran out. Verso is answering from the corpus again." The event, the consequence, then the way back. Never the event alone.
+
+**Every message is plain text, no `parse_mode`.** This is a correctness constraint before it is a stylistic one: under Markdown an unbalanced `*` in a visitor's question makes Telegram reject the message and the question vanishes silently. So no bold, no italics, no links - emphasis has to come from sentence order.
+
+**Say when nothing happened.** Silence on this channel reads as success, so a refusal, a too-late reply, or a non-text message all get an explicit line. "Nothing sent" appears verbatim wherever that is the outcome.
+
 ## 6. Do's and Don'ts
 
 ### Do:

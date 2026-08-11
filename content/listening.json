@@ -1,5 +1,5 @@
 {
-  "updated": "2026-08-10",
+  "updated": "2026-08-11",
   "artists": [
     {
       "name": "The Avalanches",
@@ -52,6 +52,10 @@
     {
       "name": "Ludwig Göransson",
       "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
+    },
+    {
+      "name": "TV On The Radio",
+      "url": "https://open.spotify.com/artist/3HJIB8sYPyxrFGuwvKXSLR"
     },
     {
       "name": "Steve Lacy",
@@ -160,6 +164,12 @@
       "image": "https://i.scdn.co/image/ab67616d00001e0290e9adff5f77dd1ff6d24e47"
     },
     {
+      "name": "Q36",
+      "artist": "The Rentals",
+      "url": "https://open.spotify.com/album/42F7nxmTkw03ZBruBdRoHS",
+      "image": "https://i.scdn.co/image/ab67616d00001e0261dc385c7bebfcba0598d74e"
+    },
+    {
       "name": "Transatlanticism (10th Anniversary Edition)",
       "artist": "Death Cab for Cutie",
       "url": "https://open.spotify.com/album/5UKAhD2VmFAuThgq4OQyEe",
@@ -190,6 +200,12 @@
       "image": "https://i.scdn.co/image/ab67616d00001e02de825e6f087f44e3b2297645"
     },
     {
+      "name": "Seeds",
+      "artist": "TV On The Radio",
+      "url": "https://open.spotify.com/album/2pJdnCpeXm3KVUlyuNSeRX",
+      "image": "https://i.scdn.co/image/ab67616d00001e02d37d023cf0ddb1440f659ee3"
+    },
+    {
       "name": "We're Not Here to Be Loved",
       "artist": "Fleshwater",
       "url": "https://open.spotify.com/album/0hm7PiBu72tRliLqLfiKy1",
@@ -200,18 +216,6 @@
       "artist": "Ty Segall",
       "url": "https://open.spotify.com/album/5BInay8c4KClHpYL94IBed",
       "image": "https://i.scdn.co/image/ab67616d00001e023f0c6b55d1dbd64cba26bd5a"
-    },
-    {
-      "name": "Afraid Of Heights",
-      "artist": "Wavves",
-      "url": "https://open.spotify.com/album/7tbCuIt9zm1fRQyH2berwK",
-      "image": "https://i.scdn.co/image/ab67616d00001e02394277bc3187a9742ea2a764"
-    },
-    {
-      "name": "7",
-      "artist": "Beach House",
-      "url": "https://open.spotify.com/album/1zN85Ep8w2JORfCe0RHLDP",
-      "image": "https://i.scdn.co/image/ab67616d00001e020af2276ae66a42e73eb07683"
     }
   ]
 }

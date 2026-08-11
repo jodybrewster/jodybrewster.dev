@@ -25,7 +25,7 @@ export const HANDOFF_WINDOW_MS = 40_000;
 /** Reply poll cadence inside that window. Short enough to feel like typing. */
 export const POLL_INTERVAL_MS = 1200;
 /** Presence expires on its own so a forgotten "online" can't strand visitors. */
-export const PRESENCE_TTL_S = 14400; // 4h
+export const PRESENCE_TTL_S = 36000; // 10h
 export const CONV_TTL_S = 86400; // 24h
 export const MSG_TTL_S = 3600; // 1h
 export const FINAL_TTL_S = 900; // 15m
@@ -45,6 +45,7 @@ export interface RedisLike {
   lrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
   llen(key: string): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
+  getdel<T = unknown>(key: string): Promise<T | null>;
   zadd(key: string, entry: { score: number; member: string }): Promise<unknown>;
   zrem(key: string, ...members: string[]): Promise<unknown>;
   zrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
@@ -79,6 +80,16 @@ export interface FinalAnswer {
  */
 const PRESENCE_KEY = 'chat:presence';
 const TG_LAST_KEY = 'chat:tg:last';
+
+/**
+ * When the current handoff window ends, in epoch ms. Deliberately outlives
+ * PRESENCE_KEY: a Redis key expiring runs nothing, so a lapse is invisible
+ * until something asks. This is the something to ask - it survives the
+ * presence key it describes, so a later request can see that the window
+ * closed on its own and say so once. Cleared by an explicit /off, which needs
+ * no announcement.
+ */
+const PRESENCE_UNTIL_KEY = 'chat:presence:until';
 
 /**
  * Questions currently waiting on a human, scored by the moment they were
@@ -150,8 +161,43 @@ export async function isOperatorOnline(redis: RedisLike | null = getRedis()): Pr
 export async function setPresence(on: boolean, redis: RedisLike | null = getRedis()): Promise<void> {
   if (!redis) return;
   await guard<void>('presence write failed', undefined, async () => {
-    if (on) await redis.set(PRESENCE_KEY, '1', { ex: PRESENCE_TTL_S });
-    else await redis.del(PRESENCE_KEY);
+    if (on) {
+      await redis.set(PRESENCE_KEY, '1', { ex: PRESENCE_TTL_S });
+      // Outlives the window by a day so the lapse is still observable after it
+      // happens. Going off deliberately clears it - he already knows.
+      await redis.set(PRESENCE_UNTIL_KEY, String(Date.now() + PRESENCE_TTL_S * 1000), {
+        ex: PRESENCE_TTL_S + 86400,
+      });
+    } else {
+      await redis.del(PRESENCE_KEY, PRESENCE_UNTIL_KEY);
+    }
+  });
+}
+
+/**
+ * Did the handoff window close on its own since anyone last looked?
+ *
+ * Returns the moment it ended, once, and never again - the read deletes the
+ * marker, so whichever request notices first is the only one that reports it.
+ * That matters because this is called from both the webhook and the chat
+ * route, and two visitors arriving together must not produce two notices.
+ *
+ * Returns null while presence is still live, when it was switched off by hand,
+ * and when someone has already been told.
+ */
+export async function claimPresenceLapse(
+  redis: RedisLike | null = getRedis(),
+): Promise<number | null> {
+  if (!redis) return null;
+  return guard<number | null>('lapse check failed', null, async () => {
+    const until = asString(await redis.get(PRESENCE_UNTIL_KEY));
+    if (!until) return null;
+    const endedAt = Number(until);
+    if (!Number.isFinite(endedAt) || endedAt > Date.now()) return null;
+    // Still on means the window was extended by a fresh /on - not a lapse.
+    if (await redis.get(PRESENCE_KEY)) return null;
+    // GETDEL is the claim: only one caller gets a value back.
+    return (await redis.getdel(PRESENCE_UNTIL_KEY)) ? endedAt : null;
   });
 }
 

@@ -18,6 +18,7 @@ import { getGlobalLimiter } from '../../lib/rate-limit';
 import {
   claim,
   getFinal,
+  claimPresenceLapse,
   getLastQuestion,
   isOperatorOnline,
   listOutstanding,
@@ -95,6 +96,26 @@ async function statusMessage(): Promise<string> {
     ? `Handoff ON. ${Math.ceil(ttl / 60)}m left.`
     : 'Handoff OFF. Verso answers from the corpus.';
   return `${presence}\n${await budgetLine()}`;
+}
+
+/**
+ * Tell the owner the handoff window closed on its own, at most once per window.
+ *
+ * A Redis key expiring runs nothing, so there is no moment to hook. This fires
+ * on the next thing that happens instead - his next message to the bot, or a
+ * visitor asking a question. The second is the case worth catching: someone is
+ * waiting and he does not know he stopped being the one answering.
+ */
+export async function announceLapse(): Promise<void> {
+  const endedAt = await claimPresenceLapse();
+  if (endedAt === null) return;
+  const agoMin = Math.max(0, Math.round((Date.now() - endedAt) / 60000));
+  const when = agoMin < 1 ? 'just now' : agoMin < 60
+    ? `${agoMin}m ago`
+    : `${Math.round(agoMin / 60)}h ago`;
+  await sendNotice(
+    `Handoff expired ${when} - the ${PRESENCE_HOURS}h window ran out. Verso is answering from the corpus again. Send /on to take questions back.`,
+  );
 }
 
 /**
@@ -181,6 +202,10 @@ export const POST: APIRoute = async ({ request }) => {
     // Wrong sender, or a group chat the bot was added to. Answering either one
     // would confirm the endpoint is live, so it gets silence.
     if (!isOwnerUpdate(msg, env('TELEGRAM_OWNER_ID'))) return ack();
+
+    // Say so before answering whatever he sent, so a `/status` that reports OFF
+    // is preceded by the reason it is off.
+    await announceLapse();
 
     const text = typeof msg.text === 'string' ? msg.text.trim() : '';
 

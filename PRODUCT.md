@@ -36,6 +36,8 @@ Not austere: warm, but never effusive. Not academic: rigorous, but never jargon-
 
 **A human may be behind Verso.** Verso is one persona with two authors. Most of the time it answers from the published corpus. When Jody is available, the question reaches his phone and his reply comes back through the same stream, paced the same way, under the same name. The visitor is not told which one answered.
 
+Being available is a window, not a switch. `/on` puts Jody on call for ten hours and it closes by itself, because the failure that matters is not forgetting to turn it on - it is believing you are on call when you stopped being hours ago, while a visitor waits out the full window for a reply that is not coming. The window expiring is announced rather than silent, on his next contact with the bot or the next visitor question, whichever lands first.
+
 This is a deliberate position and it has edges worth keeping in view. Verso speaks about Jody in the third person and never as him, which holds on both paths: the site refuses voice cloning, and a human writing in the assistant's register is not a clone of anyone. What the site must not do is claim more than is true. Copy describing Verso says what it answers from, not what generates it. A page that promised answers came only from the corpus would be lying every time he picked up his phone.
 
 One line breaks that rule knowingly: the ask-bar placeholder reads "Ask Verso, Jody's AI Assistant". It asserts the mechanism rather than the behaviour, and it is the one piece of user-facing text that is false while he is typing. It is Jody's call and it stands. Anything added later should follow the rule above rather than this exception.

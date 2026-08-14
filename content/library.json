@@ -544,6 +544,12 @@
       "author": "Michael T. Nygard",
       "url": "https://openlibrary.org/works/OL8848832W",
       "cover": "/media/books/book-release-it-design-and-deploy-production-ready-software.jpg"
+    },
+    {
+      "title": "AI Engineering",
+      "author": "Chip Huyen",
+      "url": "https://openlibrary.org/works/OL39671094W",
+      "cover": "/media/books/book-ai-engineering.jpg"
     }
   ]
 }

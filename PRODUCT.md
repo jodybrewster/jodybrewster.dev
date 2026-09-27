@@ -14,6 +14,8 @@ Personal site for Jody Brewster, AI Experience Architect. Publishes writing, dig
 
 A stated purpose of the site is working in public with a second brain: Claude researches questions under Jody's direction, Jody reviews, and what holds up is published in the Research section. Surfacing what that second brain is building on is deliberate, not a byproduct.
 
+The current visual system carries that editorial purpose through the interior pages: a permanent dark studio, thin condensed headlines, a supplied layered-glass mark, and one distinct generated illustration per research subject. Images support the argument of each piece and appear on both the index card and, where assigned, the article page.
+
 ## Brand Personality
 
 Precise. Rigorous. Warm.

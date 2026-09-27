@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -8,8 +8,8 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Display: Source Serif 4 (editorial serif w/ optical sizing). Body/UI: Plus Jakarta Sans. Mono: JetBrains Mono. -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Headlines: Barlow Semi Condensed. Body/UI: Plus Jakarta Sans. Legacy editorial: Source Serif 4. Mono: JetBrains Mono. -->
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
   :root {
@@ -1233,16 +1233,38 @@
       transition-duration: .01ms !important;
     }
   }
+/* Homepage reference palette — shared with src/styles/home.css. */
+.home-page {
+  --headline: "Barlow Semi Condensed", "Arial Narrow", var(--sans);
+  --home-bg: #050f16;
+  --home-surface: #0a1721;
+  --home-raised: #172633;
+  --home-rule: #263b4c;
+  --home-ink: #f4f7fb;
+  --home-muted: #bbcee3;
+  --home-cyan: #00c6e7;
+  --home-orange: #ff9651;
+  --home-purple: #b58aff;
+  --home-pink: #f657ac;
+  --home-green: #31da67;
+  --home-radius: 10px;
+  --home-width: 1416px;
+}
+[data-theme="light"] .home-page {
+  --home-bg: #eef3f7;
+  --home-surface: #ffffff;
+  --home-raised: #e0e9f0;
+  --home-rule: #c6d5e0;
+  --home-ink: #112634;
+  --home-muted: #455f72;
+  --home-cyan: #007b93;
+  --home-orange: #b34b12;
+  --home-purple: #7351b4;
+  --home-pink: #b92676;
+}
+
 </style>
-<script>
-  // Anti-FOUC: apply stored theme before first paint
-  (function() {
-    var stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') {
-      document.documentElement.setAttribute('data-theme', stored);
-    }
-  })();
-</script>
+
 </head>
 <body>
 
@@ -1353,10 +1375,6 @@
       <a href="#" data-go="brief"><svg class="icon sm"><use href="#i-brief"/></svg>Briefs</a>
       <a href="#" data-go="chat"><svg class="icon sm"><use href="#i-chat"/></svg>Chat</a>
       <a href="#" data-go="agent"><svg class="icon sm"><use href="#i-terminal"/></svg>Agent</a>
-      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
-        <svg class="icon sm i-sun"><use href="#i-sun"/></svg>
-        <svg class="icon sm i-moon"><use href="#i-moon"/></svg>
-      </button>
     </nav>
   </header>
 
@@ -1917,28 +1935,7 @@
     }, 1400);
   }
 
-  // dark mode toggle
-  (function() {
-    var root = document.documentElement;
-    var btn = document.getElementById('theme-toggle');
 
-    function getEffectiveTheme() {
-      var stored = localStorage.getItem('theme');
-      if (stored === 'dark' || stored === 'light') return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-
-    function applyTheme(theme) {
-      root.setAttribute('data-theme', theme);
-      localStorage.setItem('theme', theme);
-    }
-
-    if (btn) {
-      btn.addEventListener('click', function() {
-        applyTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
-      });
-    }
-  })();
 </script>
 </body>
 </html>

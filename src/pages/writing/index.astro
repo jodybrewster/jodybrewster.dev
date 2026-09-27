@@ -1,42 +1,7 @@
 ---
-import { getCollection } from 'astro:content';
-import Base from '../../layouts/Base.astro';
-import EssayCard from '../../components/EssayCard.astro';
-import PageHeader from '../../components/PageHeader.astro';
-
-const essays = (await getCollection('writing', e => e.data.status === 'published'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function readTime(body: string) {
-  const words = body.split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min`;
-}
+import Studio from '../../layouts/Studio.astro';
+import WritingIndex from '../../components/WritingIndex.astro';
 ---
-<Base title="Writing — Jody Brewster" description="Essays on AI experience architecture, runtime design, agentic interfaces, and senior design practice.">
-  <main class="page active" style="padding: 72px 0 100px;">
-    <PageHeader
-      icon="i-book"
-      eyebrow={`${essays.length} ${essays.length === 1 ? 'essay' : 'essays'}`}
-      title="Writing"
-      description="Essays, in order of having been finished."
-    />
-
-    <ul class="essay-list">
-      {essays.map((essay, i) => (
-        <EssayCard
-          title={essay.data.title}
-          date={formatDate(essay.data.date)}
-          description={essay.data.description}
-          tags={essay.data.tags}
-          slug={essay.id}
-          index={`№ ${String(essays.length - i).padStart(3, '0')}`}
-          readTime={readTime(essay.body ?? '')}
-        />
-      ))}
-    </ul>
-  </main>
-</Base>
+<Studio title="Writing & Research — Jody Brewster" description="Ideas, lessons, and what I’m exploring. Technical notes, architecture thinking, AI, product development, and lessons from real-world projects.">
+  <WritingIndex />
+</Studio>

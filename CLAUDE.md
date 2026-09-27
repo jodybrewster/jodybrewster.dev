@@ -72,6 +72,8 @@ Content lives in two places:
 
 Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
+The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Writing card imagery is selected by content slug in `src/components/WritingIndex.astro`; article lead figures are passed through `src/layouts/Essay.astro` when a piece has a dedicated image.
+
 `/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
 
 The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.

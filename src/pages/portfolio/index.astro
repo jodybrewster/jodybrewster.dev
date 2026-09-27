@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import Base from '../../layouts/Base.astro';
+import Studio from '../../layouts/Studio.astro';
 import PageHeader from '../../components/PageHeader.astro';
 
 const projects = (await getCollection('portfolio'))
@@ -10,8 +10,8 @@ function formatDate(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 ---
-<Base title="Portfolio — Jody Brewster" description="Selected interface and product design work — portals, mobile apps, mapping tools, and design systems.">
-  <main class="page active" style="padding: 72px 0 100px;">
+<Studio title="Portfolio — Jody Brewster" description="Selected interface and product design work — portals, mobile apps, mapping tools, and design systems.">
+  <main class="page active studio-container" style="padding: 72px 0 100px;">
     <PageHeader
       icon="i-layers"
       eyebrow={`${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`}
@@ -41,7 +41,7 @@ function formatDate(d: Date) {
       ))}
     </ul>
   </main>
-</Base>
+</Studio>
 
 <style>
   .folio-list {

@@ -1,221 +1,241 @@
 {
-  "updated": "2026-08-11",
+  "updated": "2026-09-27",
   "artists": [
-    {
-      "name": "The Avalanches",
-      "url": "https://open.spotify.com/artist/3C8RpaI3Go0yFF9whvKoED"
-    },
-    {
-      "name": "Bring Me The Horizon",
-      "url": "https://open.spotify.com/artist/1Ffb6ejR6Fe5IamqA5oRUF"
-    },
-    {
-      "name": "Frost Children",
-      "url": "https://open.spotify.com/artist/6R1kfr0GIWnwxY4zW11Vag"
-    },
-    {
-      "name": "Wavves",
-      "url": "https://open.spotify.com/artist/6bUJpbekaIlq2fT5FMV2mQ"
-    },
-    {
-      "name": "Beach House",
-      "url": "https://open.spotify.com/artist/56ZTgzPBDge0OvCGgMO3OY"
-    },
-    {
-      "name": "Fleshwater",
-      "url": "https://open.spotify.com/artist/6P5ccCJCe8A4s9tDSTNFzF"
-    },
-    {
-      "name": "Das Racist",
-      "url": "https://open.spotify.com/artist/4iqAeIP1ynbt71G0Oi8VIt"
-    },
-    {
-      "name": "Death Cab for Cutie",
-      "url": "https://open.spotify.com/artist/0YrtvWJMgSdVrk3SfNjTbx"
-    },
-    {
-      "name": "Bleed",
-      "url": "https://open.spotify.com/artist/15DYcBNS0c6bfsoezOIzT3"
-    },
-    {
-      "name": "Charli xcx",
-      "url": "https://open.spotify.com/artist/25uiPmTg16RbhZWAqwLBy5"
-    },
-    {
-      "name": "Token",
-      "url": "https://open.spotify.com/artist/4cUfFbVZGSsJWdbfmkdxYq"
-    },
-    {
-      "name": "The Strokes",
-      "url": "https://open.spotify.com/artist/0epOFNiUfyON9EYx7Tpr6V"
-    },
-    {
-      "name": "Ludwig Göransson",
-      "url": "https://open.spotify.com/artist/24eDfi2MSYo3A87hCcgpIL"
-    },
-    {
-      "name": "TV On The Radio",
-      "url": "https://open.spotify.com/artist/3HJIB8sYPyxrFGuwvKXSLR"
-    },
-    {
-      "name": "Steve Lacy",
-      "url": "https://open.spotify.com/artist/57vWImR43h4CaDao012Ofp"
-    },
     {
       "name": "Ty Segall",
       "url": "https://open.spotify.com/artist/58XGUNsRNu3cVOIOYk5chx"
+    },
+    {
+      "name": "The Rolling Stones",
+      "url": "https://open.spotify.com/artist/22bE4uQ6baNwSHPVcDxLCe"
+    },
+    {
+      "name": "Gilla Band",
+      "url": "https://open.spotify.com/artist/7IdPmzvB3PugXieZE9vS4S"
+    },
+    {
+      "name": "CZARFACE",
+      "url": "https://open.spotify.com/artist/4John8fJ3LKqFho0pselVr"
+    },
+    {
+      "name": "Gorillaz",
+      "url": "https://open.spotify.com/artist/3AA28KZvwAUcZuOKwyblJQ"
+    },
+    {
+      "name": "Kasabian",
+      "url": "https://open.spotify.com/artist/11wRdbnoYqRddKBrpHt4Ue"
+    },
+    {
+      "name": "Interpol",
+      "url": "https://open.spotify.com/artist/3WaJSfKnzc65VDgmj2zU8B"
+    },
+    {
+      "name": "KMD",
+      "url": "https://open.spotify.com/artist/70S4sHnxr55YQxZ53H5guq"
+    },
+    {
+      "name": "Maximum Love",
+      "url": "https://open.spotify.com/artist/6iDI0sHLIeFIkZk6BKJBVQ"
+    },
+    {
+      "name": "The Cure",
+      "url": "https://open.spotify.com/artist/7bu3H8JO7d0UbMoVzbo70s"
+    },
+    {
+      "name": "Sylvan Esso",
+      "url": "https://open.spotify.com/artist/39vA9YljbnOApXKniLWBZv"
+    },
+    {
+      "name": "The Smashing Pumpkins",
+      "url": "https://open.spotify.com/artist/40Yq4vzPs9VNUrIBG5Jr2i"
+    },
+    {
+      "name": "The Barbarians of California",
+      "url": "https://open.spotify.com/artist/4ssLjypWLLQ2kP9aHRMraO"
+    },
+    {
+      "name": "The Smile",
+      "url": "https://open.spotify.com/artist/6styCzc1Ej4NxISL0LiigM"
+    },
+    {
+      "name": "MF DOOM",
+      "url": "https://open.spotify.com/artist/2pAWfrd7WFF3XhVt9GooDL"
+    },
+    {
+      "name": "M83",
+      "url": "https://open.spotify.com/artist/63MQldklfxkjYDoUE4Tppz"
+    },
+    {
+      "name": "Mastodon",
+      "url": "https://open.spotify.com/artist/1Dvfqq39HxvCJ3GvfeIFuT"
+    },
+    {
+      "name": "Baths",
+      "url": "https://open.spotify.com/artist/5zS8r5hRRk1jzD41yYS1NO"
+    },
+    {
+      "name": "Bassvictim",
+      "url": "https://open.spotify.com/artist/7f8ydynRRnrJBqWxevKLcM"
+    },
+    {
+      "name": "Little Simz",
+      "url": "https://open.spotify.com/artist/6eXZu6O7nAUA5z6vLV8NKI"
+    },
+    {
+      "name": "The Middle Class",
+      "url": "https://open.spotify.com/artist/5I793rD126c8vMhbeowZtZ"
     }
   ],
   "albums": [
     {
-      "name": "Since I Left You (20th Anniversary Deluxe Edition)",
-      "artist": "The Avalanches",
-      "url": "https://open.spotify.com/album/0YtYaaO0aipyeQl0xhAWTO",
-      "image": "https://i.scdn.co/image/ab67616d00001e024cc65c5ce55234c548a79d9d"
+      "name": "Chrome",
+      "artist": "Ty Segall",
+      "url": "https://open.spotify.com/album/6XvOQXCzVu4QczH2ABQovW",
+      "image": "https://i.scdn.co/image/ab67616d00001e0220e94cd0f2c4e750bac4b246"
     },
     {
-      "name": "Tweaker Poem",
-      "artist": "Frost Children",
-      "url": "https://open.spotify.com/album/2fzKiP2hfzKll1QlXNzojx",
-      "image": "https://i.scdn.co/image/ab67616d00001e02557318ccf401251fe5efa334"
+      "name": "Beggars Banquet (50th Anniversary Edition)",
+      "artist": "The Rolling Stones",
+      "url": "https://open.spotify.com/album/6OHri5qNxwCdVSdyCslspd",
+      "image": "https://i.scdn.co/image/ab67616d00001e0244934a06d21864415376f5f2"
     },
     {
-      "name": "Shut Up, Dude",
-      "artist": "Das Racist",
-      "url": "https://open.spotify.com/album/0WLZ8fN0sZn9Qoux0MUrND",
-      "image": "https://i.scdn.co/image/ab67616d00001e029e18bd5f311401dee24516de"
+      "name": "ACT III",
+      "artist": "Kasabian",
+      "url": "https://open.spotify.com/album/0A3hmEjQhYcG2fZyIBYVVC",
+      "image": "https://i.scdn.co/image/ab67616d00001e02579a5c01d1c65d1c1f40719d"
     },
     {
-      "name": "Music, Fashion, Film",
-      "artist": "Charli xcx",
-      "url": "https://open.spotify.com/album/4bR7pd6TVS53l24qFV4wI8",
-      "image": "https://i.scdn.co/image/ab67616d00001e02238e2ff91714a8db91b8a64d"
+      "name": "Czarface Meets Frankie Pulitzer",
+      "artist": "CZARFACE",
+      "url": "https://open.spotify.com/album/42dcDultUHOEd4QU4umdq6",
+      "image": "https://i.scdn.co/image/ab67616d00001e02b8701034fddd1271b660e16e"
     },
     {
-      "name": "I'm Leaving Soon",
-      "artist": "Token",
-      "url": "https://open.spotify.com/album/1yina9uQXAX3Gc7q4Mf4Kv",
-      "image": "https://i.scdn.co/image/ab67616d00001e02c1f4319ec360bb15cda45827"
+      "name": "Their Satanic Majesties Request (50th Anniversary Special Edition / Remastered)",
+      "artist": "The Rolling Stones",
+      "url": "https://open.spotify.com/album/2SE7fs002NlNc3cw3SQLRC",
+      "image": "https://i.scdn.co/image/ab67616d00001e0263a1d46bf691ebd45e3cb393"
     },
     {
-      "name": "Bloom",
-      "artist": "Beach House",
-      "url": "https://open.spotify.com/album/6w84G1JaQPqbf8RzS48tPf",
-      "image": "https://i.scdn.co/image/ab67616d00001e020ac131b9488447476f7406b5"
+      "name": "Operation: Doomsday (Complete)",
+      "artist": "MF DOOM",
+      "url": "https://open.spotify.com/album/5bjUbZPVTEQcb6W3LquX1E",
+      "image": "https://i.scdn.co/image/ab67616d00001e026ce90ec627a0198a8efd127f"
     },
     {
-      "name": "Count Your Blessings | Repented",
-      "artist": "Bring Me The Horizon",
-      "url": "https://open.spotify.com/album/1v47s2Z5kdloRlVkxHcTWO",
-      "image": "https://i.scdn.co/image/ab67616d00001e02f71b9303698be44cdede2ac8"
+      "name": "Most Normal",
+      "artist": "Gilla Band",
+      "url": "https://open.spotify.com/album/3UcqK7oJ4UiScKZD8IQsk0",
+      "image": "https://i.scdn.co/image/ab67616d00001e02ee73d0bcf119dc97d6b8e0d1"
     },
     {
-      "name": "Satellites",
-      "artist": "Frost Children",
-      "url": "https://open.spotify.com/album/1lwDEmZ3j69Wrh0AycrCCU",
-      "image": "https://i.scdn.co/image/ab67616d00001e0216c3c79d1a782cf1635ee148"
+      "name": "Turn On The Bright Lights",
+      "artist": "Interpol",
+      "url": "https://open.spotify.com/album/4sW8Eql2e2kdRP1A1R1clG",
+      "image": "https://i.scdn.co/image/ab67616d00001e0214f8df9fb9c2d3056a994390"
     },
     {
-      "name": "Bleed",
-      "artist": "Bleed",
-      "url": "https://open.spotify.com/album/4kQKFJ8RTpXtWP7t97uul5",
-      "image": "https://i.scdn.co/image/ab67616d00001e02a08f9c3143699910238a7bda"
+      "name": "Mellon Collie And The Infinite Sadness (Deluxe Edition)",
+      "artist": "The Smashing Pumpkins",
+      "url": "https://open.spotify.com/album/55RhFRyQFihIyGf61MgcfV",
+      "image": "https://i.scdn.co/image/ab67616d00001e02431ac6e6f393acf475730ec6"
     },
     {
-      "name": "The Thread",
-      "artist": "WILLOW",
-      "url": "https://open.spotify.com/album/6x9IdAz7Br6NnlK7BBJubL",
-      "image": "https://i.scdn.co/image/ab67616d00001e025b1ac8071f6142875c398cca"
+      "name": "Placeholder",
+      "artist": "Gilla Band",
+      "url": "https://open.spotify.com/album/2LsamWtPqjSpB4rNICcaRp",
+      "image": "https://i.scdn.co/image/ab67616d00001e0280c2ff6471cc02b3b7d3100a"
     },
     {
-      "name": "Every Single Weekend (feat. Jamie xx)",
-      "artist": "The Avalanches",
-      "url": "https://open.spotify.com/album/0bDV16KDFYNix2fGuUQ6cw",
-      "image": "https://i.scdn.co/image/ab67616d00001e0296a50b86881f30743f92f223"
+      "name": "Disintegration (Deluxe Edition)",
+      "artist": "The Cure",
+      "url": "https://open.spotify.com/album/0H6TddUF2M63ZSHGvhk5yy",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c6e47e1240c011b60691559c"
     },
     {
-      "name": "Oh yeah?",
-      "artist": "Steve Lacy",
-      "url": "https://open.spotify.com/album/289GZwycrFReuNB706obBx",
-      "image": "https://i.scdn.co/image/ab67616d00001e024ea9ba86cd9506a004bab042"
+      "name": "Pornography",
+      "artist": "The Cure",
+      "url": "https://open.spotify.com/album/0qJ30kPyjNkKjtV5h0JpHm",
+      "image": "https://i.scdn.co/image/ab67616d00001e02bc895ce03f0a5dfd2f1597b5"
     },
     {
-      "name": "Kings Of Crunk",
-      "artist": "Lil Jon & The East Side Boyz",
-      "url": "https://open.spotify.com/album/4htcOW08TqINNLbcSf9esI",
-      "image": "https://i.scdn.co/image/ab67616d00001e023ba0e7112f965bfda72b1c5b"
+      "name": "Out of Vogue: The Early Material",
+      "artist": "The Middle Class",
+      "url": "https://open.spotify.com/album/0avXxdKl6uluHkmO6iCbXl",
+      "image": "https://i.scdn.co/image/ab67616d00001e02c57114b63a4537b4daa6b720"
     },
     {
-      "name": "Attack on Memory",
-      "artist": "Cloud Nothings",
-      "url": "https://open.spotify.com/album/5WXkhXajktSjUJxN2S50qo",
-      "image": "https://i.scdn.co/image/ab67616d00001e02bc83535dd797ff3b21d3a665"
+      "name": "Alogia",
+      "artist": "Gilla Band",
+      "url": "https://open.spotify.com/album/58TF0bXpganBLiPrTz8Xl8",
+      "image": "https://i.scdn.co/image/ab67616d00001e02646e6d722621da301c96d942"
     },
     {
-      "name": "Reality Awaits",
-      "artist": "The Strokes",
-      "url": "https://open.spotify.com/album/6x0nmCMjHeuN3rYBmI5Bor",
-      "image": "https://i.scdn.co/image/ab67616d00001e026b458d1409d938dad4e3ba2c"
-    },
-    {
-      "name": "Hurry Up, We're Dreaming",
-      "artist": "M83",
-      "url": "https://open.spotify.com/album/6R0ynY7RF20ofs9GJR5TXR",
-      "image": "https://i.scdn.co/image/ab67616d00001e0290e9adff5f77dd1ff6d24e47"
-    },
-    {
-      "name": "Q36",
-      "artist": "The Rentals",
-      "url": "https://open.spotify.com/album/42F7nxmTkw03ZBruBdRoHS",
-      "image": "https://i.scdn.co/image/ab67616d00001e0261dc385c7bebfcba0598d74e"
-    },
-    {
-      "name": "Transatlanticism (10th Anniversary Edition)",
-      "artist": "Death Cab for Cutie",
-      "url": "https://open.spotify.com/album/5UKAhD2VmFAuThgq4OQyEe",
-      "image": "https://i.scdn.co/image/ab67616d00001e02c988bbfb15aca7928323d2ff"
-    },
-    {
-      "name": "No Life for Me",
-      "artist": "Wavves",
-      "url": "https://open.spotify.com/album/4YXtgZunaJyWZifBp0pNa1",
-      "image": "https://i.scdn.co/image/ab67616d00001e02e8a25b2bd0524c4497b32223"
-    },
-    {
-      "name": "I Built You A Tower",
-      "artist": "Death Cab for Cutie",
-      "url": "https://open.spotify.com/album/4D1zUsXw30DbfOqY1gVsfT",
-      "image": "https://i.scdn.co/image/ab67616d00001e021356b24d48cbabc44384e753"
-    },
-    {
-      "name": "The Window",
-      "artist": "Ratboys",
-      "url": "https://open.spotify.com/album/07h9Qsx40cCp1h0ykxuqU1",
-      "image": "https://i.scdn.co/image/ab67616d00001e02c44a4eca1e25517c5b9ad297"
-    },
-    {
-      "name": "SISTER",
-      "artist": "Frost Children",
-      "url": "https://open.spotify.com/album/0IojfyxFQMggZW9aNCeaV7",
-      "image": "https://i.scdn.co/image/ab67616d00001e02de825e6f087f44e3b2297645"
-    },
-    {
-      "name": "Seeds",
-      "artist": "TV On The Radio",
-      "url": "https://open.spotify.com/album/2pJdnCpeXm3KVUlyuNSeRX",
-      "image": "https://i.scdn.co/image/ab67616d00001e02d37d023cf0ddb1440f659ee3"
-    },
-    {
-      "name": "We're Not Here to Be Loved",
-      "artist": "Fleshwater",
-      "url": "https://open.spotify.com/album/0hm7PiBu72tRliLqLfiKy1",
-      "image": "https://i.scdn.co/image/ab67616d00001e025e6a9cd045fa8da9ba2fe81a"
+      "name": "MEGATONS",
+      "artist": "The Barbarians of California",
+      "url": "https://open.spotify.com/album/6eweLuC9bnuSoFk1hlu1C2",
+      "image": "https://i.scdn.co/image/ab67616d00001e026bfb48fb8747a0fb71a32f14"
     },
     {
       "name": "Freedom's Goblin",
       "artist": "Ty Segall",
       "url": "https://open.spotify.com/album/5BInay8c4KClHpYL94IBed",
       "image": "https://i.scdn.co/image/ab67616d00001e023f0c6b55d1dbd64cba26bd5a"
+    },
+    {
+      "name": "Time To Burn",
+      "artist": "XCOMM",
+      "url": "https://open.spotify.com/album/1qpGHOmNg4AV5xXm1BlzrG",
+      "image": "https://i.scdn.co/image/ab67616d00001e0298d03e12822ff26a11baa152"
+    },
+    {
+      "name": "Special Ops",
+      "artist": "Lil Wayne",
+      "url": "https://open.spotify.com/album/66i3jGeHlh1SBmsaairN4J",
+      "image": "https://i.scdn.co/image/ab67616d00001e021aef8c77c4ac8c0cbfecff8c"
+    },
+    {
+      "name": "Mr. Hood",
+      "artist": "KMD",
+      "url": "https://open.spotify.com/album/4XVjGu7Pow8s1aTk9bMIDo",
+      "image": "https://i.scdn.co/image/ab67616d00001e02be265446b0be7e44977862b6"
+    },
+    {
+      "name": "Marrow Deep",
+      "artist": "Mastodon",
+      "url": "https://open.spotify.com/album/0vg1J7pmgC1X7ZeGllEQGz",
+      "image": "https://i.scdn.co/image/ab67616d00001e02a686a9eebd27477c0c0f24fb"
+    },
+    {
+      "name": "A Light for Attracting Attention",
+      "artist": "The Smile",
+      "url": "https://open.spotify.com/album/009EjjwUjtdjvH7UP0wHzi",
+      "image": "https://i.scdn.co/image/ab67616d00001e02423ac018d0ec2301e40948a0"
+    },
+    {
+      "name": "GREY Area",
+      "artist": "Little Simz",
+      "url": "https://open.spotify.com/album/3Z8Df4ghTJ7afEWkurB2I1",
+      "image": "https://i.scdn.co/image/ab67616d00001e0208fd43f4ba0708fa58dd2805"
+    },
+    {
+      "name": "UNLOCKED",
+      "artist": "Denzel Curry",
+      "url": "https://open.spotify.com/album/5LsyqeWryTmxsmda4xkm5a",
+      "image": "https://i.scdn.co/image/ab67616d00001e02922a12ba0b5a66f034dc9959"
+    },
+    {
+      "name": "Enter The Wu-Tang (36 Chambers) [Expanded Edition]",
+      "artist": "Wu-Tang Clan",
+      "url": "https://open.spotify.com/album/3tQd5mwBtVyxCoEo4htGAV",
+      "image": "https://i.scdn.co/image/ab67616d00001e025901aaa980d3e714bf01171c"
+    },
+    {
+      "name": "Tha Carter IV (Explicit Version)",
+      "artist": "Lil Wayne",
+      "url": "https://open.spotify.com/album/2YL3ddwHuiBGumvzcGHyjT",
+      "image": "https://i.scdn.co/image/ab67616d00001e02e521b35f461062a93d1a8d1a"
     }
   ]
 }

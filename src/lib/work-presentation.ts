@@ -1,0 +1,72 @@
+/** Presentation summaries drawn from the corresponding published work briefs. */
+export interface WorkPresentation {
+  title: string;
+  description: string;
+  image?: string;
+  alt?: string;
+  imageNote?: string;
+  tags: string[];
+  categories: string[];
+  challenge: string;
+  solution: string;
+  outcome: string;
+  scale: string;
+  architecture: { title: string; icon: string; items: string[] }[];
+}
+
+export const workPresentation: Record<string, WorkPresentation> = {
+  'agentic-analytics-platform': {
+    title: 'Brand Impact Tracker',
+    description: 'AI-powered analytics with Snowflake, generative UI, and enterprise integration.',
+    image: '/images/work/agentic-analytics-platform/hero.png',
+    alt: 'Brand Impact Tracker daily brief showing brand performance signals, an ask-the-data input, and attention cards.',
+    imageNote: 'Daily brief interface · Mock data',
+    tags: ['Next.js', 'Snowflake', 'AI / LLMs', 'Enterprise'],
+    categories: ['ai', 'enterprise', 'web', 'data'],
+    challenge: 'Brand performance lived across disconnected tools. Ad-hoc questions entered an analyst backlog measured in weeks, and existing BI tools could not provide a branded experience for the dealer network.',
+    solution: 'A custom Next.js application with Snowflake Cortex composes structured answers as live React components. Findings, interactive analyses, and scheduled briefs give operational and executive users different ways into the same data.',
+    outcome: 'Question-to-answer time reduced from weeks to seconds in the demonstrated experience.',
+    scale: '15 screens from one specification; delivered by one architect with the client’s data lead.',
+    architecture: [
+      { title: 'Data foundation', icon: 'layers', items: ['Funnel-stage tables', 'Semantic meaning', 'Snowflake warehouse'] },
+      { title: 'Intelligence', icon: 'sparkle', items: ['Snowflake Cortex', 'Structured JSON', 'One AI capability layer'] },
+      { title: 'Product surface', icon: 'code', items: ['Next.js + React', 'Generative canvas', 'Finding · Analysis · Brief'] },
+      { title: 'Enterprise delivery', icon: 'layers', items: ['Existing BI preserved', 'Identity-provider auth', 'Shared component library'] },
+    ],
+  },
+  'lennar-interactive-maps': {
+    title: 'Lennar Interactive Mapping Platform',
+    description: 'Turning static site plans into a live, data-driven experience.',
+    image: '/images/portfolio/lennar-interactive-maps/02.png',
+    alt: 'Lennar community site plan with individual lots, available home price pins, sold status, and availability filters.',
+    imageNote: 'Community site plan · Shipped product',
+    tags: ['GIS / CAD', 'Interactive Maps', 'Platform Architecture', 'Real Estate'],
+    categories: ['enterprise', 'web', 'data', 'maps'],
+    challenge: 'Every availability change meant another designer-updated PDF. Sales conversations depended on documents that could be stale before a buyer reached the next lot.',
+    solution: 'A repeatable GIS and CAD conversion pipeline brought more than a thousand maps into a live platform. Sales managers publish changes through an administration tool, with current prices and availability flowing into the map.',
+    outcome: 'Sales managers publish availability directly, removing designers from the update loop.',
+    scale: 'More than 1,000 community maps processed and aligned to architectural plans.',
+    architecture: [
+      { title: 'Source material', icon: 'file', items: ['PDF community maps', 'Architectural plans', 'Lot and feature details'] },
+      { title: 'Conversion pipeline', icon: 'layers', items: ['Command line tooling', 'GIS + CAD alignment', 'Documented process'] },
+      { title: 'Administration', icon: 'layers', items: ['Live backend sales data', 'Sales manager updates', 'Availability + pricing'] },
+      { title: 'Map experience', icon: 'compass', items: ['Regional search', 'Lot-level availability', 'Community features'] },
+    ],
+  },
+  'pharmacy-agent-eval': {
+    title: 'Conversational AI Evaluation',
+    description: 'Defining what good looks like for a multi-turn voice and text agent.',
+    tags: ['AI Agents', 'Evaluation', 'Voice & Text', 'Healthcare'],
+    categories: ['ai', 'enterprise'],
+    challenge: 'The agent completed 92% of tasks, yet missed confusion, mispronounced names, and sometimes contradicted clinical advice. Task completion alone could not tell the team whether it was ready to ship.',
+    solution: 'Pharmacists, patient advocates, and a compliance lead defined good behavior in plain English. Labeling real conversations refined that into 22 rules across safety, accuracy, comprehension, and dignity, then a hybrid evaluation harness.',
+    outcome: 'Approximately 40% fewer escalations after dignity rules were deployed; 3× faster regression catches.',
+    scale: 'About 600 conversations reviewed; 48 initial rules refined to 22.',
+    architecture: [
+      { title: 'Human definition', icon: 'user', items: ['Pharmacists + advocates', 'Compliance review', '48 plain-language rules'] },
+      { title: 'Conversation review', icon: 'chat', items: ['~600 conversations', 'Hand-labeled examples', '22 rules · 4 categories'] },
+      { title: 'Evaluation harness', icon: 'shield', items: ['LLM-as-judge', 'Deterministic checks', 'Regression detection'] },
+      { title: 'Ongoing review', icon: 'clock', items: ['Human re-grading', 'Quarterly sampling', 'Model-drift checks'] },
+    ],
+  },
+};

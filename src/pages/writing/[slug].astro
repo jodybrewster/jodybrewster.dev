@@ -23,6 +23,7 @@ const { Content } = await render(entry);
 
 const date = entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const isoDate = entry.data.date.toISOString();
+const heroImage = entry.id === 'the-model-that-wont-talk-a-teardown-of-jev' ? '/images/research/jev-structured-model.webp' : undefined;
 ---
 <Essay
   title={entry.data.title}
@@ -33,6 +34,7 @@ const isoDate = entry.data.date.toISOString();
   tags={entry.data.tags}
   pillar={entry.data.pillar}
   number={number}
+  heroImage={heroImage}
 >
   <Content />
 </Essay>

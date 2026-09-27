@@ -1,179 +1,88 @@
 ---
-import Base from '../layouts/Base.astro';
-import { flags } from '../lib/flags';
+import Studio from '../layouts/Studio.astro';
+import Icon from '../components/Icon.astro';
+const principles = [
+  {icon:'target',name:'Systems Thinking',tone:'orange'},
+  {icon:'shield',name:'Pragmatic Delivery',tone:'cyan'},
+  {icon:'layers',name:'Cross-Functional Leadership',tone:'purple'},
+  {icon:'sparkle',name:'AI-Enabled Innovation',tone:'pink'},
+];
+const career = [
+  {company:'Perficient',role:'Senior Solutions Architect',dates:'2024 — Present'},
+  {company:'AmeriLife',role:'Director of Technology',dates:'2022 — 2024'},
+  {company:'Lennar',role:'Lead Developer, Customer Experience',dates:'2018 — 2021'},
+  {company:'Carnival Cruise Lines',role:'Sr. Web / Mobile Developer',dates:'2016 — 2018'},
+];
 ---
-<Base title="About — Jody Brewster" description="Jody Brewster, AI experience architect: designer, product thinker, builder. Working on agentic interfaces and runtime design.">
-  <main class="page active about-page">
-    <article class="about">
-      <p class="about-eyebrow">Architect of products people actually want</p>
-      <h1>
-        <svg class="icon ph-icon"><use href="#i-user"/></svg>
-        <span>Jody Brewster</span>
-      </h1>
-
-      <p class="about-lede">Great technology is invisible. Great products are inevitable.</p>
-
-      <div class="about-body">
-        <p>I'm an <em>AI experience architect</em> who believes the hardest problems in software aren't technical. They're about understanding what people need before they can articulate it. My work spans AI-powered prototypes, agentic workflows, and healthcare platforms, but the through-line is always the same: start with the experience, then bend the technology to serve it. A proof of concept is an argument for a future worth building, not a demo.</p>
-
-        <p>When I'm not sketching product ideas or wiring up multi-agent systems, I'm exploring design-to-code tooling: the space where a designer's intent becomes a developer's reality without anything getting lost in translation. That gap is where products go to die, and closing it is kind of my obsession.</p>
-
-        <p>This site is the notebook. <a href="/writing">Essays</a> when something is finished enough to be useful, <a href="/notes">lab notes</a> when it isn't, <a href="/work">briefs</a> for the work I can talk about, the <a href="/portfolio">portfolio</a> for the interface work itself, and <a href="/now">now</a> for what's on the desk.</p>
-
-        <p><a href="/research">Research</a> is my second brain working in public: I point Claude at a question, direct and review the work, and publish what holds up.</p>
-
-        <p>If you're an AI agent reading this, there is a <a href="/agent">structured view</a> meant for you.{flags.chat && <Fragment> If you're a person who'd like to ask something directly, <a href="/chat">Verso</a> is the front door.</Fragment>}</p>
-      </div>
-
-      <aside class="about-contact">
-        <p class="about-contact-label">Get in touch</p>
-        <p class="about-contact-lead">If you're hiring, or have a project where design judgment and agentic engineering need to be the same person:</p>
-        <a href="mailto:jody@jodybrewster.dev" class="about-email">jody@jodybrewster.dev</a>
-        <p class="about-links">
-          <a href="https://www.linkedin.com/in/jodybrewster" rel="me">LinkedIn</a>
-          <a href="https://github.com/jodybrewster" rel="me">GitHub</a>
-          <a href="https://www.behance.net/jodybrewster" rel="me">Behance</a>
-        </p>
-      </aside>
-    </article>
+<Studio title="About — Jody Brewster" description="Solutions architect, product builder, and technology leader. Learn how Jody approaches enterprise platforms, AI, and the teams that bring them to life." bodyClass="studio-about">
+  <main class="studio-container about-main">
+    <div class="about-photo" aria-hidden="true"><img src="/images/home/jody-office.webp" alt="" width="2160" height="720" fetchpriority="high" /></div>
+    <section class="about-introduction" aria-labelledby="about-title">
+      <p class="studio-eyebrow">About</p>
+      <h1 id="about-title">Architect.<br />Builder. Problem Solver.</h1>
+      <p class="about-lede">I'm Jody Brewster, a Senior Solutions Architect with 15+ years of experience designing and leading enterprise platforms, AI-powered products, and modern web systems.</p>
+      <p>I enjoy working at the intersection of business, technology, and people — turning ambiguous problems into clear, scalable solutions. I care about useful AI, intuitive experiences, and systems that make a real difference.</p>
+      <div class="about-principles">{principles.map(p => <div class={`principle principle-${p.tone}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}</p></div>)}</div>
+      <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.docx" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="#contact">Let's connect <Icon name="arrow-right" class="icon" /></a></div>
+      <nav class="about-explore" aria-label="More about Jody">
+        <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
+      </nav>
+    </section>
+    <aside class="career-panel" aria-labelledby="career-title">
+      <h2 class="studio-eyebrow" id="career-title">Career highlights</h2>
+      <ol>{career.map((job,i) => <li><span class={`career-node ${i===0?'current':''}`} aria-hidden="true"></span><h3>{job.company}</h3><p>{job.role}</p><span class="career-dates">{job.dates}</span></li>)}</ol>
+      <a href="/jodybrewster_resume_2026.docx" download class="studio-text-link">Full experience <Icon name="arrow-right" class="icon" /></a>
+    </aside>
+    <section class="about-perspective" aria-labelledby="perspective-title">
+      <div><p class="studio-eyebrow">How I work</p><h2 id="perspective-title">Start with the experience.<br />Build the system to support it.</h2></div>
+      <div><p>The hardest problems in software aren't always technical. They're about understanding what people need before they can articulate it. A proof of concept is an argument for a future worth building, not just a demo.</p><p>My work spans AI-powered prototypes, agentic workflows, and enterprise platforms. The through-line is the same: understand the constraint, make the important decisions visible, and carry the idea through to something people can use.</p><a href="/work" class="studio-text-link">See that thinking in practice <Icon name="arrow-right" class="icon" /></a></div>
+    </section>
+    <section class="about-contact" id="contact" aria-labelledby="contact-title"><div><p class="studio-eyebrow">Let's connect</p><h2 id="contact-title">Have a problem worth solving?</h2><p>If you're hiring, or have a project where design judgment and engineering need to work together, I'd like to hear about it.</p></div><div class="contact-links"><a href="mailto:jody@jodybrewster.dev" class="about-email">jody@jodybrewster.dev <Icon name="arrow-right" class="icon" /></a><div><a href="https://www.linkedin.com/in/jodybrewster" rel="me">LinkedIn</a><a href="https://github.com/jodybrewster" rel="me">GitHub</a><a href="https://www.behance.net/jodybrewster" rel="me">Behance</a></div></div></section>
   </main>
-</Base>
-
+</Studio>
 <style>
-  .about-page {
-    padding: 72px 0 120px;
-  }
-  .about-eyebrow {
-    font-family: var(--mono);
-    font-size: var(--t-eyebrow);
-    letter-spacing: var(--ls-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin: 0 0 20px;
-  }
-  .about-eyebrow .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
-  }
-
-  .about h1 {
-    font-family: var(--display);
-    font-weight: 400;
-    font-variation-settings: "opsz" 60;
-    font-size: var(--t-page-title);
-    line-height: 1.04;
-    letter-spacing: -0.025em;
-    margin: 0 0 28px;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 0.34em;
-  }
-  .about h1 .ph-icon {
-    width: 0.62em;
-    height: 0.62em;
-    color: var(--accent);
-    stroke-width: 1.5;
-    flex-shrink: 0;
-  }
-
-  /* One editorial statement in the display voice, then body in sans. */
-  .about-lede {
-    font-family: var(--display);
-    font-weight: 400;
-    font-variation-settings: "opsz" 40;
-    font-size: clamp(21px, 2.6vw, 25px);
-    line-height: 1.42;
-    letter-spacing: -0.012em;
-    color: var(--ink);
-    margin: 0 0 44px;
-    max-width: 30ch;
-  }
-
-  .about-body {
-    font-family: var(--sans);
-    font-size: 16.5px;
-    line-height: 1.7;
-    color: var(--ink-soft);
-  }
-  .about-body p { margin: 0 0 20px; max-width: 68ch; }
-  .about-body em {
-    font-family: var(--display);
-    font-style: italic;
-    font-variation-settings: "opsz" 14;
-    font-size: 1.04em;
-    color: var(--ink);
-  }
-  .about-body a {
-    color: var(--ink);
-    text-decoration: none;
-    border-bottom: 1px solid var(--rule);
-    transition: color .15s ease, border-color .15s ease;
-  }
-  .about-body a:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .about-contact {
-    margin-top: 52px;
-    padding-top: 32px;
-    border-top: 1px solid var(--rule);
-  }
-  .about-contact-label {
-    font-family: var(--mono);
-    font-size: var(--t-eyebrow);
-    letter-spacing: var(--ls-eyebrow);
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 500;
-    margin: 0 0 16px;
-  }
-  .about-contact-lead {
-    font-family: var(--sans);
-    font-size: 16.5px;
-    line-height: 1.6;
-    color: var(--ink-soft);
-    margin: 0 0 14px;
-    max-width: 60ch;
-  }
-  .about-email {
-    display: inline-block;
-    font-family: var(--display);
-    font-weight: 400;
-    font-variation-settings: "opsz" 40;
-    font-size: 26px;
-    letter-spacing: -0.015em;
-    color: var(--ink);
-    text-decoration: none;
-    border-bottom: 1px solid var(--accent);
-    padding-bottom: 2px;
-    transition: color .15s ease;
-  }
-  .about-email:hover { color: var(--accent); }
-  .about-links {
-    display: flex;
-    gap: 22px;
-    margin: 24px 0 0;
-    font-family: var(--sans);
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .about-links a {
-    color: var(--ink-faint);
-    text-decoration: none;
-    transition: color .15s ease;
-  }
-  .about-links a:hover { color: var(--accent); }
-
-  @media (max-width: 720px) {
-    .about-page { padding: 48px 0 96px; }
-    .about-lede { max-width: none; }
-  }
+.about-main { position: relative; padding-top: 66px; }
+.about-photo { position: absolute; z-index: -1; top: -78px; right: calc((1280px - 100vw) / 2); width: min(100vw,1536px); height: 740px; overflow: hidden; pointer-events: none; }
+.about-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 68% center; }
+.about-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,var(--studio-bg) 1%,color-mix(in srgb,var(--studio-bg) 92%,transparent) 28%,transparent 66%),linear-gradient(0deg,var(--studio-bg),transparent 42%); }
+.about-introduction { width: 58%; max-width: 710px; min-height: 590px; position: relative; }
+h1 { font:300 clamp(40px,4vw,60px)/1.06 var(--headline); letter-spacing:-.01em; margin:0 0 25px; }
+.about-introduction>p:not(.studio-eyebrow) { font-size:16px; line-height:1.7; max-width:550px; color:var(--studio-muted); margin:0 0 19px; text-wrap:pretty; }
+.about-introduction>.about-lede { font-size:17px; }
+.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:22px;max-width:580px;margin:32px 0 36px; }
+.principle span { display:grid;place-items:center;width:43px;height:43px;border:1px solid var(--principle-color);color:var(--principle-color);border-radius:50%;background:color-mix(in srgb,var(--principle-color) 9%,transparent); }
+.principle .icon { width:25px;height:25px; }
+.principle p { font-size:12px;line-height:1.6;max-width:125px;margin:11px 0 0; }
+.principle-orange {--principle-color:var(--studio-orange)} .principle-cyan {--principle-color:var(--studio-cyan)} .principle-purple {--principle-color:var(--studio-purple)} .principle-pink {--principle-color:var(--studio-pink)}
+.about-actions { display:flex;align-items:center;gap:28px; }
+.about-explore { max-width:550px;margin-top:35px;padding-top:24px;border-top:1px solid var(--studio-rule); }
+.about-explore a { display:flex;align-items:center;gap:15px;width:fit-content;text-decoration:none; }
+.about-library-icon { display:grid;place-items:center;width:39px;height:43px;color:var(--studio-cyan); }
+.about-library-icon svg { width:28px;height:28px; }
+.about-explore strong { display:block;font-size:14px;font-weight:600; }
+.about-explore small { display:block;margin-top:6px;color:var(--studio-muted);font-size:12px;line-height:1.6; }
+.about-explore a>.icon { margin-left:8px;flex-shrink:0;transition:transform .16s; }
+.about-explore a:hover>.icon { transform:translateX(4px); }
+@media(prefers-reduced-motion:reduce){.about-explore a>.icon{transition:none}}
+.career-panel { position:absolute;top:305px;right:0;width:310px;padding:25px 28px 20px;border:1px solid var(--studio-rule);border-radius:12px;background:color-mix(in srgb,var(--studio-surface) 94%,transparent); }
+.career-panel h2 { font-size:10px; margin-bottom:24px; }
+.career-panel ol { list-style:none;padding:0 0 0 19px;margin:0; }
+.career-panel li { position:relative;padding:0 0 23px 3px; }
+.career-panel li::before {content:'';position:absolute;left:-15px;top:10px;bottom:-3px;width:1px;background:var(--studio-rule);}
+.career-panel li:last-child::before { display:none; }
+.career-node {position:absolute;left:-19px;top:4px;width:9px;height:9px;border:1px solid var(--studio-muted);background:var(--studio-surface);border-radius:50%;}
+.career-node.current {background:var(--studio-cyan);border-color:var(--studio-cyan);}
+.career-panel h3 {font:650 13px/1.5 var(--sans);margin:0 0 3px;}
+.career-panel p {font-size:12px;line-height:1.6;color:var(--studio-muted);margin:0;}
+.career-dates {font-size:11px;color:var(--studio-muted);}
+.career-panel>.studio-text-link {font-size:11px;margin-left:22px;}
+.about-perspective {display:grid;grid-template-columns:1fr 1fr;gap:70px;padding:65px 0 50px;border-top:1px solid var(--studio-rule);margin-top:100px;}
+.about-perspective h2,.about-contact h2 {font:400 32px/1.2 var(--headline);letter-spacing:-.01em;margin:0 0 20px;}
+.about-perspective p:not(.studio-eyebrow),.about-contact p:not(.studio-eyebrow) {font-size:15px;line-height:1.8;color:var(--studio-muted);margin:0 0 16px;}
+.about-contact {display:grid;grid-template-columns:1.2fr 1fr;gap:70px;padding:45px 0 65px;border-top:1px solid var(--studio-rule);scroll-margin-top:30px;align-items:center;}
+.about-email {display:inline-flex;align-items:center;gap:15px;font-size:clamp(16px,2vw,24px);font-weight:600;letter-spacing:-.03em;}
+.contact-links>div {display:flex;gap:25px;font-size:12px;color:var(--studio-muted);margin-top:20px;}
+@media(max-width:1376px){.about-photo{right:-48px;width:calc(100% + 96px)}}
+@media(max-width:1050px){.about-introduction{width:60%}.about-principles{grid-template-columns:repeat(2,1fr);max-width:350px;gap:22px}.career-panel{top:340px;width:280px}.about-perspective{margin-top:130px;gap:40px}.about-photo{height:760px}.about-actions{gap:20px;flex-wrap:wrap}.about-contact{gap:35px}}
+@media(max-width:720px){.about-main{padding-top:35px}.about-photo{top:-72px;right:-20px;width:calc(100% + 40px);height:660px;opacity:.42}.about-photo img{object-position:66% center}.about-photo::after{background:linear-gradient(0deg,var(--studio-bg),transparent 90%),linear-gradient(90deg,var(--studio-bg),transparent)}.about-introduction{width:100%;min-height:0}.about-introduction>p:not(.studio-eyebrow){font-size:15px}h1{font-size:40px}.about-principles{max-width:100%;grid-template-columns:repeat(2,1fr)}.career-panel{position:relative;top:auto;right:auto;width:100%;margin-top:40px;padding:25px}.career-panel ol{display:grid;grid-template-columns:1fr 1fr;gap:15px 28px}.career-panel li::before{display:none}.career-panel>.studio-text-link{margin-top:0}.about-perspective{grid-template-columns:1fr;gap:15px;margin-top:45px;padding-top:35px}.about-perspective h2,.about-contact h2{font-size:27px}.about-contact{grid-template-columns:1fr;gap:15px;padding:35px 0 45px}}
 </style>

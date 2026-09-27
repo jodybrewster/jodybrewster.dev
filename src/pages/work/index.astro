@@ -1,40 +1,160 @@
 ---
 import { getCollection } from 'astro:content';
-import Base from '../../layouts/Base.astro';
-import BriefCard from '../../components/BriefCard.astro';
-import PageHeader from '../../components/PageHeader.astro';
+import Studio from '../../layouts/Studio.astro';
+import Icon from '../../components/Icon.astro';
+import WorkEvaluationPreview from '../../components/WorkEvaluationPreview.astro';
+import { workPresentation } from '../../lib/work-presentation';
 
-const briefs = await getCollection('work', b => !b.data.draft);
-briefs.sort((a, b) => a.data.title.localeCompare(b.data.title));
-
-// With a single brief, /work redirects straight to its detail page —
-// matches the prototype's Briefs-nav-to-detail behavior. When more briefs
-// land here, this falls through to the listing.
-if (briefs.length === 1) {
-  return Astro.redirect(`/work/${briefs[0].id}`);
-}
+const [briefs, portfolio] = await Promise.all([
+  getCollection('work', b => !b.data.draft),
+  getCollection('portfolio'),
+]);
+const order = ['agentic-analytics-platform', 'lennar-interactive-maps', 'pharmacy-agent-eval'];
+const selectedPortfolio: Record<string, { description: string; tags: string[]; categories: string[] }> = {
+  'react-native-reporting-portal': { description: 'A single mobile home for Lennar’s internal business dashboards, with search, favorites, and report details.', tags: ['React Native', 'Enterprise', 'Reporting'], categories: ['enterprise', 'data'] },
+  'react-okta-sso-portal': { description: 'An agent-facing portal with branded sign-in, self-service registration, and an authenticated dashboard.', tags: ['React', 'Okta', 'Identity', 'Insurance'], categories: ['enterprise', 'web'] },
+  'senior-healthcare-direct': { description: 'An article experience that brings Medicare information, related video, and subscription journeys together.', tags: ['UX Design', 'Healthcare', 'Web Design'], categories: ['web'] },
+};
+const projects = [
+  ...briefs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).map(brief => {
+    const presentation = workPresentation[brief.id];
+    return {
+      title: brief.id === 'lennar-interactive-maps' ? 'Lennar Interactive Maps' : presentation?.title ?? brief.data.title,
+      href: `/work/${brief.id}`,
+      description: presentation?.description ?? brief.data.sub ?? brief.data.sector,
+      tags: presentation?.tags ?? [brief.data.sector],
+      categories: presentation?.categories ?? ['enterprise'],
+      image: presentation?.image,
+      alt: presentation?.alt ?? '',
+      type: 'Case study',
+    };
+  }),
+  ...Object.entries(selectedPortfolio).flatMap(([id, summary]) => {
+    const project = portfolio.find(item => item.id === id);
+    return project ? [{ title: project.data.title, href: `/portfolio/${id}`, ...summary, image: project.data.cover, alt: project.data.images[0]?.alt ?? '', type: 'Interface work' }] : [];
+  }),
+];
+const filters = [
+  { id: 'all', label: 'All' }, { id: 'ai', label: 'AI / LLMs' },
+  { id: 'enterprise', label: 'Enterprise' }, { id: 'web', label: 'Web Apps' },
+  { id: 'data', label: 'Data Platforms' }, { id: 'maps', label: 'Maps / GIS' },
+];
 ---
-<Base title="Work — Jody Brewster" description="Selected case briefs from design and experience-architecture engagements, anonymized.">
-  <main class="page active" style="padding: 72px 0 100px;">
-    <PageHeader
-      icon="i-brief"
-      eyebrow={`${briefs.length} ${briefs.length === 1 ? 'engagement' : 'engagements'}`}
-      title="Selected briefs"
-      description="Case studies from design and experience-architecture work, anonymized."
-    />
+<Studio title="Work & Case Studies — Jody Brewster" description="Enterprise platforms, AI-powered products, and modern web systems. Selected case studies and interface work by Jody Brewster.">
+  <main id="main-content" class="work-main studio-container">
+    <header class="work-header">
+      <div class="work-office" aria-hidden="true"><img src="/images/studio/office.webp" alt="" width="1536" height="1024" fetchpriority="high" /></div>
+      <div class="work-header-copy">
+        <p class="studio-eyebrow">Case studies</p>
+        <h1>Real problems.<br />Real systems.</h1>
+        <p class="work-lede">Enterprise platforms, AI-powered products, and modern web systems designed for scale, adoption, and measurable business impact.</p>
+      </div>
+    </header>
 
-    <div class="notes-stack">
-      {briefs.map((brief, i) => (
-        <BriefCard
-          title={brief.data.title}
-          sector={brief.data.sector}
-          role={brief.data.role}
-          duration={brief.data.duration}
-          slug={brief.id}
-          pillar={brief.data.pillar}
-          number={`№ ${String(briefs.length - i).padStart(3, '0')}`}
-        />
-      ))}
-    </div>
+    <section class="work-collection" aria-label="Selected projects" data-work-filter>
+      <div class="work-filters" role="group" aria-label="Filter projects by topic">
+        {filters.map(filter => <button type="button" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</button>)}
+      </div>
+      <p class="work-result-status" aria-live="polite" aria-atomic="true" data-work-status>{projects.length} projects</p>
+      <div class="work-grid" id="work-grid">
+        {projects.map(project => (
+          <article class="work-card" data-work-card data-categories={project.categories.join(' ')}>
+            <a href={project.href} class="work-card-link">
+              <div class="work-card-preview">
+                {project.image ? <img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="960" height="640" /> : <WorkEvaluationPreview compact />}
+                <span class="work-card-kind">{project.type}</span>
+              </div>
+              <div class="work-card-info">
+                <div class="work-card-copy"><h2>{project.title}</h2><p>{project.description}</p></div>
+                <span class="studio-arrow" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span>
+                <ul class="studio-tags" aria-label="Project topics">{project.tags.map(tag => <li>{tag}</li>)}</ul>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+      <p class="work-empty" data-work-empty hidden>No projects in this category yet. Choose All to see the collection.</p>
+      <div class="work-footer"><p>More of the interfaces behind the work.</p><a href="/portfolio" class="studio-text-link">Explore the portfolio <Icon name="arrow-right" class="icon" /></a></div>
+    </section>
   </main>
-</Base>
+</Studio>
+
+<script>
+  function initWorkFilters() {
+    const collection = document.querySelector<HTMLElement>('[data-work-filter]');
+    if (!collection || collection.dataset.initialized) return;
+    collection.dataset.initialized = 'true';
+    const buttons = Array.from(collection.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const cards = Array.from(collection.querySelectorAll<HTMLElement>('[data-work-card]'));
+    const status = collection.querySelector<HTMLElement>('[data-work-status]');
+    const empty = collection.querySelector<HTMLElement>('[data-work-empty]');
+    buttons.forEach(button => button.addEventListener('click', () => {
+      const filter = button.dataset.filter;
+      buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      let visible = 0;
+      cards.forEach(card => {
+        const matches = filter === 'all' || card.dataset.categories?.split(' ').includes(filter ?? '');
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      if (empty) empty.hidden = visible > 0;
+      if (status) status.textContent = `${visible} ${visible === 1 ? 'project' : 'projects'}${filter === 'all' ? '' : ` in ${button.textContent}`}`;
+    }));
+  }
+  initWorkFilters();
+  document.addEventListener('astro:page-load', initWorkFilters);
+</script>
+
+<style>
+  .work-main { padding-top: 34px; padding-bottom: 64px; }
+  .work-header { position: relative; isolation: isolate; min-height: 285px; display: flex; align-items: center; padding: 26px 0 36px; }
+  .work-header-copy { position: relative; z-index: 1; max-width: 550px; }
+  .work-header .studio-eyebrow { margin: 0 0 18px; }
+  .work-header h1 { margin: 0 0 20px; font: 300 clamp(40px, 4.7vw, 62px)/1.07 var(--headline); letter-spacing: -.01em; }
+  .work-lede { color: var(--studio-muted); margin: 0; max-width: 49ch; font-size: 15px; line-height: 1.7; font-weight: 400; }
+  .work-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px -48px -28px 28%; overflow: hidden; opacity: .75; mask-image: linear-gradient(to right, transparent, black 38%), linear-gradient(to bottom, transparent, black 15%, black 58%, transparent); mask-composite: intersect; }
+  .work-office img { width: 100%; height: 100%; object-fit: cover; object-position: center 46%; }
+  .work-filters { display: flex; flex-wrap: wrap; gap: 9px; margin: 9px 0 25px; }
+  .work-filters button { appearance: none; border: 1px solid var(--studio-rule); border-radius: 99px; background: var(--studio-surface); padding: 9px 15px; color: var(--studio-muted); font: 500 12px/1.4 var(--sans); cursor: pointer; transition: border-color 150ms, color 150ms, background 150ms; }
+  .work-filters button:hover { color: var(--studio-ink); border-color: var(--studio-cyan); }
+  .work-filters button[aria-pressed='true'] { background: var(--studio-ink); color: var(--studio-bg); border-color: var(--studio-ink); font-weight: 650; }
+  .work-result-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .work-card { min-width: 0; border: 1px solid var(--studio-rule); border-radius: 10px; background: var(--studio-surface); overflow: hidden; transition: border-color 150ms, transform 150ms; }
+  .work-card[hidden] { display: none; }
+  .work-card:hover, .work-card:focus-within { border-color: var(--studio-cyan); transform: translateY(-2px); }
+  .work-card-link { border: 0; color: inherit; display: flex; height: 100%; flex-direction: column; text-decoration: none; }
+  .work-card-preview { position: relative; overflow: hidden; height: clamp(175px, 20vw, 240px); background: var(--studio-raised); }
+  .work-card-preview img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 400ms; }
+  .work-card:hover .work-card-preview img { transform: scale(1.025); }
+  .work-card-kind { position: absolute; left: 13px; top: 13px; padding: 5px 8px; border: 1px solid var(--studio-rule); border-radius: 7px; background: var(--studio-surface); color: var(--studio-muted); font-size: 9px; line-height: 1.3; font-weight: 600; letter-spacing: .04em; }
+  .work-card-info { display: grid; grid-template-columns: 1fr 32px; column-gap: 18px; row-gap: 17px; padding: 20px; flex: 1; align-items: start; }
+  .work-card h2 { font: 700 17px/1.35 var(--sans); letter-spacing: -.02em; margin: 0 0 9px; }
+  .work-card p { font-size: 12px; line-height: 1.65; color: var(--studio-muted); margin: 0; font-weight: 400; }
+  .work-card .studio-arrow { width: 32px; height: 32px; margin-top: 3px; }
+  .work-card .studio-tags { grid-column: 1 / -1; align-self: end; }
+  .work-empty { padding: 40px 20px; border: 1px solid var(--studio-rule); border-radius: 10px; color: var(--studio-muted); }
+  .work-empty[hidden] { display: none; }
+  .work-footer { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--studio-rule); display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 13px; color: var(--studio-muted); }
+  .work-footer p { margin: 0; }
+  :global(html[data-theme='light']) .work-office { opacity: .22; }
+  @media (max-width: 720px) {
+    .work-main { padding-top: 10px; padding-bottom: 40px; }
+    .work-header { min-height: 265px; padding-top: 25px; }
+    .work-header-copy { max-width: 90%; }
+    .work-header h1 { font-size: 38px; }
+    .work-lede { font-size: 13px; max-width: 39ch; }
+    .work-office { inset: -40px -20px 0 10%; opacity: .35; }
+    .work-filters { gap: 7px; margin: 10px 0 22px; }
+    .work-filters button { padding: 8px 12px; font-size: 11px; }
+    .work-grid { grid-template-columns: 1fr; gap: 20px; }
+    .work-card-preview { height: 205px; }
+    .work-card-info { padding: 18px; }
+    .work-card h2 { font-size: 16px; }
+    .work-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .work-card, .work-card-preview img, .work-filters button { transition: none; }
+    .work-card:hover, .work-card:focus-within, .work-card:hover .work-card-preview img { transform: none; }
+  }
+</style>

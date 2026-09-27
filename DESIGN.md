@@ -294,3 +294,30 @@ Pre-written single-sentence constraints encoding the highest-stakes rules. Use t
 - "Hover states use `translateY(-2px)` and a border-color shift to `#2d5d4f`. Shadows appear only at hover or focus, never at rest."
 - "No pure white (#ffffff) backgrounds. No pure black text. No gradient fills. No glassmorphism."
 - "This is not a portfolio: no headshot hero, no tech-stack badge grid, no three-up feature card layout, no sticky CTA banner."
+
+## 9. Homepage reference direction (September 2026)
+
+The user-supplied portrait reference supersedes the earlier homepage exclusions against portrait heroes, thumbnail cards, multiple accents, and sans-serif display type. The initial exception was scoped to `.home-page`; the subsequent interior-page direction below extends it to the requested routes.
+
+- Full-width office photograph behind the header and hero, with the subject to the right and readable copy on the left.
+- Midnight background `#050f16`, card surface `#0a1721`, raised surface `#172633`, borders `#263b4c`, text `#f4f7fb`, secondary text `#bbcee3`.
+- Cyan `#00c6e7` and orange `#ff9651` are the two headline accents. Capability icons additionally use purple `#b58aff` and pink `#f657ac`. Green `#31da67` is an invitation indicator, not a verified live operator status.
+- Plus Jakarta Sans carries all homepage headings, body and UI. Hero: 40–52px, weight 750, line height 1.035. Labels: 10px, weight 500, tracking .24em. Cards: 14px bold headings and 12px descriptions.
+- Content width 1416px, 60px desktop gutters and 20px phone gutters. Cards use 10px corners; buttons 7px. The site now stays dark; no theme switcher or stored light-theme preference is applied.
+- Navigation, hero, company/experience strip, three linked case studies, four capabilities, and recent research. Actual screenshots illustrate the first two projects; the evaluation card diagrams the documented rubric.
+- The Verso introduction opens the existing chat dock. Prompt buttons populate the input for review before sending. Keyboard focus returns to the opener on Escape/close. The persisted conversation and name gate remain unchanged.
+- Tokens are authored in `index.html` and copied to `src/styles/home.css`. Homepage-specific rules live in that stylesheet. Responsive breakpoints at 1200, 1000, and 720px accommodate the new visual structure.
+
+
+## 10. Interior pages and user refinements (September 2026)
+
+The six-panel reference supplied by the user is the current direction for Work, case-study details, About, Writing / Research, and Verso. It supersedes earlier exclusions against photographic heroes, project grids, multiple accents, and sans-serif reading pages on these routes. `Studio.astro` and `studio.css` share the midnight palette and navigation; the homepage retains its established composition.
+
+- Main headlines use **Barlow Semi Condensed**, weight 300, with weight 400 for smaller case-study and Verso titles. The user requested a thin, modern, DIN-like face. Body copy, cards, and navigation remain Plus Jakarta Sans. Headline tracking is approximately −.01em.
+- The brand mark is the **user-supplied layered blue glass artwork with a warm orange center**, replacing the JB letters. `BrandMark.astro` uses an optimized WebP; PNG and self-contained SVG favicons use the same artwork. The main header renders it at 80 × 65px with a two-line name / “Solutions Architect” lockup; phones use 64 × 52px without the wordmark.
+- Dark is fixed in server-rendered HTML and persists through Astro page transitions. Remove theme controls; ignore old browser theme preferences.
+- About is a simple header link. The Library entry belongs **under the résumé / contact actions on About**, with the label “Explore my library.” Do not add an About header dropdown.
+- Library remains the existing interactive Three.js shelf, including its physical birch-and-plaster room, keyboard selection, phone panning, and semantic fallback. Library links use a full document navigation because the scene owns its document.
+- Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
+- Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Generated landscape imagery illustrates ideas rather than pretending to be project screenshots.
+- Verso uses the existing persisted ChatDock embedded in a two-column page. Prompt buttons only prefill the composer. Existing name entry, streaming, conversation state, and handoff behavior remain intact. Do not display a microphone unless voice actually exists.

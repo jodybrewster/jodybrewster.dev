@@ -1,219 +1,109 @@
 ---
 import { getCollection } from 'astro:content';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
 import Base from '../layouts/Base.astro';
-import EssayCard from '../components/EssayCard.astro';
-import NoteCard from '../components/NoteCard.astro';
-import FeaturedBrief from '../components/FeaturedBrief.astro';
-
-const essays = (await getCollection('writing', e => e.data.status === 'published'))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+import Icon from '../components/Icon.astro';
+import HomeCaseStudies from '../components/HomeCaseStudies.astro';
+import { flags } from '../lib/flags';
+import '../styles/home.css';
 
 const research = (await getCollection('research', r => r.data.publish))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-
-const notes = (await getCollection('notes', n => n.data.publish))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-
-const hasWriting = essays.length > 0;
-const recentEssays = essays.slice(0, 5);
-const recentResearch = research.slice(0, 5);
-const recentNotes = notes.slice(0, 4);
-
-const nowRaw = await readFile(resolve('content/now.md'), 'utf-8');
-const fmMatch = nowRaw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-const nowFrontmatter: Record<string, string> = fmMatch
-  ? Object.fromEntries(
-      fmMatch[1].split('\n').filter(Boolean).map(line => {
-        const idx = line.indexOf(':');
-        const k = line.slice(0, idx).trim();
-        const v = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-        return [k, v];
-      })
-    )
-  : {};
-const nowContent = fmMatch ? fmMatch[2] : nowRaw;
-
-let listeningArtists: string[] = [];
-try {
-  const listening = JSON.parse(await readFile(resolve('content/listening.json'), 'utf-8'));
-  listeningArtists = (listening.artists ?? []).slice(0, 3).map((a: { name: string }) => a.name);
-} catch { /* no listening cache */ }
-
-let readingTitles: string[] = [];
-try {
-  const reading = JSON.parse(await readFile(resolve('content/reading.json'), 'utf-8'));
-  readingTitles = (reading.books ?? []).map((b: { title: string }) => b.title);
-} catch { /* no reading list */ }
-const nowLines = nowContent.trim().split('\n').filter(Boolean).slice(0, 4);
-const nowUpdated = nowFrontmatter.updated
-  ? new Date(nowFrontmatter.updated).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-  : '';
-
-function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function readTime(body: string) {
-  const words = body.split(/\s+/).filter(Boolean).length;
-  return `${Math.max(1, Math.ceil(words / 200))} min`;
-}
-
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()).slice(0, 3);
+const capabilities = [
+  { icon: 'layers', title: 'Architecture & Strategy', description: 'Turn ambiguous problems into clear, scalable technical plans.', color: 'orange' },
+  { icon: 'team', title: 'Team Leadership', description: 'Align cross-functional teams and raise the bar for delivery.', color: 'cyan' },
+  { icon: 'zap', title: 'AI & Data Platforms', description: 'Practical AI solutions with real business value.', color: 'purple' },
+  { icon: 'cube', title: 'Product Engineering', description: 'From APIs and data to interfaces and deployment.', color: 'pink' },
+];
+const prompts = [
+  { label: 'Products I’ve built', question: "What products has Jody built end to end?" },
+  { label: 'From idea to launch', question: "How does Jody take a product idea from prototype to production?" },
+];
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': 'https://jodybrewster.dev/#website',
-      url: 'https://jodybrewster.dev/',
-      name: 'Jody Brewster',
-      description: 'Jody Brewster is an AI experience architect - designer, product thinker, builder. Shipping agentic products end to end.',
-      inLanguage: 'en',
-      publisher: { '@id': 'https://jodybrewster.dev/#person' },
-    },
-    {
-      '@type': 'Person',
-      '@id': 'https://jodybrewster.dev/#person',
-      name: 'Jody Brewster',
-      url: 'https://jodybrewster.dev/',
-      jobTitle: 'AI Experience Architect',
-      sameAs: [
-        'https://github.com/jodybrewster',
-        'https://www.linkedin.com/in/jodybrewster',
-        'https://www.behance.net/jodybrewster',
-      ],
-      knowsAbout: [
-        'AI experience architecture',
-        'Agentic systems',
-        'Runtime design',
-        'Evaluation as design',
-      ],
-    },
-  ],
+  '@type': 'Person',
+  name: 'Jody Brewster',
+  url: 'https://jodybrewster.dev/',
+  jobTitle: 'Senior Solutions Architect',
+  sameAs: ['https://github.com/jodybrewster', 'https://www.linkedin.com/in/jodybrewster', 'https://www.behance.net/jodybrewster'],
+  knowsAbout: ['AI experience architecture', 'Data platforms', 'Product engineering', 'Agentic systems'],
 };
 ---
-<Base
-  title="Jody Brewster"
-  description="Jody Brewster is an AI experience architect - designer, product thinker, builder. Shipping agentic products end to end."
-  jsonLd={jsonLd}
->
-  <main class="page active">
+<Base title="Jody Brewster — Solutions Architect & Product Engineer" description="I turn complex business problems into practical, scalable systems. AI-powered products, data platforms, and modern web systems — from strategy to production." bodyClass="home-page" home jsonLd={jsonLd}>
+  <div class="home-backdrop" aria-hidden="true">
+    <img src="/images/home/jody-office.webp" srcset="/images/home/jody-office-1080.webp 1080w, /images/home/jody-office.webp 2160w" sizes="100vw" width="2160" height="720" alt="" fetchpriority="high" />
+  </div>
+  <main id="main-content" class="home-main">
+    <section class="home-hero home-container" aria-labelledby="home-title">
+      <div class="hero-copy">
+        <p class="home-eyebrow hero-eyebrow">Senior Solutions Architect <span aria-hidden="true">·</span> AI & Product Engineering</p>
+        <h1 id="home-title">I turn complex<br class="desktop-break" /> business problems<br class="desktop-break" /> into practical,<br /> <span class="text-orange">scalable</span> <span class="text-cyan">systems.</span></h1>
+        <p class="hero-description">I design and lead AI-powered products, data platforms, and modern web systems — from strategy and architecture to production and adoption. I help teams move faster, make better decisions, and deliver measurable business value.</p>
+        <div class="hero-actions">
+          <a href="#featured-work" class="home-button home-button-primary">View Case Studies <Icon name="arrow-right" class="icon" /></a>
+          <a href="/jodybrewster_resume_2026.docx" download class="home-button">Download Résumé <Icon name="file" class="icon" /></a>
+          {flags.chat && <button type="button" class="home-button" data-verso-open aria-controls="chat-dock" aria-expanded="false"><Icon name="chat" class="icon" /> Talk to Verso <span class="availability-dot" aria-hidden="true"></span></button>}
+        </div>
+      </div>
+      {flags.chat && (
+        <aside class="verso-intro" aria-label="Meet Verso, my chat assistant">
+          <div class="verso-intro-header">
+            <span class="verso-avatar" aria-hidden="true"><Icon name="bot" class="icon" /></span>
+            <span class="home-eyebrow">Verso</span>
+            <span class="verso-status">Let's talk <span class="availability-dot" aria-hidden="true"></span></span>
+          </div>
+          <div class="verso-intro-body">
+            <p>Hey there! I'm Verso — ask me about the products Jody has built, the projects behind them, or how he takes an idea into production.</p>
+            <button type="button" class="circle-arrow" data-verso-open aria-label="Start a conversation with Verso" aria-controls="chat-dock" aria-expanded="false"><Icon name="arrow-right" class="icon" /></button>
+          </div>
+          <div class="verso-prompts">
+            {prompts.map(prompt => <button type="button" data-verso-open data-verso-prompt={prompt.question} aria-controls="chat-dock" aria-expanded="false">{prompt.label}</button>)}
+          </div>
+        </aside>
+      )}
+    </section>
 
-    <section class="hero">
-      <p class="eyebrow role-label">
-        <span class="dot"></span>
-        Agency craft, agentic systems
-      </p>
-      <h1>AI experience architect, designer, <em>product thinker</em>, builder.</h1>
-      <p class="lede">I figure out what to build and then build it - interface, strategy, and runtime in one pass. What used to take a department now takes me a sprint.</p>
-      <div class="meta">
-        {nowUpdated && <span><i class="pulse"></i> recently tended · {nowUpdated}</span>}
-        {hasWriting
-          ? <span><svg class="icon sm"><use href="#i-book"/></svg> {essays.length} essays</span>
-          : <span><svg class="icon sm"><use href="#i-compass"/></svg> {research.length} research</span>
-        }
-        <span><svg class="icon sm"><use href="#i-note"/></svg> {notes.length} {notes.length === 1 ? 'lab note' : 'lab notes'}</span>
+    <section class="experience-strip home-container" aria-label="Trusted experience">
+      <div class="experience-brands">
+        <h2 class="home-eyebrow">Trusted experience</h2>
+        <ul class="brand-list" aria-label="Companies I've worked with">
+          <li class="brand-perficient"><span class="brand-p" aria-hidden="true">P</span>Perficient</li>
+          <li class="brand-amerilife"><span class="brand-a" aria-hidden="true">A</span>AmeriLife</li>
+          <li class="brand-lennar">LENNAR<span aria-hidden="true">®</span></li>
+          <li class="brand-carnival"><svg viewBox="0 0 36 32" aria-hidden="true"><path d="M17 2 3 26h14V2Zm3 6v18h13L20 8ZM1 28h34l-5 3H5Z" fill="currentColor"/></svg>Carnival</li>
+        </ul>
+      </div>
+      <dl class="experience-facts">
+        <div><dt>15+</dt><dd>Years Experience</dd></div>
+        <div><dt>AI</dt><dd>Product & Platform</dd></div>
+        <div><dt>Enterprise</dt><dd>Architecture & Delivery</dd></div>
+        <div><dt>End-to-End</dt><dd>Strategy → Production</dd></div>
+      </dl>
+    </section>
+
+    <HomeCaseStudies />
+
+    <section class="capabilities-section" aria-labelledby="capabilities-title">
+      <div class="home-container">
+        <h2 class="home-eyebrow" id="capabilities-title">What I do</h2>
+        <div class="capability-grid">
+          {capabilities.map(item => (
+            <div class={`capability capability-${item.color}`}>
+              <span class="capability-icon" aria-hidden="true">
+                {item.icon === 'team' ? <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3"/><path d="M6 21v-4a6 6 0 0 1 12 0v4ZM5 5a3 3 0 0 0 0 6M19 5a3 3 0 0 1 0 6M3 14a5 5 0 0 0-1 3v3M21 14a5 5 0 0 1 1 3v3"/></svg> : item.icon === 'cube' ? <svg class="icon" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10M7.5 4.5l9 5"/></svg> : <Icon name={item.icon} class="icon" />}
+              </span>
+              <div><h3>{item.title}</h3><p>{item.description}</p></div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
 
-    <FeaturedBrief slug="agentic-analytics-platform" num="§ 01" />
-
-    {hasWriting ? (
-      <>
-        <div class="section-h">
-          <span class="num">§ 02</span>
-          <h2><svg class="icon"><use href="#i-book"/></svg> Recent writing</h2>
-          <span class="aside">Essays, in order of having been finished.</span>
-        </div>
-        <ul class="essay-list">
-          {recentEssays.map((essay, i) => (
-            <EssayCard
-              title={essay.data.title}
-              date={formatDate(essay.data.date)}
-              description={essay.data.description}
-              tags={essay.data.tags}
-              slug={essay.id}
-              index={`№ ${String(essays.length - i).padStart(3, '0')}`}
-              readTime={readTime(essay.body ?? '')}
-            />
-          ))}
-        </ul>
-        <a href="/writing" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All writing
-        </a>
-      </>
-    ) : (
-      <>
-        <div class="section-h">
-          <span class="num">§ 02</span>
-          <h2><svg class="icon"><use href="#i-compass"/></svg> Recent research</h2>
-          <span class="aside">Landscape scans and working maps from my second brain, reviewed before they ship.</span>
-        </div>
-        <ul class="essay-list">
-          {recentResearch.map((entry, i) => (
-            <EssayCard
-              title={entry.data.title}
-              date={formatDate(entry.data.pubDate)}
-              description={entry.data.description}
-              tags={entry.data.tags}
-              slug={entry.id}
-              basePath="/research"
-              index={`№ ${String(research.length - i).padStart(3, '0')}`}
-              readTime={readTime(entry.body ?? '')}
-            />
-          ))}
-        </ul>
-        <a href="/research" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:48px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All research
-        </a>
-      </>
-    )}
-
-    <div class="two-col">
-      <div>
-        <div class="section-h">
-          <span class="num">§ 03</span>
-          <h2><svg class="icon"><use href="#i-note"/></svg> Lab notes</h2>
-          <span class="aside">Shorter, less finished, sometimes wrong.</span>
-        </div>
-        <div class="notes-stack">
-          {recentNotes.map((note) => {
-            const excerpt = (note.body ?? '').split('\n').find(l => l.trim() && !l.startsWith('#')) ?? '';
-            return (
-              <NoteCard
-                title={note.data.title}
-                date={formatDate(note.data.date)}
-                status={note.data.status}
-                slug={note.id}
-                tags={note.data.tags}
-                body={excerpt.slice(0, 200)}
-              />
-            );
-          })}
-        </div>
-        <a href="/notes" class="more-link" style="display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:13px;color:var(--ink-faint);">
-          <svg class="icon sm"><use href="#i-arrow-right"/></svg> All lab notes
-        </a>
+    <section class="home-notebook home-container" aria-labelledby="notebook-title">
+      <div class="notebook-heading"><div><p class="home-eyebrow">Beyond the build</p><h2 id="notebook-title">A look inside the notebook.</h2></div><a href="/research" class="home-text-link">All research <Icon name="arrow-right" class="icon" /></a></div>
+      <div class="notebook-grid">
+        {research.map(entry => <a href={`/research/${entry.id}`} class="notebook-entry"><span class="home-eyebrow">Research · {entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span><h3>{entry.data.title}</h3><span class="notebook-read">Read the research <Icon name="arrow-right" class="icon" /></span></a>)}
       </div>
-
-      <aside class="now-panel">
-        <p class="eyebrow label">/ now{nowUpdated && ` · ${nowUpdated}`}</p>
-        <h4><svg class="icon"><use href="#i-compass"/></svg> What I'm thinking about</h4>
-        <ul>
-          {nowLines.map(line => (
-            <li><svg class="icon sm li-icon"><use href="#i-file"/></svg> {line.replace(/^[-*]\s*/, '')}</li>
-          ))}
-        </ul>
-        <p class="stamp"><a href="/now">Read more →</a></p>
-        {listeningArtists.length > 0 && (
-          <p class="stamp"><a href="/now#listening">Listening: {listeningArtists.join(', ')} →</a></p>
-        )}
-        {readingTitles.length > 0 && (
-          <p class="stamp"><a href="/now#reading">Reading: {readingTitles.join(', ')} →</a></p>
-        )}
-      </aside>
-    </div>
-
+      <div class="notebook-links"><a href="/notes">Lab notes <Icon name="arrow-right" class="icon" /></a><a href="/now">What I'm working on <Icon name="arrow-right" class="icon" /></a><a href="/library" data-astro-reload>Explore my library <Icon name="arrow-right" class="icon" /></a><a href="/portfolio">More interface work <Icon name="arrow-right" class="icon" /></a></div>
+    </section>
   </main>
 </Base>

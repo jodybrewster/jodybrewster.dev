@@ -1,5 +1,5 @@
 ---
-import Base from './Base.astro';
+import Studio from './Studio.astro';
 
 interface Props {
   title: string;
@@ -12,6 +12,7 @@ interface Props {
   number?: string;
   sectionHref?: string;
   sectionLabel?: string;
+  heroImage?: string;
 }
 
 const {
@@ -25,6 +26,7 @@ const {
   number,
   sectionHref = '/writing',
   sectionLabel = 'writing',
+  heroImage,
 } = Astro.props;
 const tagList = Array.isArray(tags) ? tags : [tags];
 const primaryTag = tagList[0] ?? '';
@@ -44,8 +46,8 @@ const jsonLd: Record<string, unknown> = {
   mainEntityOfPage: { '@type': 'WebPage', '@id': `https://jodybrewster.dev${Astro.url.pathname}` },
 };
 ---
-<Base title={title} description={description} markdownHref={markdownHref} jsonLd={jsonLd}>
-  <main class="page active" style="padding: 72px 0 100px;">
+<Studio title={title} description={description} markdownHref={markdownHref} jsonLd={jsonLd}>
+  <main class="page active studio-container" style="padding: 72px 0 100px;">
     <article class="essay-shell">
       <a href={sectionHref} class="back">
         <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to {sectionLabel}
@@ -67,6 +69,7 @@ const jsonLd: Record<string, unknown> = {
       <h1 set:html={title} />
 
       {description && <p class="dek">{description}</p>}
+      {heroImage && <figure class="essay-hero"><img src={heroImage} alt="" width="960" height="640" loading="eager" decoding="async" /></figure>}
 
       <div class="essay-body">
         <slot />
@@ -85,4 +88,4 @@ const jsonLd: Record<string, unknown> = {
       </div>
     </article>
   </main>
-</Base>
+</Studio>

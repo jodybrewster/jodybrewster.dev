@@ -29,16 +29,25 @@ const iconForType: Record<string, string> = {
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p>Verso is Jody's chat assistant. Ask about his essays, his case briefs, or how he thinks about designing for AI. Where an answer comes from the writing, it'll show you the source.</p>
+        <p class="dock-default-greeting">Verso is Jody's chat assistant. Ask about his essays, his case briefs, or how he thinks about designing for AI. Where an answer comes from the writing, it'll show you the source.</p>
+        <div class="dock-page-welcome">
+          <span class="dock-welcome-avatar" aria-hidden="true"><svg class="icon"><use href="#i-bot"/></svg></span>
+          <div><p>Hi! I'm Verso. I can help you explore the products Jody has built, the decisions behind them, and the thinking that carried them into production. What would you like to know?</p>
+            <div class="dock-suggestions">
+              <button type="button" data-verso-open data-verso-prompt="What products has Jody built end to end?">What products have you built end to end?</button>
+              <button type="button" data-verso-open data-verso-prompt="How does Jody take a product idea from prototype to production?">How do you take an idea to production?</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="conversation" id="conversation"></div>
+      <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="polite" aria-relevant="additions"></div>
     </div>
   </div>
 
   <div class="dock-bar">
     <form class="input-row" id="chat-form">
       <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
-      <input type="text" id="chat-q" autocomplete="off" placeholder="Ask Verso, Jody's AI Assistant…" />
+      <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" placeholder="Ask Verso, Jody's AI Assistant…" />
       <!-- The label is its own element so name-entry mode can swap the word
            without disturbing the icon beside it. -->
       <button type="submit"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
@@ -72,6 +81,7 @@ const iconForType: Record<string, string> = {
 </div>
 
 <style>
+  .dock-page-welcome { display: none; }
   .chat-dock {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -221,8 +231,28 @@ const iconForType: Record<string, string> = {
     const tplYou = document.getElementById('tpl-you');
     const tplSite = document.getElementById('tpl-site');
 
-    function openDock() { dock.classList.add('open'); }
-    function closeDock() { dock.classList.remove('open'); input.blur(); }
+    let dockTrigger = null;
+    const isEmbedded = () => document.body.classList.contains('verso-page');
+    function syncDockTriggers() {
+      document.querySelectorAll('[data-verso-open]').forEach(el => el.setAttribute('aria-expanded', String(isEmbedded() || dock.classList.contains('open'))));
+    }
+    function openDock() {
+      dock.classList.add('open');
+      syncDockTriggers();
+    }
+    function closeDock(restoreFocus = false) {
+      if (isEmbedded()) return;
+      dock.classList.remove('open');
+      input.blur();
+      syncDockTriggers();
+      if (restoreFocus && dockTrigger?.isConnected) dockTrigger.focus();
+    }
+    function syncDockMode() {
+      if (isEmbedded()) dock.classList.add('open');
+      syncDockTriggers();
+    }
+    syncDockMode();
+    document.addEventListener('astro:after-swap', syncDockMode);
 
     // A conversation is a visit, so it lives in sessionStorage: close the tab
     // and the next one starts clean. Safari's private mode throws on both
@@ -437,9 +467,17 @@ const iconForType: Record<string, string> = {
       ask(input.value);
     });
     input.addEventListener('focus', openDock);
-    closeBtn.addEventListener('click', closeDock);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDock(); });
+    closeBtn.addEventListener('click', () => closeDock(true));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dock.classList.contains('open')) closeDock(true); });
     document.addEventListener('click', (e) => {
+      const trigger = e.target instanceof Element ? e.target.closest('[data-verso-open]') : null;
+      if (trigger) {
+        dockTrigger = trigger;
+        openDock();
+        if (!inFlight && !awaitingName && trigger.dataset.versoPrompt) input.value = trigger.dataset.versoPrompt;
+        input.focus();
+        return;
+      }
       if (dock.classList.contains('open') && !dock.contains(e.target)) closeDock();
     });
   })();

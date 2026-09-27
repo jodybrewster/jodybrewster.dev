@@ -1,44 +1,77 @@
 ---
-import Base from '../layouts/Base.astro';
-import PageHeader from '../components/PageHeader.astro';
+import Studio from '../layouts/Studio.astro';
+import ChatDock from '../components/ChatDock.astro';
+import Icon from '../components/Icon.astro';
 import { flags } from '../lib/flags';
-
 if (!flags.chat) return Astro.redirect('/');
+const features = [
+  {icon:'brief',tone:'cyan',title:'Explore the work',copy:'Ask about real projects, the decisions behind them, and the lessons learned.'},
+  {icon:'shield',tone:'orange',title:'Go deeper on product decisions',copy:'Talk through product choices, technical tradeoffs, and how ideas become useful software.'},
+  {icon:'compass',tone:'pink',title:'Follow the thinking',copy:'Find research, case studies, and ideas worth a closer look.'},
+  {icon:'chat',tone:'cyan',title:'A conversation, in your words',copy:'Start with a question and follow your curiosity from there.'},
+];
 ---
-<Base
-  title="Verso — Jody Brewster"
-  description="Verso is the chat on Jody Brewster's site. It answers from his published essays, notes, and case briefs, cites what it drew on, and refuses what isn't in the writing."
->
-  <main class="page active" style="padding: 72px 0 100px;">
-    <PageHeader
-      icon="i-chat"
-      eyebrow="Verso"
-      title="Verso."
-      description="Ask about anything published here. Verso answers from the writing, shows you what it drew on, and tells you plainly when the writing doesn't cover it."
-    />
-
-    <div class="chat-explainer">
-      <p>A verso is the left-hand page of an open book: the one you have already read, facing the one you are reading now. Verso answers from what Jody has published, speaks <em>about</em> him rather than <em>as</em> him, cites the pieces it drew on, and refuses what the writing doesn't cover. It will sometimes be wrong, so the cited piece is the source of truth, not the synthesis above it.</p>
-      <p>The ask bar at the bottom of every page is Verso. Type a question anywhere on the site. An answer can take a moment, and Jody reads everything people ask it.</p>
-    </div>
+<Studio title="Verso — Ask about Jody's work" description="Explore Jody Brewster's products, work, and product decisions in a conversation with Verso." bodyClass="verso-page" embeddedChat>
+  <main class="studio-container verso-main">
+    <aside class="verso-guide" aria-labelledby="verso-title">
+      <div class="verso-identity"><span class="verso-face" aria-hidden="true"><Icon name="bot" class="icon" /></span><h1 id="verso-title">Verso</h1></div>
+      <p class="verso-lede">Your guide to my work, experience, and thinking.</p>
+      <ul class="verso-features">{features.map(f => <li class={`verso-feature-${f.tone}`}><span class="feature-icon" aria-hidden="true"><Icon name={f.icon} class="icon" /></span><div><h2>{f.title}</h2><p>{f.copy}</p></div></li>)}</ul>
+      <button class="studio-button studio-button-primary verso-example" type="button" data-verso-open data-verso-prompt="What products has Jody built end to end?" aria-controls="chat-dock" aria-expanded="true">Try an example question <Icon name="arrow-right" class="icon" /></button>
+      <p class="verso-guide-note">Prefer to browse? <a href="/work">Explore the case studies.</a></p>
+    </aside>
+    <section class="verso-conversation" aria-label="Chat with Verso">
+      <ChatDock />
+      <p class="verso-privacy"><Icon name="shield" class="icon" /> Jody may read and respond to questions. Please don't share sensitive information.</p>
+    </section>
   </main>
-</Base>
-
+</Studio>
 <style>
-  .chat-explainer {
-    max-width: 62ch;
-  }
-  .chat-explainer p {
-    font-family: var(--sans);
-    font-size: 16.5px;
-    line-height: 1.7;
-    color: var(--ink-soft);
-    margin: 0 0 18px;
-  }
-  .chat-explainer em {
-    font-family: var(--display);
-    font-style: italic;
-    font-variation-settings: "opsz" 14;
-    color: var(--ink);
-  }
+.verso-main{display:grid;grid-template-columns:310px minmax(0,1fr);gap:70px;align-items:start;padding-top:54px;padding-bottom:54px;}
+.verso-guide{padding-top:38px;}
+.verso-identity{display:flex;align-items:center;gap:13px;}
+.verso-face{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--studio-cyan);border-radius:50%;background:var(--studio-raised);color:var(--studio-cyan);}
+.verso-face .icon{width:27px;height:27px;}
+h1{font:400 24px/1.3 var(--headline);letter-spacing:.08em;text-transform:uppercase;margin:0;}
+.verso-lede{font-size:17px;line-height:1.65;color:var(--studio-muted);max-width:270px;margin:17px 0 32px;}
+.verso-features{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:28px;}
+.verso-features li{display:flex;align-items:flex-start;gap:16px;}
+.feature-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border:1px solid var(--feature-color);color:var(--feature-color);border-radius:50%;}
+.feature-icon .icon{width:19px;height:19px;}
+.verso-feature-cyan{--feature-color:var(--studio-cyan)}.verso-feature-orange{--feature-color:var(--studio-orange)}.verso-feature-pink{--feature-color:var(--studio-pink)}
+.verso-features h2{font:650 13px/1.5 var(--sans);margin:0 0 6px;}
+.verso-features p{font-size:12px;line-height:1.75;color:var(--studio-muted);margin:0;}
+.verso-example{margin-top:37px;}
+.verso-guide-note{font-size:11px;line-height:1.7;color:var(--studio-muted);margin-top:17px;}
+.verso-guide-note a{text-decoration:underline;text-underline-offset:3px;}
+.verso-conversation{min-width:0;}
+.verso-privacy{display:flex;align-items:flex-start;justify-content:center;gap:9px;font-size:10px;line-height:1.7;color:var(--studio-muted);margin:16px 15px 0;}
+.verso-privacy .icon{color:var(--studio-orange);width:13px;height:13px;margin-top:2px;}
+@media(max-width:1050px){.verso-main{grid-template-columns:250px minmax(0,1fr);gap:35px;}.verso-guide{padding-top:20px}}
+@media(max-width:720px){.verso-main{grid-template-columns:1fr;gap:28px;padding-top:24px;padding-bottom:40px;}.verso-guide{padding-top:0;}.verso-lede{max-width:none;margin:14px 0 0;font-size:15px;}.verso-features,.verso-example,.verso-guide-note{display:none;}.verso-privacy{font-size:10px;margin-inline:0;}}
+</style>
+<style is:global>
+.verso-page #chat-dock,.verso-page #chat-dock.open {position:static;inset:auto;width:100%;height:min(680px,calc(100dvh - 220px));min-height:500px;display:flex;flex-direction:column;visibility:visible;pointer-events:auto;z-index:auto;border:1px solid var(--studio-rule);border-radius:14px;background:var(--studio-surface);box-shadow:none;overflow:hidden;}
+.verso-page #chat-dock .dock-panel {display:flex;flex-direction:column;flex:1;min-height:0;max-height:none;opacity:1;overflow:hidden;border:0;transition:none;}
+.verso-page #chat-dock .dock-panel-head {display:none;}
+.verso-page #chat-dock .dock-scroll {width:100%;max-width:none;min-height:0;max-height:none;flex:1;overflow-y:auto;padding:38px 30px 24px;scrollbar-color:var(--studio-rule) transparent;}
+.verso-page #chat-dock .dock-default-greeting {display:none;}
+.verso-page #chat-dock .dock-page-welcome {display:flex;align-items:flex-start;gap:17px;}
+.verso-page #chat-dock .dock-welcome-avatar {display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border:1px solid var(--studio-cyan);color:var(--studio-cyan);border-radius:50%;background:var(--studio-raised);}
+.verso-page #chat-dock .dock-welcome-avatar .icon {width:24px;height:24px;}
+.verso-page #chat-dock .dock-page-welcome>div {min-width:0;}
+.verso-page #chat-dock .dock-page-welcome p {padding:16px 18px;border:1px solid var(--studio-rule);background:var(--studio-bg);border-radius:0 10px 10px 10px;font-size:13px;line-height:1.8;margin:0 0 20px;}
+.verso-page #chat-dock .dock-suggestions {display:flex;flex-direction:column;align-items:flex-start;gap:10px;}
+.verso-page #chat-dock .dock-suggestions button {border:1px solid var(--studio-rule);border-radius:99px;background:var(--studio-raised);color:var(--studio-muted);padding:10px 14px;min-height:40px;font-size:11px;line-height:1.5;text-align:left;}
+.verso-page #chat-dock .dock-suggestions button:hover {border-color:var(--studio-cyan);color:var(--studio-ink);}
+.verso-page #chat-dock .dock-bar {flex-shrink:0;padding:18px 20px;background:var(--studio-surface);border-top:1px solid var(--studio-rule);}
+.verso-page #chat-dock .input-row {max-width:none;border:1px solid var(--studio-rule);background:var(--studio-bg);border-radius:8px;}
+.verso-page #chat-dock .input-row:focus-within {border-color:var(--studio-cyan);}
+.verso-page #chat-dock .input-row input {font-size:14px;padding:17px 10px;}
+.verso-page #chat-dock .input-row button {margin:6px;min-width:66px;border-radius:6px;background:var(--studio-muted);color:var(--studio-bg);}
+.verso-page #chat-dock .input-row button:hover {background:var(--studio-cyan);}
+.verso-page #chat-dock .turn {font-size:14px;}
+.verso-page #chat-dock .said {min-width:0;overflow-wrap:anywhere;}
+.verso-page #chat-dock .sources {overflow-wrap:anywhere;}
+@media(max-width:720px){.verso-page #chat-dock,.verso-page #chat-dock.open{height:600px;min-height:460px;max-height:75dvh;}.verso-page #chat-dock .dock-scroll{padding:23px 16px;}.verso-page #chat-dock .dock-page-welcome{gap:10px;}.verso-page #chat-dock .dock-welcome-avatar{width:29px;height:29px;}.verso-page #chat-dock .dock-welcome-avatar .icon{width:20px;height:20px;}.verso-page #chat-dock .dock-page-welcome p{padding:12px;font-size:12px;}.verso-page #chat-dock .dock-suggestions button{padding:9px 12px;font-size:10px;}.verso-page #chat-dock .dock-bar{padding:12px;}.verso-page #chat-dock .input-row input{font-size:12px}.verso-page #chat-dock .input-icon{display:none;}}
 </style>

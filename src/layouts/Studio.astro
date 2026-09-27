@@ -1,0 +1,16 @@
+---
+import Base from './Base.astro';
+import '../styles/studio.css';
+interface Props {
+  title: string;
+  description?: string;
+  jsonLd?: Record<string, unknown>;
+  markdownHref?: string;
+  bodyClass?: string;
+  embeddedChat?: boolean;
+}
+const {bodyClass = '', embeddedChat = false, ...props} = Astro.props;
+---
+<Base {...props} bodyClass={`studio-page ${bodyClass}`} home showChatDock={!embeddedChat}>
+  <slot />
+</Base>

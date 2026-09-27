@@ -1,0 +1,247 @@
+---
+import { flags } from '../lib/flags';
+import BrandMark from './BrandMark.astro';
+
+const pathname = Astro.url.pathname;
+const activeSection = pathname.startsWith('/work') || pathname.startsWith('/portfolio') ? '/work'
+  : pathname.startsWith('/writing') || pathname.startsWith('/research') ? '/writing'
+  : pathname === '/about' ? '/about' : '';
+
+const links = [
+  { href: '/work', label: 'Work' },
+  { href: '/writing', label: 'Writing' },
+  { href: '/about', label: 'About' },
+  { href: '/jodybrewster_resume_2026.docx', label: 'Résumé', download: true },
+  { href: '/about#contact', label: 'Contact' },
+];
+---
+
+<header class="home-nav">
+  <a class="home-brand" href="/" aria-label="Jody Brewster, home">
+    <span class="home-monogram"><BrandMark /></span>
+    <span class="home-wordmark">Jody Brewster<small>Solutions Architect</small></span>
+  </a>
+
+  <nav class="home-links" id="home-primary-nav" aria-label="Main navigation">
+    {links.map(({ href, label, download }) => (
+      <a href={href} download={download} aria-current={href === activeSection ? 'page' : undefined}>{label}</a>
+    ))}
+  </nav>
+
+  <div class="home-nav-actions">
+    <a class="home-icon-button" href="/search" aria-label="Search the site" title="Search the site">
+      <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg>
+    </a>
+    {flags.chat && (
+      <button class="home-verso-button" data-verso-open aria-label="Talk to Verso" aria-controls="chat-dock" aria-expanded="false">
+        <svg class="home-waveform" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M2 12v4M6 8v12M10 3v22M14 10v8M18 6v16M22 11v6M26 13v2" />
+        </svg>
+        <span>Talk to Verso</span>
+        <span class="home-status-dot" aria-hidden="true"></span>
+      </button>
+    )}
+    <button class="home-menu-toggle home-icon-button" id="home-menu-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="home-primary-nav">
+      <span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<style>
+  .home-nav {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    width: min(1416px, calc(100% - 120px));
+    height: 78px;
+    margin: 0 auto;
+    gap: 54px;
+    color: #f4f7fb;
+    font-family: var(--sans);
+  }
+  .home-brand {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .home-monogram { display: block; width: 80px; height: 65px; }
+  .home-wordmark {
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .home-wordmark small { display:block; margin-top:7px; font-size:9px; line-height:1.2; letter-spacing:.3em; color:#bbcee3; }
+  .home-links {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 35px;
+  }
+  .home-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: color .16s ease;
+  }
+  .home-links a:hover { color: var(--home-cyan, #00c6e7); }
+  .home-nav-actions {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .home-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .16s ease, color .16s ease;
+  }
+  .home-icon-button:hover {
+    background: rgb(167 202 230 / .1);
+    color: var(--home-cyan, #00c6e7);
+  }
+  .home-icon-button .icon { width: 24px; height: 24px; stroke-width: 1.7; }
+  .home-verso-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    margin-left: 5px;
+    padding: 0 14px;
+    border: 1px solid #a6bfd7;
+    border-radius: 999px;
+    background: rgb(3 14 25 / .34);
+    color: #f4f7fb;
+    font: 600 15px / 1 var(--sans);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .16s ease, border-color .16s ease;
+  }
+  .home-verso-button:hover {
+    border-color: var(--home-cyan, #00c6e7);
+    background: rgb(0 198 231 / .12);
+  }
+  .home-waveform { width: 28px; height: 28px; color: var(--home-cyan, #00c6e7); }
+  .home-status-dot {
+    align-self: flex-start;
+    width: 7px;
+    height: 7px;
+    margin-top: 9px;
+    border-radius: 50%;
+    background: #29d44f;
+  }
+  .home-menu-toggle { display: none; }
+  .home-nav a:focus-visible, .home-nav button:focus-visible {
+    outline: 2px solid var(--home-cyan, #00c6e7);
+    outline-offset: 5px;
+  }
+  @media (max-width: 1220px) {
+    .home-nav { width: calc(100% - 64px); gap: 30px; }
+    .home-links { gap: 23px; }
+  }
+  @media (max-width: 1050px) {
+    .home-nav { gap: 16px; }
+    .home-links {
+      display: none;
+      position: absolute;
+      top: calc(100% - 2px);
+      right: 0;
+      left: 0;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      padding: 12px;
+      border: 1px solid var(--home-rule, #273949);
+      border-radius: 12px;
+      background: var(--home-surface, #0a1721);
+      color: var(--home-ink, #f4f7fb);
+      box-shadow: 0 18px 40px rgb(0 0 0 / .24);
+    }
+    .home-links[data-open="true"] { display: flex; }
+    .home-links a { min-height: 46px; padding: 0 14px; border-radius: 6px; }
+    .home-links a:hover { background: rgb(167 202 230 / .07); }
+    .home-menu-toggle { display: inline-flex; flex-direction: column; gap: 6px; }
+    .home-menu-toggle span {
+      width: 20px;
+      height: 1.5px;
+      border-radius: 2px;
+      background: currentColor;
+      transition: transform .16s ease;
+    }
+    .home-menu-toggle[aria-expanded="true"] span:first-child { transform: translateY(3.75px) rotate(45deg); }
+    .home-menu-toggle[aria-expanded="true"] span:last-child { transform: translateY(-3.75px) rotate(-45deg); }
+  }
+  @media (max-width: 640px) {
+    .home-nav { width: calc(100% - 40px); height: 72px; }
+    .home-wordmark { display: none; }
+    .home-monogram { --brand-mark-width:64px; --brand-mark-height:52px; width:64px; height:52px; }
+    .home-nav-actions { gap: 5px; }
+    .home-verso-button { gap: 7px; padding-inline: 10px; font-size: 13px; }
+  }
+  @media (max-width: 390px) {
+    .home-verso-button { width: 44px; padding: 0; }
+    .home-verso-button > span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-nav a, .home-nav button, .home-menu-toggle span { transition: none; }
+  }
+</style>
+
+<script>
+  const homeMenuElements = () => ({
+    toggle: document.getElementById('home-menu-toggle'),
+    panel: document.getElementById('home-primary-nav'),
+  });
+
+  function setHomeMenu(open: boolean) {
+    const { toggle, panel } = homeMenuElements();
+    toggle?.setAttribute('aria-expanded', String(open));
+    toggle?.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+    panel?.setAttribute('data-open', String(open));
+  }
+
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest('#home-menu-toggle')) {
+      setHomeMenu(homeMenuElements().toggle?.getAttribute('aria-expanded') !== 'true');
+      return;
+    }
+    if (target.closest('#home-primary-nav a') || !target.closest('.home-nav')) setHomeMenu(false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    const { toggle } = homeMenuElements();
+    if (toggle?.getAttribute('aria-expanded') === 'true') {
+      setHomeMenu(false);
+      toggle.focus();
+    }
+  });
+
+  window.matchMedia('(min-width: 1051px)').addEventListener('change', () => setHomeMenu(false));
+</script>

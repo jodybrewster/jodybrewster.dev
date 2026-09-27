@@ -1,0 +1,24 @@
+---
+import Icon from './Icon.astro';
+const projects = [
+  { title: 'Brand Impact Tracker', href: '/work/agentic-analytics-platform', description: 'AI-powered analytics with Snowflake, generative UI, and enterprise integration.', tags: ['Next.js', 'Snowflake', 'AI / LLMs', 'Enterprise'], image: '/images/work/agentic-analytics-platform/hero.png', alt: 'Brand Impact Tracker showing daily insights and changes in brand performance.', type: 'analytics' },
+  { title: 'Lennar Interactive Maps', href: '/work/lennar-interactive-maps', description: 'Scalable mapping with a GIS/CAD pipeline, live availability, and operational tools.', tags: ['GIS', 'Maps', 'Platform Architecture', 'Real Estate'], image: '/images/portfolio/lennar-interactive-maps/02.png', alt: 'Lennar community map with lot-level availability and home prices.', type: 'maps' },
+  { title: 'Conversational AI Evaluation', href: '/work/pharmacy-agent-eval', description: 'An evaluation system for multi-turn AI, grounded in real conversations and human judgment.', tags: ['AI Agents', 'Evaluation', 'Voice & Text', 'Healthcare'], type: 'evaluation' },
+];
+---
+<section class="featured-work home-container" id="featured-work" aria-labelledby="work-title">
+  <div class="home-section-heading"><h2 class="home-eyebrow" id="work-title">Featured case studies</h2><a href="/work" class="home-text-link">View all work <Icon name="arrow-right" class="icon" /></a></div>
+  <div class="project-grid">
+    {projects.map(project => (
+      <a href={project.href} class={`project-card project-${project.type}`}>
+        <div class="project-preview">
+          {project.image ? <img src={project.image} alt={project.alt} width="960" height="640" loading="lazy" decoding="async" /> : <div class="evaluation-preview" aria-hidden="true">
+            <div class="eval-heading"><Icon name="shield" class="icon" /><span>Conversation quality</span><span class="eval-label">EVALUATION FRAMEWORK</span></div>
+            <div class="eval-columns"><div class="eval-conversations"><span><i></i> Refill requests</span><span><i></i> Transfer initiation</span><span><i></i> Adherence check-ins</span></div><div class="eval-rubric"><span>Safety <b>01</b></span><span>Accuracy <b>02</b></span><span>Comprehension <b>03</b></span><span>Dignity <b>04</b></span></div></div>
+          </div>}
+        </div>
+        <div class="project-info"><h3>{project.title}</h3><div class="project-description"><p>{project.description}</p><span class="circle-arrow" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span></div><ul class="project-tags" aria-label="Project topics">{project.tags.map(tag => <li>{tag}</li>)}</ul></div>
+      </a>
+    ))}
+  </div>
+</section>

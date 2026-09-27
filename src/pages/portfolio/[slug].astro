@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import Base from '../../layouts/Base.astro';
+import Studio from '../../layouts/Studio.astro';
 
 export async function getStaticPaths() {
   const projects = await getCollection('portfolio');
@@ -25,12 +25,12 @@ const jsonLd = {
   ],
 };
 ---
-<Base
+<Studio
   title={`${entry.data.title} — Portfolio — Jody Brewster`}
   description={entry.data.description}
   jsonLd={jsonLd}
 >
-  <main class="page active" style="padding: 72px 0 100px;">
+  <main class="page active studio-container" style="padding: 72px 0 100px;">
     <article class="brief-shell">
       <div class="brief-head">
         <p class="crumb">
@@ -87,7 +87,7 @@ const jsonLd = {
       </div>
     </article>
   </main>
-</Base>
+</Studio>
 
 <style>
   .folio-prose {

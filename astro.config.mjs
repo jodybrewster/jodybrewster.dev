@@ -42,4 +42,23 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [wikiLinkPlugin],
   },
+  // Three is imported only by /library, so Vite would otherwise discover it
+  // on the first visit and re-optimize mid-session. When that re-run is lost,
+  // the page keeps requesting bundles that no longer exist (504 Outdated
+  // Optimize Dep) and the shelf never boots. Pre-bundling at startup means
+  // there is nothing left to discover.
+  vite: {
+    optimizeDeps: {
+      include: [
+        'three',
+        'three/examples/jsm/geometries/RoundedBoxGeometry.js',
+        'three/examples/jsm/renderers/CSS3DRenderer.js',
+        'three/examples/jsm/postprocessing/EffectComposer.js',
+        'three/examples/jsm/postprocessing/GTAOPass.js',
+        'three/examples/jsm/postprocessing/OutputPass.js',
+        'three/examples/jsm/postprocessing/RenderPass.js',
+        'three/examples/jsm/postprocessing/ShaderPass.js',
+      ],
+    },
+  },
 });

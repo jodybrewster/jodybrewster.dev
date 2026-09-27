@@ -177,6 +177,10 @@ The site mark (logo) is a small circle glyph (28px, 1px forest accent border) al
 
 Row layout: a 60px-wide column for a timestamp or number stamp (mono, 10px, uppercase), a flex content column for the title and dek, and a trailing metadata column. Title: Source Serif 4 25px wght 450 ls -0.012em. Dek: Plus Jakarta Sans 15px ink-soft max 64ch. Hover state: warm-ash background on the row with a slight negative margin bleed to the container edge (not a card; the hover is the card).
 
+### Studio interior pages
+
+The dark Studio shell is shared by writing, research, work, About, Lab Notes, and Now. It uses the same navigation, Barlow Semi Condensed display headlines, Plus Jakarta Sans interface text, cyan rule tokens, and restrained card borders. Lab Notes presents unfinished entries as bordered reading cards; Now keeps its live reading and listening sections in the same essay width and metadata rhythm.
+
 ### Note cards
 
 Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Body text: Plus Jakarta Sans 14.5px lh 1.55. State badge (seedling/budding/evergreen): 10px mono, 1px rule border, 3px 9px padding, 99px radius. Evergreen state uses quiet-forest text and forest-mist background. Hover: border shifts to quiet-forest, `translateY(-2px)`, ambient shadow.

@@ -37,7 +37,7 @@ The site opens on `/home`, not on `/`. The root is a redirect (declared in `astr
 
 The `jodybrewster.dev` notebook on the shelf holds a live iframe of `/home` and opens into it, so the shelf stays running behind the site rather than unloading. See `CLAUDE.md` for the rules that keep that iframe alive.
 
-The writing and research indexes use dedicated, slug-matched editorial illustrations from `public/images/research/`. Article pages can surface the same image as a lead figure; the Jev teardown is the first writing article using that treatment.
+The writing and research indexes use dedicated, slug-matched editorial illustrations from `public/images/research/`. Article pages can surface the same image as a lead figure; the Jev teardown is the first writing article using that treatment. Lab notes and Now use the same Studio shell as the writing and research pages.
 
 ## Content
 

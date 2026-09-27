@@ -16,6 +16,8 @@ A stated purpose of the site is working in public with a second brain: Claude re
 
 The current visual system carries that editorial purpose through the interior pages: a permanent dark studio, thin condensed headlines, a supplied layered-glass mark, and one distinct generated illustration per research subject. Images support the argument of each piece and appear on both the index card and, where assigned, the article page.
 
+Lab notes and Now belong to the same Studio family as writing and research. They keep their distinct content modes—unfinished notes and current reading/listening—while sharing the dark shell, navigation, spacing, and typography so the homepage links do not send readers into a visually unrelated part of the site.
+
 ## Brand Personality
 
 Precise. Rigorous. Warm.

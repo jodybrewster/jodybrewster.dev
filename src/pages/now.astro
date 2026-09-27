@@ -1,7 +1,7 @@
 ---
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import Base from '../layouts/Base.astro';
+import Studio from '../layouts/Studio.astro';
 
 interface Listening {
   artists: { name: string; url: string }[];
@@ -50,14 +50,14 @@ const updatedFull = updatedDate
   ? updatedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   : '';
 ---
-<Base title="Now — Jody Brewster" description="What Jody is working on, reading, and thinking about right now.">
-  <main class="page active" style="padding: 72px 0 100px;">
+<Studio title="Now — Jody Brewster" description="What Jody is working on, reading, and thinking about right now.">
+  <main class="now-main studio-container">
     <article class="essay-shell">
       <a href="/home" class="back">
         <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
       </a>
 
-      <p class="eyebrow">/ now{updatedMonthYear && ` · ${updatedMonthYear}`}</p>
+      <p class="studio-eyebrow">/ now{updatedMonthYear && ` · ${updatedMonthYear}`}</p>
       <h1>Now</h1>
 
       {lede && <p class="lede">{lede}</p>}
@@ -68,7 +68,7 @@ const updatedFull = updatedDate
 
       {hasReading && (
         <section class="now-extra" id="reading">
-          <p class="eyebrow">/ reading</p>
+          <p class="studio-eyebrow">/ reading</p>
           <ul class="reading-books">
             {reading.books.map(book => (
               <li>
@@ -85,7 +85,7 @@ const updatedFull = updatedDate
 
       {hasListening && (
         <section class="now-extra" id="listening">
-          <p class="eyebrow">/ listening · last 4 weeks</p>
+          <p class="studio-eyebrow">/ listening · last 4 weeks</p>
           {listening.artists.length > 0 && (
             <p class="listening-artists">
               {listening.artists.map((artist, i) => (
@@ -122,16 +122,22 @@ const updatedFull = updatedDate
       </div>
     </article>
   </main>
-</Base>
+</Studio>
 
 <style>
+  .now-main { padding-top: 52px; padding-bottom: 80px; }
+  .now-main .essay-shell { max-width: 900px; }
+  .now-main .essay-shell h1 { margin-bottom: 16px; }
+  .now-main .essay-shell .lede { max-width: 650px; margin: 0 0 42px; color: var(--studio-muted); font-size: 18px; line-height: 1.65; }
+  .now-main .essay-body { max-width: 680px; color: var(--studio-muted); }
+  .now-main .essay-body p { margin: 0 0 22px; }
   .now-extra {
     max-width: var(--measure);
     margin-top: 72px;
     padding-top: 28px;
-    border-top: 1px solid var(--rule);
+    border-top: 1px solid var(--studio-rule);
   }
-  .now-extra .eyebrow { margin: 0 0 20px; }
+  .now-extra .studio-eyebrow { margin: 0 0 20px; }
   .reading-books {
     list-style: none;
     margin: 0;
@@ -148,22 +154,22 @@ const updatedFull = updatedDate
     height: 66px;
     object-fit: cover;
     border-radius: 3px;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--studio-rule);
     flex-shrink: 0;
   }
   .listening-artists {
     font-size: var(--t-input);
     line-height: 1.7;
-    color: var(--ink-soft);
+    color: var(--studio-muted);
     margin: 0 0 32px;
   }
   .listening-artists a {
     color: inherit;
     border: none;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--studio-rule);
     transition: color .15s ease, border-color .15s ease;
   }
-  .listening-artists a:hover { color: var(--accent); border-color: var(--accent); }
+  .listening-artists a:hover { color: var(--studio-cyan); border-color: var(--studio-cyan); }
   .listening-albums {
     list-style: none;
     margin: 0;
@@ -182,7 +188,7 @@ const updatedFull = updatedDate
     font-family: var(--mono);
     font-size: var(--t-micro);
     font-weight: 500;
-    color: var(--ink-faint);
+    color: var(--studio-muted);
     font-variant-numeric: tabular-nums;
     width: 20px;
     flex-shrink: 0;
@@ -192,7 +198,7 @@ const updatedFull = updatedDate
     height: 44px;
     object-fit: cover;
     border-radius: 4px;
-    border: 1px solid var(--rule);
+    border: 1px solid var(--studio-rule);
     flex-shrink: 0;
   }
   .media-meta {
@@ -204,22 +210,23 @@ const updatedFull = updatedDate
   .media-meta a {
     font-size: var(--t-ui);
     font-weight: 500;
-    color: var(--ink);
+    color: var(--studio-ink);
     border: none;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color .15s ease;
   }
-  .media-meta a:hover { color: var(--accent); }
+  .media-meta a:hover { color: var(--studio-cyan); }
   .media-sub {
     font-size: var(--t-meta);
-    color: var(--ink-faint);
+    color: var(--studio-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   @media (max-width: 720px) {
+    .now-main { padding-top: 20px; padding-bottom: 50px; }
     .listening-albums { columns: 1; }
   }
 </style>

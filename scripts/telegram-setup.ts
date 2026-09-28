@@ -16,7 +16,9 @@
 import 'dotenv/config';
 
 const API_ROOT = 'https://api.telegram.org';
-const DEFAULT_URL = 'https://jodybrewster.dev/api/telegram';
+// www, not the bare domain: the bare domain redirects there, and Telegram
+// treats a redirect as a failed delivery.
+const DEFAULT_URL = 'https://www.jodybrewster.dev/api/telegram';
 
 /** Shown in Telegram's own command menu, so each one has to read on a phone. */
 const COMMANDS = [

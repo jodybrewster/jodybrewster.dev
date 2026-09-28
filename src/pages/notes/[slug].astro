@@ -1,6 +1,6 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import Base from '../../layouts/Base.astro';
+import Studio from '../../layouts/Studio.astro';
 
 export async function getStaticPaths() {
   const notes = await getCollection('notes', ({ data }) => data.publish);
@@ -17,13 +17,13 @@ const date = entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 
 const tagList = entry.data.tags ?? [];
 const primaryTag = tagList[0] ?? '';
 ---
-<Base
+<Studio
   title={`${entry.data.title} — Notes — Jody Brewster`}
   description={entry.data.title}
   markdownHref={`${Astro.url.pathname.replace(/\/$/, '')}.md`}
 >
-  <main class="page active" style="padding: 72px 0 100px;">
-    <article class="essay-shell" style="max-width:660px;">
+  <main class="page active studio-container" style="padding: 72px 0 100px;">
+    <article class="essay-shell">
       <a href="/notes" class="back">
         <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to lab notes
       </a>
@@ -52,4 +52,4 @@ const primaryTag = tagList[0] ?? '';
       </div>
     </article>
   </main>
-</Base>
+</Studio>

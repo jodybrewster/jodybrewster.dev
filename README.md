@@ -10,7 +10,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 - **Content:** Markdown files synced from an Obsidian vault
 - **Fonts:** Barlow Semi Condensed (thin display headlines), Plus Jakarta Sans (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
-- **AI/Chat:** Verso, the site's chat. Anthropic Claude API + Upstash Vector (RAG over site content), with an optional human handoff: `/on` to the bot puts him on call for ten hours, a question then reaches him on Telegram and his reply goes back on the same stream. The window closes by itself and says so, rather than leaving a visitor waiting on someone who stopped being available hours ago. Verso asks a first-time visitor their name so he knows who he is answering; it is stored in the visitor's browser, sent to Telegram, and never shown to the model. See `CLAUDE.md` for how the race between the two answers is settled.
+- **AI/Chat:** Verso, the site's chat. Anthropic Claude API + Upstash Vector (RAG over site content), with an optional human handoff: `/on` to the bot puts him on call for ten hours, a question then reaches him on Telegram and his reply goes back on the same stream. The window closes by itself and says so, rather than leaving a visitor waiting on someone who stopped being available hours ago. Visitors may optionally add a name; it is remembered in their browser and used for the Telegram header, never shown to the model. Mobile pages have one fixed chat composer with Stop and Retry controls. See `CLAUDE.md` for how the race between the two answers is settled.
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
 - **Analytics:** Google Analytics 4 (`G-4DLGJN6CZ5`) loaded directly, production builds only
 
@@ -37,7 +37,7 @@ The site opens on `/home`, not on `/`. The root is a redirect (declared in `astr
 
 The `jodybrewster.dev` notebook on the shelf holds a live iframe of `/home` and opens into it, so the shelf stays running behind the site rather than unloading. See `CLAUDE.md` for the rules that keep that iframe alive.
 
-The writing and research indexes use dedicated, slug-matched editorial illustrations from `public/images/research/`. Article pages can surface the same image as a lead figure; the Jev teardown is the first writing article using that treatment.
+The writing and research indexes use dedicated, slug-matched editorial illustrations from `public/images/research/`. Article pages can surface the same image as a lead figure; the Jev teardown is the first writing article using that treatment. Lab notes and Now use the same Studio shell as the writing and research pages.
 
 ## Content
 
@@ -70,3 +70,5 @@ UPSTASH_REDIS_*=       # Rate limiting / caching
 TELEGRAM_*=            # Verso handoff: bot token, owner id, webhook secret
 PREVIEW_PASSWORD=      # Basic auth gate (remove for public launch)
 ```
+
+Verso operations, corpus refresh/rollback and representative answer checks are documented in [docs/verso-evaluation.md](docs/verso-evaluation.md). Production Vercel builds safely refresh the five-collection index after building the site; local builds do not call the embedding service.

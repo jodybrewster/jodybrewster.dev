@@ -52,11 +52,18 @@ export function clientIp(request: Request): string {
  * Vercel preview deployments don't get locked out).
  */
 export function isOriginAllowed(request: Request): boolean {
-  if (env('VERCEL_ENV') !== 'production' && env('NODE_ENV') !== 'production') {
+  const environment = env('VERCEL_ENV');
+  if (environment ? environment !== 'production' : env('NODE_ENV') !== 'production') {
     return true;
   }
-  const origin = request.headers.get('origin') ?? '';
-  const referer = request.headers.get('referer') ?? '';
-  const allowedHost = 'jodybrewster.dev';
-  return origin.includes(allowedHost) || referer.includes(allowedHost);
+  const origin = request.headers.get('origin');
+  const candidate = origin ?? request.headers.get('referer');
+  if (!candidate) return false;
+  try {
+    const url = new URL(candidate);
+    if (url.username || url.password) return false;
+    if (!['https://jodybrewster.dev', 'https://www.jodybrewster.dev'].includes(url.origin)) return false;
+    // Origin is an origin, never a path, query, credentials, or fragment.
+    return origin === null || candidate === url.origin;
+  } catch { return false; }
 }

@@ -7,7 +7,7 @@
     "start": "astro dev",
     "build": "astro build",
     "prebuild": "tsx scripts/spotify-sync.ts",
-    "postbuild": "pagefind --site dist",
+    "postbuild": "pagefind --site .vercel/output/static && tsx scripts/embed.ts --if-production --allow-failure",
     "preview": "astro preview",
     "astro": "astro",
     "sync": "tsx scripts/sync-vault.ts",
@@ -31,8 +31,10 @@
     "@upstash/vector": "^1.2.3",
     "astro": "^5.0.0",
     "dotenv": "^17.4.2",
+    "github-slugger": "^2.0.0",
     "remark-wiki-link": "^2.0.0",
-    "three": "^0.185.1"
+    "three": "^0.185.1",
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

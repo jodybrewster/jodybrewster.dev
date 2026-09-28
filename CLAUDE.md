@@ -43,7 +43,7 @@ npm run books      # resolve book catalog links + cache covers → content/libra
 npm test           # vitest run
 ```
 
-Unit tests live next to their subject (`src/lib/**/*.test.ts`) and cover the shelf's pure logic only.
+Unit tests live under `src/lib/**/*.test.ts` and cover the shelf, Verso transport/routes, handoff, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
 Type-check with `npx astro check`.
 
 ## Architecture
@@ -72,7 +72,7 @@ Content lives in two places:
 
 Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
 
-The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Writing card imagery is selected by content slug in `src/components/WritingIndex.astro`; article lead figures are passed through `src/layouts/Essay.astro` when a piece has a dedicated image.
+The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. A new piece without a dedicated image gets a studio illustration picked from its slug.
 
 `/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
 
@@ -82,17 +82,23 @@ The `src/pages/` subdirectories exist but are mostly empty — pages are activel
 
 ### Verso (the chat)
 
-The chat persona is named Verso and it has two authors. Most of the time `/api/chat` answers from the corpus. When the operator is present, the visitor's question is pushed to Telegram and **the same request holds its SSE response open**, polling Redis for a human reply. Vercel has no background jobs, so the wait has to be the request itself; `maxDuration: 90` in `astro.config.mjs` covers the 40s window plus a model stream after it, and it is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
+The chat persona is named Verso and it has two authors. Most of the time `/api/chat` answers from the corpus. When the operator is present, the visitor's question is pushed to Telegram and **the same request holds its SSE response open**, polling Redis for a human reply. Vercel has no background jobs, so the wait has to be the request itself; `maxDuration: 90` in `astro.config.mjs` covers the 20s window plus a model stream after it, and it is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
 
 The visitor is never told which author answered. That is deliberate, and three things hold it together:
 
-1. **The claim key is the whole concurrency design.** `SET chat:msg:<mid>:claim <who> NX EX 3600` is the only arbiter of the race. The webhook claims `human` when a reply lands; the route claims `llm` at the deadline; the loser reads what the winner wrote. No locks, no doubled answers, no lost ones.
+1. **The claim key is the whole concurrency design.** `SET chat:msg:<mid>:claim <who> NX EX 3600` is the only arbiter of the race. The webhook validates a pending question and saves its `human` claim and reply together in one Redis script; the route claims `llm` at the deadline. A closed or expired target refuses a reply. The loser reads what the winner wrote. No locks, no doubled answers, no lost ones.
 2. **A human reply is word-chunked and paced** (`chunkForTyping` / `typingDelayMs` in `src/lib/verso.ts`) so it types out like the model. A verbatim reply landing as one instant block next to a model reply that types for eight seconds is the tell.
 3. **Copy must stay true on both paths.** Nothing user-facing may claim answers come only from the corpus, because that is false whenever Jody is typing. The ask-bar placeholder is the one deliberate exception, chosen by him.
 
 Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly, typing cadence). `src/lib/handoff.ts` is the Redis state layer under a `chat:` namespace, distinct from the `rl:chat:*` prefix that `@upstash/ratelimit` owns. `src/lib/telegram.ts` is the Bot API client plus pure formatters. The two routes are deliberately thin so the decisions stay unit-testable.
 
-Verso asks a first-time visitor their name before their first question is sent, holds the question back rather than making them retype it, and remembers the answer in `localStorage` under `verso:name` (the conversation id is `sessionStorage` under `verso:cid` - a conversation is a visit, a person is not). The name reaches the Telegram header and stops there: it is deliberately kept out of the system prompt, the messages, and the Redis history, so the model can neither personalise on it nor echo it back.
+Verso sends the first question immediately. Visitors may add a first name through an optional disclosure; it is remembered in `localStorage` under `verso:name`. The conversation ID lives in `sessionStorage` under `verso:cid`. Names go to the Telegram header and pending-question state, never into model prompts or conversation history. New chat clears the conversation ID.
+
+The server enforces an independent 80-second request deadline, plus shorter setup/retrieval/model/persistence deadlines. The browser times out after 85 seconds, supports Stop and Retry, and consumes `done` as a terminal frame. Stage logs contain message IDs and timing, never question text. A timed-out rate-limit fallback is refused. Human handoff waits 20 seconds; accepted Telegram replies are stored atomically and are acknowledged as accepted, not as displayed.
+
+On phones, one fixed safe-area-aware composer replaces the header button, hero action and introduction card. The panel expands above it; 16px inputs prevent iPhone focus zoom. The desktop introduction and dedicated `/chat` layout remain available. Conversation DOM is persisted across Astro navigation.
+
+`npm run embed -- --dry-run` validates the complete five-collection corpus without network access. Production Vercel builds refresh it after the application build: stage a new namespace, verify all vectors, then atomically switch `chat:corpus:active`. Never reset the active namespace. See `docs/verso-evaluation.md` for rollback and answer-quality checks.
 
 `/on` opens a 10-hour window (`PRESENCE_TTL_S`). It closes by Redis TTL, and **an expiring key runs nothing** - there is no moment to hook a notification onto. So `chat:presence:until` holds the end time and deliberately outlives the presence key it describes; `claimPresenceLapse()` reads it via GETDEL, so whichever request notices first is the only one that reports it. Both the webhook and the chat route call it, which means the notice arrives either on his next message to the bot or when a visitor asks - the second being the case worth catching, since someone is waiting and he does not know he stopped being the one answering. An explicit `/off` clears the marker: he already knows.
 

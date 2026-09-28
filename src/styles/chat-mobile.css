@@ -1,0 +1,64 @@
+/* Shared conversation controls, including the persisted floating/page modes. */
+#chat-dock [hidden] { display: none !important; }
+#chat-dock .dock-new { margin-left: auto; margin-right: 12px; padding: 8px; min-height: 40px; border: 0; background: none; color: var(--ink-soft); font: 500 11px/1.5 var(--sans); cursor: pointer; }
+#chat-dock .dock-close { align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+#chat-dock .dock-identity { padding: 0 0 14px; color: var(--ink-soft); font: 400 12px/1.6 var(--sans); }
+#chat-dock .dock-identity summary { min-height: 32px; cursor: pointer; }
+#chat-dock .dock-identity summary span { opacity: .8; }
+#chat-dock .dock-identity label { display: block; margin: 8px 0 5px; }
+#chat-dock #chat-name { width: 100%; min-width: 0; border: 1px solid var(--rule); border-radius: 7px; padding: 10px 12px; background: var(--paper-warm); color: var(--ink); font: 400 16px/1.5 var(--sans); }
+#chat-dock .dock-data-note { font: 400 10px/1.6 var(--sans); color: var(--ink-soft); margin: 0 0 20px; }
+#chat-dock .dock-recovery { margin-top: 10px; }
+#chat-dock .dock-error { color: var(--ink-soft); font: 400 13px/1.6 var(--sans); }
+#chat-dock .dock-retry { border: 1px solid var(--rule); border-radius: 7px; min-height: 44px; padding: 8px 14px; background: var(--paper-warm); color: var(--ink); font: 500 12px/1.5 var(--sans); cursor: pointer; }
+#chat-dock .input-row .is-busy { background: var(--paper-warm); color: var(--ink); border: 1px solid var(--rule); }
+#chat-dock .is-busy svg { display: none; }
+#chat-dock .turn { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
+#chat-dock :is(.said, .answer, .source-item, .si-title) { min-width: 0; overflow-wrap: anywhere; }
+#chat-dock .source-item { align-items: start; flex-wrap: wrap; gap: 5px 10px; }
+#chat-dock .source-item .si-title { flex-basis: 150px; }
+#chat-dock .input-row { min-width: 0; }
+#chat-dock .input-row input { min-width: 0; }
+
+@media (max-width: 720px) {
+  /* Keep page panning separate from intentionally scrollable case-study cards. */
+  html:has(body[data-chat-enabled]) { overflow-x: clip; overscroll-behavior-x: none; }
+  body[data-chat-enabled] { max-width: 100%; }
+  body[data-chat-enabled]:not(.verso-page) { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock {
+    position: fixed;
+    inset: auto max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom) + var(--chat-keyboard-offset, 0px)) max(12px, env(safe-area-inset-left));
+    width: auto;
+    max-width: none;
+    visibility: visible;
+    pointer-events: auto;
+    border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--rule));
+    border-radius: 999px;
+    background: var(--paper);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 15%, transparent), 0 10px 35px rgb(0 0 0 / .4);
+    overflow: hidden;
+  }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock.open { border-radius: 20px; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-bar { padding: 7px; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row { border-radius: 999px; background: var(--paper); border-color: var(--rule); }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-icon { padding-left: 13px; color: var(--accent); }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-icon .icon { width: 20px; height: 20px; }
+  /* 16px avoids the input-focus zoom/pan on iPhone without disabling zoom. */
+  body[data-chat-enabled] #chat-dock .input-row input { font-size: 16px; padding: 13px 8px; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button { width: 44px; height: 44px; min-width: 44px; margin: 3px; padding: 0; justify-content: center; border-radius: 50%; background: var(--accent); color: var(--paper); }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button .submit-label { display: none; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button.is-busy .submit-label { display: inline; font-size: 10px; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel { max-height: 0; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock.open .dock-panel { max-height: min(62dvh, calc(var(--chat-visible-height, 100dvh) - 110px)); }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel-head { padding: 8px 14px 0; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-scroll { max-height: min(calc(62dvh - 52px), calc(var(--chat-visible-height, 100dvh) - 162px)); padding: 12px 18px 20px; overscroll-behavior: contain; }
+  #chat-dock .turn { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  #chat-dock .turn .said { font-size: 14px; }
+  #chat-dock .turn.you .said { font: 400 14px/1.6 var(--sans); }
+  #chat-dock .sources { padding: 12px; }
+  #chat-dock .thinking .waited { font-size: 9px; letter-spacing: .02em; text-transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #chat-dock .dock-panel { transition: none; }
+}

@@ -177,6 +177,10 @@ The site mark (logo) is a small circle glyph (28px, 1px forest accent border) al
 
 Row layout: a 60px-wide column for a timestamp or number stamp (mono, 10px, uppercase), a flex content column for the title and dek, and a trailing metadata column. Title: Source Serif 4 25px wght 450 ls -0.012em. Dek: Plus Jakarta Sans 15px ink-soft max 64ch. Hover state: warm-ash background on the row with a slight negative margin bleed to the container edge (not a card; the hover is the card).
 
+### Studio interior pages
+
+The dark Studio shell is shared by writing, research, work, About, Lab Notes, and Now. It uses the same navigation, Barlow Semi Condensed display headlines, Plus Jakarta Sans interface text, cyan rule tokens, and restrained card borders. Lab Notes presents unfinished entries as bordered reading cards; Now keeps its live reading and listening sections in the same essay width and metadata rhythm.
+
 ### Note cards
 
 Border: 1px ash-rule. Radius: 4px. Background: warm-ash. Padding: 20px 22px. Body text: Plus Jakarta Sans 14.5px lh 1.55. State badge (seedling/budding/evergreen): 10px mono, 1px rule border, 3px 9px padding, 99px radius. Evergreen state uses quiet-forest text and forest-mist background. Hover: border shifts to quiet-forest, `translateY(-2px)`, ambient shadow.
@@ -321,3 +325,17 @@ The six-panel reference supplied by the user is the current direction for Work, 
 - Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
 - Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Generated landscape imagery illustrates ideas rather than pretending to be project screenshots.
 - Verso uses the existing persisted ChatDock embedded in a two-column page. Prompt buttons only prefill the composer. Existing name entry, streaming, conversation state, and handoff behavior remain intact. Do not display a microphone unless voice actually exists.
+
+## 11. Mobile Verso refinement (September 27, 2026)
+
+The user's phone reference establishes one persistent mobile chat entry. At 720px and below, hide the header Verso button, the hero action beside the résumé, and the separate hero introduction card. ChatDock becomes an inset, rounded footer composer; focusing it expands the actual conversation above it. Keep the current cyan accent, midnight surfaces and fonts. Do not add decorative microphone or voice controls.
+
+The composer uses safe-area insets, reserves page space below the footer, and follows the visual viewport when the keyboard opens. Message and optional-name inputs stay at least 16px on phones so focusing them does not trigger iPhone auto-zoom. Constrain long messages and citation titles within their grid columns. A closed panel is inert.
+
+Featured case studies use a contained horizontal swipe row with a visible next-card edge and scroll snapping. Only the row scrolls sideways. The document stays within the viewport. Keep desktop card and navigation layouts intact.
+
+Names are optional, entered through a disclosure in the chat. A question sends immediately without a name gate. The composer exposes Stop during a request and Try again after a failed or interrupted answer. New chat resets the conversation ID. The dedicated `/chat` page retains its embedded full conversation; other mobile pages use the fixed composer.
+
+## 12. Motion (September 28, 2026)
+
+Motion explains entry and state. Page content may rise and fade once on entry; Verso expands from its fixed composer; dynamic search results fade into place. Use transform and opacity for visual movement, the shared `--ease-out` curve for entrances, and keep interface transitions under 300ms. Homepage image and copy entrances may run longer because they are infrequent marketing moments. Reduced-motion mode keeps a brief opacity fade and removes positional movement.

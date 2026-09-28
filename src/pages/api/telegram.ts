@@ -16,14 +16,13 @@ import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
 import { getGlobalLimiter } from '../../lib/rate-limit';
 import {
-  claim,
+  submitReply,
   getFinal,
   claimPresenceLapse,
   getLastQuestion,
   isOperatorOnline,
   listOutstanding,
   presenceTtlSeconds,
-  putReply,
   resolveTelegramMessage,
   setPresence,
   HANDOFF_WINDOW_MS,
@@ -130,6 +129,11 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
   const quoted = msg.reply_to_message?.message_id;
   let mid = typeof quoted === 'number' ? await resolveTelegramMessage(quoted) : null;
 
+  if (typeof quoted === 'number' && !mid) {
+    await sendNotice('That question expired. Nothing sent.');
+    return;
+  }
+
   // A bare message names no target. Answering the newest open question is only
   // safe when it is the only one open; with two visitors waiting, guessing
   // delivers one person's answer to the other and reports success either way.
@@ -154,9 +158,13 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
     return;
   }
 
-  if (await claim(mid, 'human')) {
-    await putReply(mid, text);
-    await sendNotice('Sent as Verso.');
+  const result = await submitReply(mid, text);
+  if (result === 'accepted') {
+    await sendNotice('Reply accepted for the waiting conversation.');
+    return;
+  }
+  if (result === 'unavailable') {
+    await sendNotice('Your reply could not be saved. Please try again.');
     return;
   }
 
@@ -169,8 +177,11 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
     String(final?.text ?? '').replace(/\s+/g, ' ').trim(),
     FINAL_PREVIEW_CHARS,
   );
-  const tail = preview ? `\n\nVerso said: "${preview}"` : '';
-  await sendNotice(`Too late - Verso answered from the corpus. Not sent.${tail}`);
+  if (final?.by === 'llm' && preview) {
+    await sendNotice(`Too late - Verso answered from the corpus. Not sent.\n\nVerso said: "${preview}"`);
+  } else {
+    await sendNotice('That conversation is no longer waiting for this reply. Nothing sent.');
+  }
 }
 
 export const POST: APIRoute = async ({ request }) => {

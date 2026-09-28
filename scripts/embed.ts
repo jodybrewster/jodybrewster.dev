@@ -1,186 +1,92 @@
-/**
- * Embed all published content into Upstash Vector.
- *
- * Reads ./content/{writing,notes,work}/*.md, chunks at ~500 words with 50-word
- * overlap, embeds via Voyage voyage-3-lite (512 dims), upserts to Upstash with
- * metadata for retrieval-side citation rendering.
- *
- * Run: npm run embed
- */
+/** Stage a complete corpus, verify it, then activate it. Never reset the live index. */
 import 'dotenv/config';
-import { readdir, readFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { pathToFileURL } from 'node:url';
 import { Index } from '@upstash/vector';
-
-const VOYAGE_API = 'https://api.voyageai.com/v1/embeddings';
-const MODEL = 'voyage-3-lite';
-const CHUNK_WORDS = 500;
-const OVERLAP_WORDS = 50;
-const BATCH_SIZE = 64;
-
-interface Frontmatter {
-  title?: string;
-  date?: string;
-  description?: string;
-  status?: string;
-  publish?: boolean;
-  sector?: string;
-  role?: string;
-  duration?: string;
-  pillar?: string;
-  tags?: string[];
-}
-
-type DocType = 'writing' | 'notes' | 'work';
-
-interface Doc {
-  type: DocType;
-  slug: string;
-  url: string;
-  fm: Frontmatter;
-  body: string;
-}
-
-interface Chunk {
-  id: string;
-  text: string;
-  metadata: {
-    type: DocType;
-    slug: string;
-    title: string;
-    date: string;
-    url: string;
-    chunk: number;
-    description?: string;
-  };
-}
-
-function parseFrontmatter(raw: string): { fm: Frontmatter; body: string } {
-  const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!m) return { fm: {}, body: raw };
-  const fm: Frontmatter = {};
-  for (const line of m[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx < 0) continue;
-    const key = line.slice(0, idx).trim();
-    let val: string | string[] | boolean = line.slice(idx + 1).trim();
-    if (val === 'true') val = true;
-    else if (val === 'false') val = false;
-    else if (typeof val === 'string') {
-      if (val.startsWith('[') && val.endsWith(']')) {
-        val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
-      } else {
-        val = val.replace(/^["']|["']$/g, '');
-      }
-    }
-    (fm as Record<string, unknown>)[key] = val;
-  }
-  return { fm, body: m[2].trim() };
-}
-
-async function loadDocs(): Promise<Doc[]> {
-  const docs: Doc[] = [];
-  const collections: Array<{ type: DocType; dir: string; filter?: (fm: Frontmatter) => boolean }> = [
-    { type: 'writing', dir: 'content/writing', filter: fm => fm.status !== 'draft' },
-    { type: 'notes', dir: 'content/notes', filter: fm => fm.publish === true },
-    { type: 'work', dir: 'content/work' },
-  ];
-
-  for (const { type, dir, filter } of collections) {
-    let files: string[];
-    try {
-      files = (await readdir(dir)).filter(f => f.endsWith('.md') || f.endsWith('.mdx'));
-    } catch {
-      continue;
-    }
-    for (const file of files) {
-      const raw = await readFile(join(dir, file), 'utf-8');
-      const { fm, body } = parseFrontmatter(raw);
-      if (filter && !filter(fm)) continue;
-      const slug = basename(file).replace(/\.mdx?$/, '');
-      docs.push({ type, slug, url: `/${type}/${slug}`, fm, body });
-    }
-  }
-  return docs;
-}
-
-function chunkText(text: string): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length <= CHUNK_WORDS) return [text];
-  const chunks: string[] = [];
-  for (let i = 0; i < words.length; i += CHUNK_WORDS - OVERLAP_WORDS) {
-    chunks.push(words.slice(i, i + CHUNK_WORDS).join(' '));
-    if (i + CHUNK_WORDS >= words.length) break;
-  }
-  return chunks;
-}
-
-function docToChunks(doc: Doc): Chunk[] {
-  const pieces = chunkText(doc.body);
-  return pieces.map((text, i) => ({
-    id: `${doc.type}:${doc.slug}#${i}`,
-    text,
-    metadata: {
-      type: doc.type,
-      slug: doc.slug,
-      title: doc.fm.title ?? doc.slug,
-      date: doc.fm.date ?? '',
-      url: doc.url,
-      chunk: i,
-      description: doc.fm.description,
-    },
-  }));
-}
-
-async function embedBatch(texts: string[]): Promise<number[][]> {
-  const res = await fetch(VOYAGE_API, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.VOYAGE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ input: texts, model: MODEL, input_type: 'document' }),
-  });
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`Voyage API error ${res.status}: ${errBody}`);
-  }
-  const json = await res.json() as { data: Array<{ embedding: number[]; index: number }> };
-  return json.data.sort((a, b) => a.index - b.index).map(d => d.embedding);
-}
+import { Redis } from '@upstash/redis';
+import { loadDocs, docToChunks } from '../src/lib/corpus';
+import { ACTIVE_NAMESPACE_KEY, refreshCorpus } from '../src/lib/vector-refresh';
+import { withDeadline } from '../src/lib/deadline';
 
 async function main() {
-  if (!process.env.VOYAGE_API_KEY) throw new Error('VOYAGE_API_KEY missing');
-  if (!process.env.UPSTASH_VECTOR_REST_URL) throw new Error('UPSTASH_VECTOR_REST_URL missing');
-
-  const index = new Index({
-    url: process.env.UPSTASH_VECTOR_REST_URL,
-    token: process.env.UPSTASH_VECTOR_REST_TOKEN,
-  });
-
-  console.log('Loading docs…');
+  if (process.argv.includes('--if-production') && process.env.VERCEL_ENV !== 'production') return;
   const docs = await loadDocs();
-  console.log(`Loaded ${docs.length} docs (writing+notes+work).`);
-
-  const allChunks: Chunk[] = docs.flatMap(docToChunks);
-  console.log(`Chunked into ${allChunks.length} pieces.`);
-
-  console.log('Resetting index…');
-  await index.reset();
-
-  for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
-    const batch = allChunks.slice(i, i + BATCH_SIZE);
-    const vectors = await embedBatch(batch.map(c => c.text));
-    await index.upsert(
-      batch.map((c, j) => ({ id: c.id, vector: vectors[j], metadata: c.metadata })),
-    );
-    console.log(`  Upserted ${Math.min(i + BATCH_SIZE, allChunks.length)}/${allChunks.length}`);
+  const chunks = docs.flatMap(docToChunks);
+  console.log(`Published corpus: ${docs.length} documents, ${chunks.length} chunks.`);
+  if (process.argv.includes('--dry-run')) {
+    for (const doc of docs) console.log(`${doc.type}\t${doc.url}\t${doc.fm.title}`);
+    return;
   }
-
-  console.log('Done.');
+  for (const key of ['VOYAGE_API_KEY', 'UPSTASH_VECTOR_REST_URL', 'UPSTASH_VECTOR_REST_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+    if (!process.env[key] || process.env[key] === '[SENSITIVE]') throw new Error(`${key} missing`);
+  }
+  const index = new Index({ url: process.env.UPSTASH_VECTOR_REST_URL, token: process.env.UPSTASH_VECTOR_REST_TOKEN,
+    signal: () => AbortSignal.timeout(10_000), retry: false });
+  const redis = new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    signal: () => AbortSignal.timeout(5000), retry: false });
+  // Read the pointer before any embeddings are billed. The old namespace is
+  // deliberately retained for rollback and any queries already in flight.
+  const previous = await redis.get<string>(ACTIVE_NAMESPACE_KEY);
+  const namespace = `corpus-${Date.now()}-${randomUUID().slice(0, 8)}`;
+  console.log(`Staging ${namespace}; current namespace: ${previous ?? '(default)'}.`);
+  await refreshCorpus(chunks, namespace, {
+    async write(name, rows) {
+      await index.namespace(name).upsert(rows.map(row => ({ id: row.id, vector: row.vector, metadata: { ...row.metadata } })));
+    },
+    async verify(name, ids) {
+      const limit = Date.now() + 30_000;
+      while (Date.now() < limit) {
+        const info = (await index.info()).namespaces[name];
+        if (info?.vectorCount === ids.length && info.pendingVectorCount === 0) {
+          for (let i = 0; i < ids.length; i += 100) {
+            const batch = ids.slice(i, i + 100);
+            const fetched = await index.namespace(name).fetch(batch, { includeMetadata: true });
+            if (fetched.some(row => !row || typeof row.metadata?.text !== 'string') || fetched.length !== batch.length) return false;
+          }
+          return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      return false;
+    },
+    async activate(name) {
+      await redis.set(ACTIVE_NAMESPACE_KEY, name);
+      console.log(`Active namespace: ${name}. Previous namespace retained: ${previous ?? '(default)'}.`);
+    },
+  }, async texts => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await withDeadline(async (signal: AbortSignal): Promise<
+        { ok: true; vectors: number[][] } | { ok: false; status: number; retryAfter: string | null }
+      > => {
+        const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+          method: 'POST', signal,
+          headers: { Authorization: `Bearer ${process.env.VOYAGE_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: texts, model: 'voyage-3-lite', input_type: 'document' }),
+        });
+        if (response.ok) {
+          const body = await response.json() as { data: Array<{ index: number; embedding: number[] }> };
+          return { ok: true, vectors: body.data.sort((a, b) => a.index - b.index).map(row => row.embedding) };
+        }
+        await response.body?.cancel();
+        return { ok: false, status: response.status, retryAfter: response.headers.get('retry-after') };
+      }, 30_000);
+      if (result.ok) return result.vectors;
+      if (result.status !== 429 || attempt === 2) {
+        throw new Error(`Voyage embedding failed (${result.status}); active corpus unchanged`);
+      }
+      const requested = Number(result.retryAfter) * 1000;
+      const delay = Number.isFinite(requested) && requested > 0 ? Math.min(requested, 8000) : 2000 * (attempt + 1);
+      console.warn(`Voyage rate limited the refresh; retrying in ${delay}ms (${attempt + 1}/2).`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    throw new Error('Voyage embedding failed; active corpus unchanged');
+  });
 }
-
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(error => {
+    console.error(error instanceof Error ? error.message : 'Corpus refresh failed');
+    if (process.argv.includes('--allow-failure')) {
+      console.warn('Corpus refresh skipped; the previous active namespace remains in service.');
+    } else process.exitCode = 1;
+  });
+}

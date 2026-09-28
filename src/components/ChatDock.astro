@@ -7,29 +7,24 @@
  * A reply arrives on the same stream whether the model wrote it or Jody typed
  * it himself, and a typed reply can take the better part of a minute. So the
  * client holds one turn at a time and has a waiting state built to survive a
- * 40-second silence without reading as a dead page.
+ * brief handoff wait without reading as a dead page.
  *
- * Before the very first question goes out, Verso asks who is asking. The
- * question is held back rather than sent, the name is remembered, and nobody
- * is ever asked twice.
+ * Visitors can optionally add their name. The composer sends their first
+ * question immediately; no name gate blocks a conversation.
  */
-const iconForType: Record<string, string> = {
-  writing: 'i-book',
-  notes: 'i-note',
-  work: 'i-brief',
-};
 ---
 <div class="chat-dock" id="chat-dock" transition:persist>
-  <div class="dock-panel" id="dock-panel">
+  <div class="dock-panel" id="dock-panel" inert>
     <div class="dock-panel-head">
-      <span class="dock-title"><svg class="icon sm"><use href="#i-sparkle"/></svg> Verso</span>
+      <span class="dock-title"><svg class="icon sm"><use href="#i-bot"/></svg> Verso</span>
+      <button class="dock-new" id="dock-new" type="button">New chat</button>
       <button class="dock-close" id="dock-close" type="button" aria-label="Close chat">
-        <svg class="icon sm"><use href="#i-arrow-right"/></svg>
+        <svg class="icon sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
       </button>
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p class="dock-default-greeting">Verso is Jody's chat assistant. Ask about his essays, his case briefs, or how he thinks about designing for AI. Where an answer comes from the writing, it'll show you the source.</p>
+        <p class="dock-default-greeting">Hi, I'm Verso. Ask me about Jody’s products, the decisions behind them, or how he takes an idea into production.</p>
         <div class="dock-page-welcome">
           <span class="dock-welcome-avatar" aria-hidden="true"><svg class="icon"><use href="#i-bot"/></svg></span>
           <div><p>Hi! I'm Verso. I can help you explore the products Jody has built, the decisions behind them, and the thinking that carried them into production. What would you like to know?</p>
@@ -40,20 +35,28 @@ const iconForType: Record<string, string> = {
           </div>
         </div>
       </div>
+      <details class="dock-identity" id="dock-identity">
+        <summary>Add your name <span>(optional)</span></summary>
+        <label for="chat-name">First name</label>
+        <input id="chat-name" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
+      </details>
+      <p class="dock-data-note">Jody may read and respond to questions.</p>
       <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="polite" aria-relevant="additions"></div>
     </div>
   </div>
 
   <div class="dock-bar">
     <form class="input-row" id="chat-form">
-      <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
-      <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" placeholder="Ask Verso, Jody's AI Assistant…" />
-      <!-- The label is its own element so name-entry mode can swap the word
-           without disturbing the icon beside it. -->
-      <button type="submit"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
+      <span class="input-icon"><svg class="icon"><use href="#i-bot"/></svg></span>
+      <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" maxlength="600" placeholder="Ask Verso about my work…" aria-controls="dock-panel" aria-expanded="false" />
+      <!-- Keep a separate label so a running response can expose Stop. -->
+      <button type="submit" aria-label="Send message"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
     </form>
   </div>
 
+  <template id="tpl-retry">
+    <div class="dock-recovery"><p class="dock-error" role="status"></p><button type="button" class="dock-retry">Try again</button></div>
+  </template>
   <template id="tpl-you">
     <div class="turn you">
       <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> You</span>
@@ -72,7 +75,7 @@ const iconForType: Record<string, string> = {
         <div class="answer">
           <span class="thinking" aria-live="polite">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-            <span class="waited" hidden>still thinking</span>
+            <span class="waited" hidden>Taking a little longer…</span>
           </span>
         </div>
       </div>
@@ -103,12 +106,14 @@ const iconForType: Record<string, string> = {
     max-height: 0;
     overflow: hidden;
     opacity: 0;
-    transition: max-height .32s cubic-bezier(0.4, 0, 0.2, 1), opacity .24s ease;
+    transform: translateY(12px);
+    transition: max-height 240ms var(--ease-out), opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
     border-bottom: 1px solid transparent;
   }
   .chat-dock.open .dock-panel {
     max-height: min(62vh, 640px);
     opacity: 1;
+    transform: translateY(0);
     border-bottom-color: var(--rule);
   }
   .dock-panel-head {
@@ -195,6 +200,7 @@ const iconForType: Record<string, string> = {
   @media (prefers-reduced-motion: reduce) {
     /* Still legible as three dots, just not moving. */
     .thinking .dot { animation: none; opacity: 0.5; }
+    .dock-panel { transform: none; transition: opacity 150ms ease; }
   }
 
   /* One turn at a time, so the bar reads as unavailable while it runs. */
@@ -212,273 +218,8 @@ const iconForType: Record<string, string> = {
   }
 </style>
 
-<script is:inline define:vars={{ iconForType }}>
-  (function () {
-    // Guard: with View Transitions the persisted dock keeps its listeners;
-    // don't re-bind when the inline script re-runs on navigation.
-    if (window.__chatDockInit) return;
-    window.__chatDockInit = true;
-
-    const dock = document.getElementById('chat-dock');
-    const form = document.getElementById('chat-form');
-    const input = document.getElementById('chat-q');
-    const submit = form.querySelector('button[type="submit"]');
-    const submitLabel = submit.querySelector('.submit-label');
-    const conv = document.getElementById('conversation');
-    const empty = document.getElementById('dock-empty');
-    const scroll = document.getElementById('dock-scroll');
-    const closeBtn = document.getElementById('dock-close');
-    const tplYou = document.getElementById('tpl-you');
-    const tplSite = document.getElementById('tpl-site');
-
-    let dockTrigger = null;
-    const isEmbedded = () => document.body.classList.contains('verso-page');
-    function syncDockTriggers() {
-      document.querySelectorAll('[data-verso-open]').forEach(el => el.setAttribute('aria-expanded', String(isEmbedded() || dock.classList.contains('open'))));
-    }
-    function openDock() {
-      dock.classList.add('open');
-      syncDockTriggers();
-    }
-    function closeDock(restoreFocus = false) {
-      if (isEmbedded()) return;
-      dock.classList.remove('open');
-      input.blur();
-      syncDockTriggers();
-      if (restoreFocus && dockTrigger?.isConnected) dockTrigger.focus();
-    }
-    function syncDockMode() {
-      if (isEmbedded()) dock.classList.add('open');
-      syncDockTriggers();
-    }
-    syncDockMode();
-    document.addEventListener('astro:after-swap', syncDockMode);
-
-    // A conversation is a visit, so it lives in sessionStorage: close the tab
-    // and the next one starts clean. Safari's private mode throws on both
-    // reads and writes, in which case every turn is simply a first turn.
-    const CID_KEY = 'verso:cid';
-    function readCid() {
-      try { return sessionStorage.getItem(CID_KEY); } catch { return null; }
-    }
-    function writeCid(cid) {
-      try { sessionStorage.setItem(CID_KEY, cid); } catch { /* no storage; carry on */ }
-    }
-
-    // The name goes in localStorage, not sessionStorage, and the split from
-    // the conversation id above is deliberate: a conversation is a visit, a
-    // person is not. Come back next week and the thread starts clean while
-    // Verso still knows who you are.
-    const NAME_KEY = 'verso:name';
-    const NAME_MAX = 40;
-    function normalizeName(value) {
-      return (value || '').trim().slice(0, NAME_MAX);
-    }
-    function readName() {
-      try { return normalizeName(localStorage.getItem(NAME_KEY)); } catch { return ''; }
-    }
-    function writeName(name) {
-      try { localStorage.setItem(NAME_KEY, name); } catch { /* no storage; asked again next visit */ }
-    }
-    // Held in memory as well as in storage, so a browser that refuses the
-    // write still only asks once instead of gating every question.
-    let visitorName = readName();
-
-    // A reply can be the model's or Jody's own, typed in, so a turn may run to
-    // 40 seconds. Firing three questions into that window produces three
-    // notifications and a thread nobody can follow, so turns are serialised.
-    let inFlight = false;
-    function setBusy(busy) {
-      inFlight = busy;
-      input.disabled = busy;
-      submit.disabled = busy;
-      if (!busy && dock.classList.contains('open')) input.focus();
-    }
-
-    function append(template) {
-      const node = template.content.firstElementChild.cloneNode(true);
-      conv.appendChild(node);
-      return node;
-    }
-
-    // The ask, and the bar's two placeholders. The resting one is read off the
-    // markup rather than repeated here, so there is one copy of that wording.
-    const NAME_PROMPT = 'Before we start - who am I talking to?';
-    const NAME_PLACEHOLDER = 'Your first name…';
-    const ASK_PLACEHOLDER = input.placeholder;
-
-    // No network call is involved in answering this one, so it never touches
-    // inFlight: the bar stays live and the visitor types straight on.
-    let awaitingName = false;
-    let stashedQuery = '';
-
-    function requestName(query) {
-      stashedQuery = query;
-      awaitingName = true;
-      openDock();
-      if (empty) empty.style.display = 'none';
-
-      // A normal Verso turn, minus the wait: writing to .answer replaces the
-      // thinking indicator and its caption outright, and nothing else in the
-      // template needs suppressing.
-      const siteTurn = append(tplSite);
-      siteTurn.querySelector('.answer').textContent = NAME_PROMPT;
-      input.value = '';
-      input.placeholder = NAME_PLACEHOLDER;
-      submitLabel.textContent = 'Send';
-      input.focus();
-      siteTurn.querySelector('.said').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function acceptName(raw) {
-      const name = normalizeName(raw);
-      if (!name) return;
-      visitorName = name;
-      writeName(name);
-      awaitingName = false;
-      input.value = '';
-      input.placeholder = ASK_PLACEHOLDER;
-      submitLabel.textContent = 'Ask';
-      // The question was typed once already; asking for it again would make
-      // the gate cost something.
-      const query = stashedQuery;
-      stashedQuery = '';
-      if (query) ask(query);
-    }
-
-    function paragraphize(text) {
-      const paras = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
-      return paras.map(p => {
-        const html = p
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-          .replace(/_([^_]+)_/g, '<em>$1</em>')
-          .replace(/\n/g, '<br>');
-        return `<p>${html}</p>`;
-      }).join('');
-    }
-
-    function renderSources(sources) {
-      if (!sources || sources.length === 0) return '';
-      const count = sources.length;
-      const label = count === 1 ? 'One source' : count === 2 ? 'Two sources' : count === 3 ? 'Three sources' : `${count} sources`;
-      const items = sources.map(s => {
-        const icon = iconForType[s.type] || 'i-file';
-        return `<a class="source-item" href="${s.url}.md">
-          <svg class="icon sm si-icon"><use href="#${icon}"/></svg>
-          <span class="si-tag">${s.type}</span>
-          <span class="si-title">${s.title}</span>
-          <span class="si-date">${s.date || ''}</span>
-        </a>`;
-      }).join('');
-      return `<div class="sources"><p class="h"><svg class="icon sm"><use href="#i-quote"/></svg> ${label}</p>${items}</div>`;
-    }
-
-    async function ask(query) {
-      const trimmed = query.trim();
-      if (!trimmed || inFlight) return;
-      // Held back rather than sent: the question is stashed, and goes out on
-      // its own the moment the name lands. Only ever true once per visitor.
-      if (!visitorName) { requestName(trimmed); return; }
-      setBusy(true);
-      openDock();
-      if (empty) empty.style.display = 'none';
-
-      const youTurn = append(tplYou);
-      youTurn.querySelector('.said').textContent = trimmed;
-      const siteTurn = append(tplSite);
-      const answerEl = siteTurn.querySelector('.answer');
-      const saidEl = siteTurn.querySelector('.said');
-      const waitedEl = siteTurn.querySelector('.waited');
-      input.value = '';
-      saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-      // Past a dozen seconds the dots alone stop reassuring anyone, so the
-      // wait says so in words.
-      let waitTimer = setTimeout(() => { waitedEl.hidden = false; }, 12000);
-      const stopWaiting = () => clearTimeout(waitTimer);
-
-      try {
-        const body = { query: trimmed };
-        const cid = readCid();
-        if (cid) body.cid = cid;
-        if (visitorName) body.name = visitorName;
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        if (!res.ok) {
-          if (res.status === 429 || res.status === 403) {
-            try { answerEl.textContent = (await res.text()) || 'Rate limit hit.'; }
-            catch { answerEl.textContent = 'Rate limit hit.'; }
-          } else if (res.status === 503) {
-            answerEl.textContent = 'Upstream service is busy. Try again in a moment.';
-          } else {
-            answerEl.textContent = `Error: ${res.status}.`;
-          }
-          return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '', text = '', sources = null, started = false;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let idx;
-          while ((idx = buffer.indexOf('\n\n')) >= 0) {
-            const chunk = buffer.slice(0, idx);
-            buffer = buffer.slice(idx + 2);
-            if (!chunk.startsWith('data: ')) continue;
-            let event;
-            try { event = JSON.parse(chunk.slice(6)); } catch { continue; }
-            // The opening frame identifies the conversation and this turn
-            // within it. The id goes back on the next question so the server
-            // can thread it; the message id stays on the turn so a later
-            // frame can find the element it belongs to.
-            if (event.cid) writeCid(event.cid);
-            if (event.mid) siteTurn.dataset.mid = event.mid;
-            if (event.text) {
-              if (!started) { stopWaiting(); answerEl.innerHTML = ''; started = true; }
-              text += event.text;
-              answerEl.innerHTML = paragraphize(text);
-            }
-            if (event.sources) sources = event.sources;
-            if (event.error) { answerEl.textContent = event.error; return; }
-          }
-        }
-        // A stream that closes without a word would otherwise leave the dots
-        // pulsing for good.
-        if (!started) answerEl.textContent = 'Nothing came back. Try again.';
-        if (sources) saidEl.insertAdjacentHTML('beforeend', renderSources(sources));
-        saidEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } catch (e) {
-        answerEl.textContent = 'Network error. Try again.';
-      } finally {
-        stopWaiting();
-        setBusy(false);
-      }
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (awaitingName) { acceptName(input.value); return; }
-      ask(input.value);
-    });
-    input.addEventListener('focus', openDock);
-    closeBtn.addEventListener('click', () => closeDock(true));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && dock.classList.contains('open')) closeDock(true); });
-    document.addEventListener('click', (e) => {
-      const trigger = e.target instanceof Element ? e.target.closest('[data-verso-open]') : null;
-      if (trigger) {
-        dockTrigger = trigger;
-        openDock();
-        if (!inFlight && !awaitingName && trigger.dataset.versoPrompt) input.value = trigger.dataset.versoPrompt;
-        input.focus();
-        return;
-      }
-      if (dock.classList.contains('open') && !dock.contains(e.target)) closeDock();
-    });
-  })();
+<script>
+  import { initChatDock } from '../lib/chat-dock-client';
+  initChatDock();
+  document.addEventListener('astro:page-load', initChatDock);
 </script>

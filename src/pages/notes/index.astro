@@ -1,8 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
-import Base from '../../layouts/Base.astro';
+import Studio from '../../layouts/Studio.astro';
 import NoteCard from '../../components/NoteCard.astro';
-import PageHeader from '../../components/PageHeader.astro';
 
 const notes = (await getCollection('notes', n => n.data.publish))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -11,16 +10,15 @@ function formatDate(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 ---
-<Base title="Lab notes — Jody Brewster" description="Shorter, less finished, sometimes wrong. Lab notes from a garden of ideas about AI, design, and practice.">
-  <main class="page active" style="padding: 72px 0 100px;">
-    <PageHeader
-      icon="i-note"
-      eyebrow={`${notes.length} published`}
-      title="Lab notes"
-      description="Shorter, less finished, sometimes wrong."
-    />
+<Studio title="Lab notes — Jody Brewster" description="Shorter, less finished, sometimes wrong. Lab notes from a garden of ideas about AI, design, and practice.">
+  <main class="notes-main studio-container">
+    <header class="notes-header">
+      <p class="studio-eyebrow">{notes.length} published</p>
+      <h1>Lab notes.</h1>
+      <p>Shorter, less finished, sometimes wrong.</p>
+    </header>
 
-    <div class="notes-stack">
+    <div class="notes-stack" aria-label="Published lab notes">
       {notes.map((note) => {
         const excerpt = (note.body ?? '').split('\n').find(l => l.trim() && !l.startsWith('#')) ?? '';
         return (
@@ -36,4 +34,24 @@ function formatDate(d: Date) {
       })}
     </div>
   </main>
-</Base>
+</Studio>
+
+<style>
+  .notes-main { padding-top: 52px; padding-bottom: 80px; }
+  .notes-header { max-width: 680px; padding: 20px 0 44px; border-bottom: 1px solid var(--studio-rule); }
+  .notes-header h1 { margin: 14px 0 12px; font: 300 clamp(44px, 5.5vw, 70px)/1.05 var(--headline); letter-spacing: -.02em; }
+  .notes-header > p:last-child { margin: 0; color: var(--studio-muted); font-size: 16px; line-height: 1.7; }
+  .notes-stack { display: grid; gap: 14px; max-width: 900px; padding-top: 28px; }
+  .notes-stack :global(.note) { display: block; padding: 20px 22px; border: 1px solid var(--studio-rule) !important; border-radius: 10px; background: var(--studio-surface); color: var(--studio-ink); transition: border-color 150ms, transform 150ms; }
+  .notes-stack :global(.note:hover), .notes-stack :global(.note:focus-visible) { border-color: var(--studio-cyan) !important; transform: translateY(-2px); }
+  .notes-stack :global(.note .tended) { display: flex; justify-content: space-between; gap: 14px; color: var(--studio-muted); font: 500 10px/1.4 var(--sans); }
+  .notes-stack :global(.note .state) { color: var(--studio-cyan); text-transform: uppercase; letter-spacing: .1em; }
+  .notes-stack :global(.note > p) { color: var(--studio-muted); font: 400 13px/1.65 var(--sans) !important; }
+  .notes-stack :global(.note > p[style]) { color: var(--studio-ink) !important; font: 650 20px/1.3 var(--sans) !important; letter-spacing: -.02em !important; }
+  .notes-stack :global(.note .tag) { color: var(--studio-muted); border-color: var(--studio-rule); }
+  @media (max-width: 720px) {
+    .notes-main { padding-top: 20px; padding-bottom: 50px; }
+    .notes-header { padding-bottom: 32px; }
+    .notes-stack :global(.note .tended) { align-items: flex-start; flex-direction: column; gap: 6px; }
+  }
+</style>

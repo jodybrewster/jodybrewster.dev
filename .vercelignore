@@ -1,0 +1,9 @@
+# The CLI uploads the working tree and does not read .gitignore.
+# Secrets live in the Vercel project env; local copies stay local.
+.env
+.env.*
+!.env.example
+.conversations/
+.mieruka/
+.claude/
+.worktrees/

@@ -2,28 +2,28 @@
 import Studio from '../layouts/Studio.astro';
 import Icon from '../components/Icon.astro';
 const principles = [
-  {icon:'target',name:'Systems Thinking',tone:'orange'},
-  {icon:'shield',name:'Pragmatic Delivery',tone:'cyan'},
-  {icon:'layers',name:'Cross-Functional Leadership',tone:'purple'},
-  {icon:'sparkle',name:'AI-Enabled Innovation',tone:'pink'},
+  {icon:'zap',name:'AI Engineering',detail:'Agents · RAG · Evals',tone:'orange'},
+  {icon:'cube',name:'Product Engineering',detail:'Web · Mobile · APIs',tone:'cyan'},
+  {icon:'database',name:'Systems Thinking',detail:'Architecture · Data · Cloud',tone:'purple'},
+  {icon:'team',name:'Technical Leadership',detail:'Teams · Standards · Delivery',tone:'pink'},
 ];
 const career = [
   {company:'Perficient',role:'Senior Solutions Architect',dates:'2024 — Present'},
   {company:'AmeriLife',role:'Director of Technology',dates:'2022 — 2024'},
-  {company:'Lennar',role:'Lead Developer, Customer Experience',dates:'2018 — 2021'},
+  {company:'Lennar',role:'Lead Developer',dates:'2018 — 2021'},
   {company:'Carnival Cruise Lines',role:'Sr. Web / Mobile Developer',dates:'2016 — 2018'},
 ];
 ---
-<Studio title="About — Jody Brewster" description="Solutions architect, product builder, and technology leader. Learn how Jody approaches enterprise platforms, AI, and the teams that bring them to life." bodyClass="studio-about">
+<Studio title="About — Jody Brewster" description="Hands-on technical leader building AI-powered products, agentic systems and the web, mobile and data software around them." bodyClass="studio-about">
   <main class="studio-container about-main">
     <div class="about-photo" aria-hidden="true"><img src="/images/home/jody-office.webp" alt="" width="2160" height="720" fetchpriority="high" /></div>
     <section class="about-introduction" aria-labelledby="about-title">
       <p class="studio-eyebrow">About</p>
-      <h1 id="about-title" class="enter-title">Architect.<br />Builder. Problem Solver.</h1>
-      <p class="about-lede">I'm Jody Brewster, a Senior Solutions Architect with 15+ years of experience designing and leading enterprise platforms, AI-powered products, and modern web systems.</p>
-      <p>I enjoy working at the intersection of business, technology, and people — turning ambiguous problems into clear, scalable solutions. I care about useful AI, intuitive experiences, and systems that make a real difference.</p>
-      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class={`principle principle-${p.tone}`} style={`--i: ${i}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}</p></div>)}</div>
-      <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.docx" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="#contact">Let's connect <Icon name="arrow-right" class="icon" /></a></div>
+      <h1 id="about-title" class="enter-title">Builder.<br />Architect.<br /><span class="text-gradient">Problem Solver.</span></h1>
+      <p class="about-lede">I'm Jody Brewster, a hands-on technical leader with 15+ years of experience building web, mobile, data and enterprise software, with a strong focus on AI-powered products and agentic systems.</p>
+      <p>I like being close to the code: turning ideas into working products, figuring out where AI actually creates value and building the engineering around it so the result can survive beyond a demo.</p>
+      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class={`principle principle-${p.tone}`} style={`--i: ${i}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
+      <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.docx" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="/work">See what I'm building <Icon name="arrow-right" class="icon" /></a></div>
       <nav class="about-explore" aria-label="More about Jody">
         <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
       </nav>
@@ -49,10 +49,11 @@ const career = [
 h1 { font:300 clamp(40px,4vw,60px)/1.06 var(--headline); letter-spacing:-.01em; margin:0 0 25px; }
 .about-introduction>p:not(.studio-eyebrow) { font-size:16px; line-height:1.7; max-width:550px; color:var(--studio-muted); margin:0 0 19px; text-wrap:pretty; }
 .about-introduction>.about-lede { font-size:17px; }
-.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:22px;max-width:580px;margin:32px 0 36px; }
-.principle span { display:grid;place-items:center;width:43px;height:43px;border:1px solid var(--principle-color);color:var(--principle-color);border-radius:50%;background:color-mix(in srgb,var(--principle-color) 9%,transparent); }
-.principle .icon { width:25px;height:25px; }
-.principle p { font-size:12px;line-height:1.6;max-width:125px;margin:11px 0 0; }
+.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:22px;max-width:640px;margin:32px 0 36px; }
+.principle span { display:grid;place-items:center;width:50px;height:50px;border:1px solid var(--principle-color);color:var(--principle-color);border-radius:50%;background:color-mix(in srgb,var(--principle-color) 9%,transparent); }
+.principle .icon { width:26px;height:26px; }
+.principle p { font-size:12px;line-height:1.6;max-width:150px;margin:11px 0 0;font-weight:600; }
+.principle small { display:block;margin-top:3px;color:var(--studio-muted);font-size:11px;font-weight:400; }
 .principle-orange {--principle-color:var(--studio-orange)} .principle-cyan {--principle-color:var(--studio-cyan)} .principle-purple {--principle-color:var(--studio-purple)} .principle-pink {--principle-color:var(--studio-pink)}
 .about-actions { display:flex;align-items:center;gap:28px; }
 .about-explore { max-width:550px;margin-top:35px;padding-top:24px;border-top:1px solid var(--studio-rule); }

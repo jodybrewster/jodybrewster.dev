@@ -37,7 +37,7 @@ const jsonLd = {
     <section class="home-hero home-container" aria-labelledby="home-title">
       <div class="hero-copy">
         <p class="home-eyebrow hero-eyebrow">AI Engineering & Product Development</p>
-        <h1 id="home-title" aria-label="I build and ship AI-powered products."><span class="hero-word" style="--w: 0"><span>I</span></span> <span class="hero-word" style="--w: 1"><span>build</span></span> <span class="hero-word" style="--w: 2"><span>and</span></span> <span class="hero-word" style="--w: 3"><span>ship</span></span><br /> <span class="hero-word hero-word-accent" style="--w: 4"><span class="text-orange">AI-powered</span></span><br /> <span class="hero-word hero-word-accent" style="--w: 5"><span class="text-cyan">products.</span></span></h1>
+        <h1 id="home-title" aria-label="I build and ship AI-powered products."><span class="hero-word" style="--w: 0"><span>I</span></span> <span class="hero-word" style="--w: 1"><span>build</span></span> <span class="hero-word" style="--w: 2"><span>and</span></span> <span class="hero-word" style="--w: 3"><span>ship</span></span><br /> <span class="hero-word" style="--w: 4"><span>AI-powered</span></span><br /> <span class="hero-word hero-word-accent" style="--w: 5"><span class="text-gradient">products.</span></span></h1>
         <p class="hero-description">From intelligent chat experiences to scalable web and mobile applications, I turn ideas into real products that people use.</p>
         <div class="hero-actions">
           <a href="#featured-work" class="home-button home-button-primary">View Featured Work <Icon name="arrow-right" class="icon" /></a>
@@ -71,7 +71,7 @@ const jsonLd = {
           {capabilities.map(item => (
             <div class={`capability capability-${item.color}`}>
               <span class="capability-icon" aria-hidden="true">
-                {item.icon === 'database' ? <svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg> : item.icon === 'cube' ? <svg class="icon" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10M7.5 4.5l9 5"/></svg> : <Icon name={item.icon} class="icon" />}
+                <Icon name={item.icon} class="icon" />
               </span>
               <div><h3>{item.title}</h3><p>{item.description}</p></div>
             </div>

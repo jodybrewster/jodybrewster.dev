@@ -58,3 +58,12 @@ describe('formatTurnMessage topic', () => {
     expect(text.split('\n')[0]).toBe('Verso · a3f1 · q1 · hiring');
   });
 });
+
+describe('formatTurnMessage while held', () => {
+  it('says the question is waiting on Jody and when Verso steps in', () => {
+    const text = formatTurnMessage({ cid: 'a3f1c2d4-0000-4000-8000-000000000000', index: 3, question: 'And rates?', waitSeconds: 118 });
+    expect(text.split('\n')[0]).toBe('Verso · a3f1 · q3 · waiting on you');
+    expect(text).toContain("Verso answers in 2 min if you don't.");
+    expect(text).not.toContain('Verso said');
+  });
+});

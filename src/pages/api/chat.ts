@@ -13,7 +13,7 @@ import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
-import { notifyTurn } from '../../lib/operator';
+import { holdQuestion, liveUntil, notifyTurn, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import { TOPIC_PROMPT, parseTopic, type Topic } from '../../lib/topics';
 
@@ -56,7 +56,9 @@ export const POST: APIRoute = async ({ request }) => {
       typeof (body as { query?: unknown }).query !== 'string') {
     return new Response('query must be a string', { status: 400 });
   }
-  const data = body as { query: string; cid?: unknown; page?: unknown };
+  const data = body as { query: string; cid?: unknown; page?: unknown; fallback?: unknown };
+  // Sent by the dock when Jody's window ran out, or the visitor chose not to wait.
+  const fallback = data.fallback === true;
   // Where the question was asked, for the transcript. A path on this site or nothing.
   const page = typeof data.page === 'string' && /^\/[\w\-./]{0,199}$/.test(data.page) ? data.page : undefined;
   const query = data.query.trim();
@@ -98,6 +100,16 @@ export const POST: APIRoute = async ({ request }) => {
     log('setup', 'unavailable');
     return new Response(UNAVAILABLE, { status: 503 });
   }
+  const turnIndex = history.filter(turn => turn.r === 'u').length + 1;
+  // Jody replied a moment ago, so this question waits for him rather than Verso.
+  const holdUntil = posted && !fallback ? await withDeadline(() => liveUntil(cid), 2000, request.signal).catch(() => null) : null;
+  if (holdUntil) {
+    log('hold', 'jody');
+    return holdForJody({ cid, mid, query, page, index: turnIndex, until: holdUntil });
+  }
+  // The visitor stopped waiting for Jody. Clear the held question now, before
+  // anything can fail, or a later reply of his would be filed against it.
+  if (posted && fallback) await withDeadline(() => takeHeld(cid), 2000, request.signal).catch(() => null);
   if (!env('GEMINI_API_KEY')) return new Response(UNAVAILABLE, { status: 503 });
   const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY'), httpOptions: { retryOptions: { attempts: 1 } } });
   const lifetime = new AbortController();
@@ -107,7 +119,6 @@ export const POST: APIRoute = async ({ request }) => {
   if (request.signal.aborted) disconnect();
   const hardTimer = setTimeout(() => lifetime.abort(new DOMException('Request timed out', 'TimeoutError')),
     Math.max(1, HARD_DEADLINE_MS - (Date.now() - started)));
-  const turnIndex = history.filter(turn => turn.r === 'u').length + 1;
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -238,7 +249,8 @@ export const POST: APIRoute = async ({ request }) => {
           }, 4000, lifetime.signal).then(() => log('persistence', 'complete'), () => log('persistence', 'failed')),
           withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, answer: answerText, topic }, signal),
             NOTIFY_DEADLINE_MS, lifetime.signal).catch(() => log('notify', 'failed')),
-          withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts, topic, page }, { r: 'a', t: answerText, ts }]),
+          // A held question was logged when it was held; only the answer is new.
+          withDeadline(() => logEntries(cid, fallback ? [{ r: 'a', t: answerText, ts }] : [{ r: 'u', t: query, ts, topic, page }, { r: 'a', t: answerText, ts }]),
             4000, lifetime.signal).catch(() => log('transcript', 'failed')),
         ]);
         lifetime.signal.throwIfAborted();
@@ -254,7 +266,7 @@ export const POST: APIRoute = async ({ request }) => {
           await Promise.all([
             withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true, topic }, signal),
               NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed')),
-            withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), topic, page, failed: true }]),
+            fallback ? Promise.resolve() : withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), topic, page, failed: true }]),
               NOTIFY_DEADLINE_MS).catch(() => log('transcript', 'failed')),
           ]);
         }
@@ -273,3 +285,32 @@ export const POST: APIRoute = async ({ request }) => {
     'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive',
   } });
 };
+
+/**
+ * A question asked while Jody is live in the conversation. Verso does not
+ * answer: the question goes to his phone and the dock is told how long to
+ * wait. Everything is sent before `done` so it survives the function
+ * freezing, and none of it can fail the response.
+ */
+function holdForJody(turn: { cid: string; mid: string; query: string; page?: string; index: number; until: number }): Response {
+  const { cid, mid, query, page, index, until } = turn;
+  const encoder = new TextEncoder();
+  const frame = (event: Record<string, unknown>) => encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      controller.enqueue(frame({ cid, mid }));
+      controller.enqueue(frame({ hold: { until } }));
+      const waitSeconds = Math.max(1, Math.round((until - Date.now()) / 1000));
+      await Promise.all([
+        withDeadline(signal => notifyTurn({ cid, index, question: query, waitSeconds }, signal), NOTIFY_DEADLINE_MS).catch(() => {}),
+        withDeadline(() => holdQuestion(cid, query), NOTIFY_DEADLINE_MS).catch(() => {}),
+        withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), page, held: true }]), NOTIFY_DEADLINE_MS).catch(() => {}),
+      ]);
+      controller.enqueue(frame({ done: true }));
+      controller.close();
+    },
+  });
+  return new Response(stream, { headers: {
+    'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive',
+  } });
+}

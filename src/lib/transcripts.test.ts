@@ -75,17 +75,19 @@ describe('formatTranscripts', () => {
     { r: 'u' as const, t: 'Is he available?', ts: Date.UTC(2026, 8, 28, 14, 2), topic: 'hiring', page: '/about' },
     { r: 'a' as const, t: 'The site does not say.', ts: 2 },
     { r: 'u' as const, t: 'What stack?', ts: 3, topic: 'experience', failed: true },
+    { r: 'u' as const, t: 'And rates?', ts: 3, held: true },
     { r: 'j' as const, t: 'Yes, email me.', ts: 4 },
   ] }];
 
   it('counts what matters', () => {
-    expect(summarize(transcripts)).toMatchObject({ conversations: 1, questions: 2, failed: 1, replies: 1 });
+    expect(summarize(transcripts)).toMatchObject({ conversations: 1, questions: 3, failed: 1, replies: 1 });
   });
 
   it('writes a readable transcript with its summary', () => {
     const md = formatTranscripts(transcripts, { since: Date.UTC(2026, 8, 21), until: Date.UTC(2026, 8, 28), digest: '### Themes' });
     expect(md).toContain('# Verso conversations, 2026-09-21 to 2026-09-28');
-    expect(md).toContain('1 conversation, 2 questions, 1 unanswered, 1 reply from Jody. Times are UTC.');
+    expect(md).toContain('1 conversation, 3 questions, 1 unanswered, 1 reply from Jody. Times are UTC.');
+    expect(md).toContain('Visitor (held for Jody):');
     expect(md).toContain('## Digest\n\n### Themes');
     expect(md).toContain('## 2026-09-28 14:02 · a3f1 · from /about');
     expect(md).toContain('Visitor (hiring):\n\nIs he available?');

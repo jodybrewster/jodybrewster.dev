@@ -5,8 +5,12 @@ const dependencies = vi.hoisted(() => ({
   getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
+  liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(),
 }));
-vi.mock('../operator', () => ({ notifyTurn: dependencies.notifyTurn }));
+vi.mock('../operator', () => ({
+  notifyTurn: dependencies.notifyTurn, liveUntil: dependencies.liveUntil,
+  holdQuestion: dependencies.holdQuestion, takeHeld: dependencies.takeHeld,
+}));
 vi.mock('../transcripts', () => ({ logEntries: dependencies.logEntries }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
@@ -89,6 +93,9 @@ beforeEach(() => {
   dependencies.notifyTurn.mockResolvedValue(undefined);
   dependencies.logEntries.mockResolvedValue(undefined);
   dependencies.generateContent.mockResolvedValue({ text: 'hiring' });
+  dependencies.liveUntil.mockResolvedValue(null);
+  dependencies.holdQuestion.mockResolvedValue(undefined);
+  dependencies.takeHeld.mockResolvedValue(null);
 });
 afterEach(() => {
   vi.clearAllTimers();
@@ -209,6 +216,58 @@ describe('POST /api/chat reliability', () => {
     await vi.advanceTimersByTimeAsync(1_000);
     expect(state.settled).toBe(true);
     expect(dependencies.logEntries.mock.calls[0][1][0]).toMatchObject({ r: 'u', t: 'PRIVATE QUESTION', failed: true, topic: 'hiring' });
+  });
+
+  it('holds a question for Jody while he is live, without calling the model', async () => {
+    const until = Date.now() + 100_000;
+    dependencies.liveUntil.mockResolvedValue(until);
+    const cid = '0a1b2c3d-0000-4000-8000-000000000000';
+    const state = consume(await post({ query: 'And rates?', cid, page: '/about' }));
+    await vi.advanceTimersByTimeAsync(0);
+    const events = frames(state.text);
+    expect(events).toContainEqual({ hold: { until } });
+    expect(events.at(-1)).toEqual({ done: true });
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
+    expect(dependencies.searchVectors).not.toHaveBeenCalled();
+    expect(dependencies.holdQuestion).toHaveBeenCalledWith(cid, 'And rates?');
+    expect(dependencies.notifyTurn.mock.calls[0][0]).toMatchObject({ cid, question: 'And rates?', waitSeconds: 100 });
+    expect(dependencies.logEntries.mock.calls[0][1]).toEqual([{ r: 'u', t: 'And rates?', ts: expect.any(Number), page: '/about', held: true }]);
+  });
+
+  it('never holds a new conversation', async () => {
+    dependencies.liveUntil.mockResolvedValue(Date.now() + 100_000);
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(dependencies.liveUntil).not.toHaveBeenCalled();
+    expect(state.text).toContain('An answer.');
+  });
+
+  it('answers a held question on fallback, clears it and logs only the answer', async () => {
+    dependencies.liveUntil.mockResolvedValue(Date.now() + 100_000);
+    const cid = '0a1b2c3d-0000-4000-8000-000000000000';
+    const state = consume(await post({ query: 'And rates?', cid, fallback: true }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('An answer.');
+    expect(dependencies.takeHeld).toHaveBeenCalledWith(cid);
+    expect(dependencies.logEntries.mock.calls[0][1]).toEqual([{ r: 'a', t: 'An answer.', ts: expect.any(Number) }]);
+  });
+
+  it('clears the held question on fallback even when Verso then cannot answer', async () => {
+    dependencies.generateContentStream.mockRejectedValue(new Error('boom'));
+    const cid = '0a1b2c3d-0000-4000-8000-000000000000';
+    const state = consume(await post({ query: 'And rates?', cid, fallback: true }));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(state.text).toContain('"error":');
+    expect(dependencies.takeHeld).toHaveBeenCalledWith(cid);
+  });
+
+  it('answers normally when the live check fails', async () => {
+    dependencies.liveUntil.mockImplementation(never);
+    const pending = post({ query: 'Q', cid: '0a1b2c3d-0000-4000-8000-000000000000' });
+    await vi.advanceTimersByTimeAsync(2_500);
+    const state = consume(await pending);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('An answer.');
   });
 
   it('still finishes the answer when Telegram hangs', async () => {

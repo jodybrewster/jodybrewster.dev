@@ -13,8 +13,8 @@
 import type { APIRoute } from 'astro';
 import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
-import { appendReply } from '../../lib/conversation';
-import { resolveTelegramMessage } from '../../lib/operator';
+import { appendReply, appendTurn } from '../../lib/conversation';
+import { LIVE_WINDOW_MS, goLive, resolveTelegramMessage, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import {
   isOwnerUpdate, parseCommand, sanitizeForTelegram, sendNotice, type TelegramMessage,
@@ -28,6 +28,7 @@ export const REPLY_MAX = 2000;
 const HELP = [
   'Each question someone asks Verso arrives here with its answer.',
   'Swipe right on one and reply to answer them in the chat. Your reply appears as you, not as Verso, if they still have the page open.',
+  `After you reply, Verso waits ${LIVE_WINDOW_MS / 60_000} min before answering their next question, so you can keep talking. Each reply restarts the wait.`,
   'Replies work for 24 hours after their last message.',
 ].join('\n\n');
 
@@ -50,12 +51,18 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
     return;
   }
   const reply = sanitizeForTelegram(text, REPLY_MAX);
-  if (!await appendReply(target.cid, reply, target.q)) {
+  // A question held for him is answered by this reply, so it joins the thread first.
+  const held = await takeHeld(target.cid);
+  if (held) await appendTurn(target.cid, { r: 'u', t: held.q, ts: held.ts });
+  if (!await appendReply(target.cid, reply, held?.q ?? target.q)) {
     await sendNotice('Your reply could not be saved. Nothing sent. Try again.');
     return;
   }
   await logEntries(target.cid, [{ r: 'j', t: reply, ts: Date.now() }]);
-  await sendNotice('Sent. It shows in their chat if the page is still open.');
+  const live = await goLive(target.cid);
+  await sendNotice(live
+    ? `Sent. It shows in their chat if the page is still open. Verso waits ${LIVE_WINDOW_MS / 60_000} min for anything else before it answers again.`
+    : 'Sent. It shows in their chat if the page is still open.');
 }
 
 export const POST: APIRoute = async ({ request }) => {

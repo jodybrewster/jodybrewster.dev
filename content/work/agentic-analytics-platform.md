@@ -1,7 +1,7 @@
 ---
 title: "Brand Impact Tracker: an agentic build, built agentically"
 sector: "Fortune 100 industrial equipment manufacturer"
-role: "Sr Solutions Architect"
+role: "Lead Developer / Architect"
 duration: "Q1–Q3 2026, ongoing"
 pillar: "Agentic delivery as method"
 sub: "A custom generative analytics platform for a brand strategy team, designed, specified, and delivered agentically by one architect."

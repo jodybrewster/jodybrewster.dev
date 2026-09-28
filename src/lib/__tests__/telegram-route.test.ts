@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const deps = vi.hoisted(() => ({
   env: {} as Record<string, string | undefined>,
-  sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(),
+  sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(), logEntries: vi.fn(),
 }));
 vi.mock('../env', () => ({ env: (key: string) => deps.env[key] }));
 vi.mock('../flags', () => ({ flags: { chat: true } }));
 vi.mock('../conversation', () => ({ appendReply: deps.appendReply }));
+vi.mock('../transcripts', () => ({ logEntries: deps.logEntries }));
 vi.mock('../operator', () => ({ resolveTelegramMessage: deps.resolveTelegramMessage }));
 vi.mock('../telegram', async importOriginal => ({
   ...await importOriginal<typeof import('../telegram')>(), sendNotice: deps.sendNotice,
@@ -52,6 +53,7 @@ describe('POST /api/telegram', () => {
     expect(response.status).toBe(200);
     expect(deps.resolveTelegramMessage).toHaveBeenCalledWith(501);
     expect(deps.appendReply).toHaveBeenCalledWith(cid, 'Happy to talk more.', 'What did he build?');
+    expect(deps.logEntries).toHaveBeenCalledWith(cid, [{ r: 'j', t: 'Happy to talk more.', ts: expect.any(Number) }]);
     expect(notices()[0]).toMatch(/^Sent\./);
   });
 

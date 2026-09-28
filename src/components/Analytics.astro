@@ -44,3 +44,9 @@ import { GA_ID, analyticsEnabled } from '../lib/analytics';
     </script>
   </>
 )}
+<script>
+  // Custom events (src/lib/track.ts) do nothing until gtag exists, so this is
+  // safe on the dev server, where the tag above is never rendered.
+  import { trackContactClicks } from '../lib/track';
+  trackContactClicks();
+</script>

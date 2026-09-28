@@ -52,16 +52,16 @@ All events go through one `track(name, params)` helper that no-ops when `gtag` i
 | `contact_click` | `channel` (email, linkedin, github, behance), `location` | Who reaches out, and from where. Marked as a key event. |
 | `file_download` | built in | Résumé downloads. Marked as a key event. |
 | `chat_open` | `trigger` (bar, suggestion, page) | Whether people find Verso. |
-| `chat_question` | `source` (typed, suggestion), `topic`, `turn` | What they ask about, without the text. |
-| `chat_answer` | `outcome` (done, error, timeout, stopped) | How often Verso fails them. |
+| `chat_question` | `source` (typed, suggestion, retry), `outcome` (done, error, timeout, stopped), `topic`, `turn` | What they ask about without the text, and how often Verso fails them. Sent once the turn ends, so it can carry both. |
+| `chat_reply_seen` | `count` | Whether Jody's Telegram replies reach anyone. |
 | `chat_new` | none | How often people start over. |
-| `card_click` | `kind`, `slug` | Which work Verso surfaces that people follow. |
-| `voice_start`, `voice_end` | `seconds`, `reason` | Whether voice is used and how it ends. |
+| `card_click` | `kind`, `path` | Which work Verso surfaces that people follow. |
+| `voice_start`, `voice_end` | `seconds`, `reason` (on end) | Whether voice is used and how it ends. |
 | `shelf_open` | `kind`, `title` | What draws attention on `/library`. |
-| `lightbox_open` | `slug` | Which case study images get a closer look. |
+| `lightbox_open` | `page` | Which case study images get a closer look. |
 
 Question text never goes to GA4: its terms forbid PII, people type names and emails into chat boxes, and parameter values stop at 100 characters.
-Instead the server tags each question with one topic from a fixed list (case study, hiring or availability, process, writing, personal, off-topic) and returns it in the `{ cid, mid }` frame.
+Instead the server tags each question with one topic from a fixed list (work, experience, hiring, process, writing, personal, verso, other) and sends it as a `{ topic }` frame before `done`. The Telegram notice and the transcript carry it too.
 The topic comes from a small classification call that runs in parallel with retrieval and is dropped if it misses its deadline.
 
 The custom parameters must be registered as custom dimensions in GA4 before they show in reports.

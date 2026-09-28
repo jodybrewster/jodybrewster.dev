@@ -106,6 +106,7 @@ function credit(item: ShelfItem): string {
   import { LibraryScene } from '../lib/shelf/scene';
   import type { ShelfPayload } from '../lib/shelf/scene';
   import { ShelfStore } from '../lib/shelf/scene-state';
+  import { track } from '../lib/track';
   import type { ShelfItem } from '../lib/shelf/media';
 
   /** Puts the server-rendered shelf back; the scene is not coming. */
@@ -222,6 +223,10 @@ function credit(item: ShelfItem): string {
     }
 
     store.subscribe(state => renderCard(state.active));
+    store.subscribe((state, previous) => {
+      const item = state.active && state.active !== previous.active ? byId.get(state.active) : undefined;
+      if (item) track('shelf_open', { kind: item.kind, title: item.title });
+    });
 
     // The rendered anchors stay the keyboard path into the scene. With the
     // canvas live they drive selection; the card carries the real link.

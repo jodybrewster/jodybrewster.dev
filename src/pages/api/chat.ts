@@ -14,6 +14,8 @@ import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
 import { notifyTurn } from '../../lib/operator';
+import { logEntries } from '../../lib/transcripts';
+import { TOPIC_PROMPT, parseTopic, type Topic } from '../../lib/topics';
 
 export const prerender = false;
 /**
@@ -33,6 +35,9 @@ const MAX_TOOL_ROUNDS = 2;
 const MAX_CARDS = 4;
 /** Telegram is a notice to Jody. It may not hold the visitor's answer for long. */
 const NOTIFY_DEADLINE_MS = 3000;
+/** Tagging runs beside retrieval and is dropped if it is not back in time. */
+const TOPIC_MODEL = 'gemini-3.5-flash-lite';
+const TOPIC_DEADLINE_MS = 6000;
 const TOOLS = [{ functionDeclarations: VERSO_TOOL_DECLARATIONS.map(({ name, description, parameters }) =>
   ({ name, description, parametersJsonSchema: parameters })) }];
 const DAILY_CAP_MESSAGE = 'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
@@ -51,7 +56,9 @@ export const POST: APIRoute = async ({ request }) => {
       typeof (body as { query?: unknown }).query !== 'string') {
     return new Response('query must be a string', { status: 400 });
   }
-  const data = body as { query: string; cid?: unknown };
+  const data = body as { query: string; cid?: unknown; page?: unknown };
+  // Where the question was asked, for the transcript. A path on this site or nothing.
+  const page = typeof data.page === 'string' && /^\/[\w\-./]{0,199}$/.test(data.page) ? data.page : undefined;
   const query = data.query.trim();
   if (!query) return new Response('query required', { status: 400 });
   if (query.length > MAX_QUERY_LEN) return new Response(`query too long (max ${MAX_QUERY_LEN} chars)`, { status: 413 });
@@ -112,9 +119,18 @@ export const POST: APIRoute = async ({ request }) => {
       }, 10_000);
       let answerText = '';
       let sources: CitedSource[] = [];
+      let topicTag: Promise<Topic | null> = Promise.resolve(null);
       try {
         lifetime.signal.throwIfAborted();
         send({ cid, mid });
+        // Never awaited on its own: a slow or failed tag costs the topic, not the answer.
+        topicTag = withDeadline(async signal => {
+          const result = await ai.models.generateContent({
+            model: TOPIC_MODEL, contents: query,
+            config: { systemInstruction: TOPIC_PROMPT, maxOutputTokens: 64, abortSignal: signal },
+          });
+          return parseTopic(result.text);
+        }, TOPIC_DEADLINE_MS, lifetime.signal).catch(() => null);
         log('retrieval', 'start');
         const hits = await withDeadline(signal => searchVectors(retrievalQuery(history, query), 5, undefined, signal), 12_000, lifetime.signal);
         lifetime.signal.throwIfAborted();
@@ -210,16 +226,20 @@ export const POST: APIRoute = async ({ request }) => {
         log('model', 'complete');
         lifetime.signal.throwIfAborted();
         if (!answerText.trim()) throw new Error('Nothing came back. Try again.');
-        // Both before the done frame: once the response closes the function
-        // can be frozen, and a notice sent after it would be lost.
+        const topic = await topicTag ?? undefined;
+        if (topic) send({ topic });
+        const ts = Date.now();
+        // All before the done frame: once the response closes the function
+        // can be frozen, and anything sent after it would be lost.
         await Promise.all([
           withDeadline(async signal => {
-            const ts = Date.now();
             await appendTurn(cid, { r: 'u', t: query, ts }); signal.throwIfAborted();
             await appendTurn(cid, { r: 'a', t: answerText, ts });
           }, 4000, lifetime.signal).then(() => log('persistence', 'complete'), () => log('persistence', 'failed')),
-          withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, answer: answerText }, signal),
+          withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, answer: answerText, topic }, signal),
             NOTIFY_DEADLINE_MS, lifetime.signal).catch(() => log('notify', 'failed')),
+          withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts, topic, page }, { r: 'a', t: answerText, ts }]),
+            4000, lifetime.signal).catch(() => log('transcript', 'failed')),
         ]);
         lifetime.signal.throwIfAborted();
         completed = true;
@@ -229,8 +249,15 @@ export const POST: APIRoute = async ({ request }) => {
         log('response', disconnected ? 'disconnected' : 'failed');
         // Jody hears about the questions Verso could not answer, too. Not
         // bound to the lifetime, which a timeout has already aborted.
-        if (!disconnected) await withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true }, signal),
-          NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed'));
+        if (!disconnected) {
+          const topic = await Promise.race([topicTag, new Promise<null>(resolve => setTimeout(resolve, 1000, null))]) ?? undefined;
+          await Promise.all([
+            withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true, topic }, signal),
+              NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed')),
+            withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), topic, page, failed: true }]),
+              NOTIFY_DEADLINE_MS).catch(() => log('transcript', 'failed')),
+          ]);
+        }
         if (!disconnected) send({ error: error instanceof Error && error.message === DAILY_CAP_MESSAGE
           ? DAILY_CAP_MESSAGE : 'The response could not finish. Try again in a moment.' });
       } finally {

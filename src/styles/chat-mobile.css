@@ -88,7 +88,6 @@ body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who-dot { width: 8px; 
   from { transform: scale(1); opacity: .8; }
   to { transform: scale(1.45); opacity: 0; }
 }
-}
 #chat-dock .input-row .dock-voice[data-state="connecting"] { animation: dock-voice-breathe 1.2s var(--ease-out) infinite alternate; }
 @keyframes dock-voice-breathe { from { opacity: 1; } to { opacity: .45; } }
 #chat-dock .dock-voice-status { max-width: var(--measure); margin: 0 auto 10px; font: 500 11px/1.5 var(--mono); letter-spacing: .06em; color: var(--ink-soft); text-align: center; }

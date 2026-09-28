@@ -3,7 +3,6 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import HomeCaseStudies from '../components/HomeCaseStudies.astro';
-import { flags } from '../lib/flags';
 import '../styles/home.css';
 
 const research = (await getCollection('research', r => r.data.publish))
@@ -13,11 +12,6 @@ const capabilities = [
   { icon: 'cube', title: 'Web & Mobile', description: 'Modern apps, end to end', color: 'cyan' },
   { icon: 'database', title: 'Data & Integrations', description: 'APIs · Azure · GCP · Databases', color: 'purple' },
   { icon: 'zap', title: 'Real-World Impact', description: 'From prototype to production', color: 'pink' },
-];
-const prompts = [
-  { label: 'Experience', question: "What is Jody's experience?" },
-  { label: 'Featured work', question: "What are Jody's featured projects?" },
-  { label: 'Tech stack', question: "What is Jody's tech stack?" },
 ];
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -44,24 +38,6 @@ const jsonLd = {
           <a href="/jodybrewster_resume_2026.docx" download class="home-button">Download Résumé <Icon name="file" class="icon" /></a>
         </div>
       </div>
-      {flags.chat && (
-        <aside class="verso-intro" aria-label="Meet Verso, my chat assistant">
-          <div class="verso-intro-header">
-            <span class="verso-avatar" aria-hidden="true"><Icon name="bot" class="icon" /></span>
-            <span class="verso-name">Verso</span>
-            <span class="verso-status" title="Online"><span class="availability-dot" aria-hidden="true"></span><span class="visually-hidden">Online</span></span>
-          </div>
-          <p class="verso-intro-copy">Hi! I'm Verso. Ask me anything about Jody's work, projects, tech stack or ideas.</p>
-          <div class="verso-prompts">
-            {prompts.map(prompt => <button type="button" data-verso-open data-verso-prompt={prompt.question} aria-controls="chat-dock" aria-expanded="false">{prompt.label}</button>)}
-          </div>
-          <form class="verso-ask" data-verso-ask>
-            <label class="visually-hidden" for="verso-ask-input">Ask Verso a question</label>
-            <input id="verso-ask-input" type="text" autocomplete="off" maxlength="600" placeholder="Ask anything…" />
-            <button type="submit" aria-label="Send to Verso" data-verso-open aria-controls="chat-dock" aria-expanded="false"><Icon name="send" class="icon" /></button>
-          </form>
-        </aside>
-      )}
     </section>
 
     <section class="capabilities-section" aria-labelledby="capabilities-title">
@@ -110,26 +86,3 @@ const jsonLd = {
   </main>
 </Base>
 
-<script>
-  // The home panel's own input hands the question to the Verso dock, which opens and answers it there.
-  function initVersoAsk() {
-    const form = document.querySelector<HTMLFormElement>('[data-verso-ask]');
-    if (!form || form.dataset.ready) return;
-    form.dataset.ready = 'true';
-    form.addEventListener('submit', event => {
-      event.preventDefault();
-      const field = form.querySelector<HTMLInputElement>('input');
-      const question = field?.value.trim();
-      const dockInput = document.querySelector<HTMLInputElement>('#chat-q');
-      const dockForm = document.querySelector<HTMLFormElement>('#chat-form');
-      // While Verso is still answering, the dock input is disabled and submitting would stop that answer instead.
-      if (!field || !question || !dockInput || !dockForm || dockInput.disabled) return;
-      dockInput.value = question;
-      field.value = '';
-      dockInput.focus({ preventScroll: true });
-      dockForm.requestSubmit();
-    });
-  }
-  initVersoAsk();
-  document.addEventListener('astro:page-load', initVersoAsk);
-</script>

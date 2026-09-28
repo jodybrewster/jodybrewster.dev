@@ -67,17 +67,8 @@
 .studio-text-link { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--studio-muted); min-height: 40px; }
 .studio-text-link:hover { color: var(--studio-cyan); }
 .studio-page .foot { max-width: var(--site-width); width: calc(100% - 2 * var(--site-gutter)); margin: 0 auto; padding: 26px 0 34px; gap: 20px; color: var(--studio-muted); }
-.studio-page .chat-dock:not(.open) { visibility: hidden; pointer-events: none; }
-.studio-page .chat-dock { --studio-chat-height: min(62dvh,600px); }
-.studio-page .chat-dock.open { left: auto; right: 24px; bottom: 24px; width: min(440px,calc(100vw - 48px)); border: 1px solid var(--studio-rule); border-radius: 12px; overflow: hidden; box-shadow: 0 16px 60px rgb(0 0 0 / .35); }
-.studio-page .dock-bar { padding: 12px; }
-.studio-page .dock-panel-head { padding: 16px 18px 4px; }
-.studio-page .dock-scroll { padding: 12px 18px 20px; max-height: calc(var(--studio-chat-height) - 60px); }
-.studio-page .chat-dock.open .dock-panel { max-height: var(--studio-chat-height); }
 .studio-page .chat-dock input { min-width: 0; font-size: 14px; }
 .studio-page .chat-dock .dock-close { width: 36px; height: 36px; }
-.studio-page .chat-dock .input-row button { color: var(--studio-bg); font-weight: 650; }
-.studio-page .chat-dock .input-row { border-radius: 7px; }
 /* Articles share the page edges: the header and lead image span the full width, the body keeps a readable measure. */
 .studio-page .essay-shell { max-width: none; }
 .studio-page .essay-shell h1 { font-family: var(--headline); font-weight: 300; line-height: 1.13; font-size: clamp(36px,4.2vw,58px); letter-spacing: -.01em; max-width: 1080px; text-wrap: balance; }
@@ -96,7 +87,6 @@ html:not([data-soft-nav]) .studio-page .essay-hero { animation: essay-hero-in 90
 .studio-page .essay-body pre { overflow-x: auto; }
 @media(max-width:1100px) { .studio-page .home-nav { gap: 24px; } .studio-page .home-links { gap: 20px; } }
 @media(max-width:720px) {
-  .studio-page .chat-dock.open { right: 10px; bottom: 10px; width: calc(100vw - 20px); }
   .studio-page .essay-shell h1 { font-size: 33px; }
   .studio-page .essay-hero img { aspect-ratio: 3 / 2; }
   .studio-page .essay-body { font-size: 15px; }

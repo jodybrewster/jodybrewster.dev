@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Icon from './Icon.astro';
+import { articleImage } from '../lib/article-images';
 
 interface Props { researchOnly?: boolean; }
 const { researchOnly = false } = Astro.props;
@@ -14,29 +15,12 @@ const categoryDefinitions = [
   { id: 'product', label: 'Product', pattern: /product|design|interface|generative|experience|portfolio|frontend/i },
   { id: 'craft', label: 'Craft', pattern: /methodology|design-systems|documentation|writing|design-engineering|senior-practice|judgment|quality/i },
 ];
-const illustrations = ['/images/studio/research-systems.webp', '/images/studio/research-building.webp', '/images/studio/research-exploration.webp'];
-const researchIllustrations: Record<string, string> = {
-  'ai-design-skills-comparison': '/images/research/ai-design-skills-comparison.webp',
-  'diverge-converge-workflows': '/images/research/diverge-converge-workflows.webp',
-  'snowflake-cortex-learning-customization-charts': '/images/research/snowflake-cortex-learning-customization-charts.webp',
-  'claude-md-design-md-patterns-ai-agents': '/images/research/claude-md-design-md-patterns-ai-agents.webp',
-  'pro-claude-code-agentic-stack': '/images/research/pro-claude-code-agentic-stack.webp',
-  'vercel-eve-agent-framework': '/images/research/vercel-eve-agent-framework.webp',
-  'technical-writing-doc-skills-claude-codex': '/images/research/technical-writing-doc-skills-claude-codex.webp',
-  'claude-code-codebase-audit-commands': '/images/research/claude-code-codebase-audit-commands.webp',
-  'design-engineer-portfolios-field-guide': '/images/research/design-engineer-portfolios-field-guide.webp',
-  'evaluating-conversational-ai-quality': '/images/research/evaluating-conversational-ai-quality.webp',
-  'pkm-alternatives-obsidian-mcp': '/images/research/pkm-alternatives-obsidian-mcp.webp',
-};
-const writingIllustrations: Record<string, string> = {
-  'the-model-that-wont-talk-a-teardown-of-jev': '/images/research/jev-structured-model.webp',
-};
 const articles = [
   ...essays.map(entry => ({ slug: entry.id, title: entry.data.title, description: entry.data.description, tags: entry.data.tags, pillar: entry.data.pillar, date: entry.data.date, href: `/writing/${entry.id}`, kind: 'Essay' })),
   ...research.map(entry => ({ slug: entry.id, title: entry.data.title, description: entry.data.description, tags: entry.data.tags, pillar: entry.data.pillar, date: entry.data.pubDate, href: `/research/${entry.id}`, kind: 'Research' })),
-].sort((a, b) => b.date.valueOf() - a.date.valueOf() || a.title.localeCompare(b.title)).map((entry, index) => {
+].sort((a, b) => b.date.valueOf() - a.date.valueOf() || a.title.localeCompare(b.title)).map(entry => {
   const search = [entry.title, entry.description, ...entry.tags, entry.pillar ?? ''].join(' ');
-  return { ...entry, search: search.toLocaleLowerCase(), categories: categoryDefinitions.filter(category => category.pattern.test(search)).map(category => category.id), image: entry.kind === 'Research' ? researchIllustrations[entry.slug] : writingIllustrations[entry.slug] ?? illustrations[index % illustrations.length] };
+  return { ...entry, search: search.toLocaleLowerCase(), categories: categoryDefinitions.filter(category => category.pattern.test(search)).map(category => category.id), image: articleImage(entry.kind === 'Research' ? 'research' : 'writing', entry.slug) };
 });
 const filters = [{ id: 'all', label: 'All' }, ...categoryDefinitions.filter(category => articles.some(article => article.categories.includes(category.id))).map(({ id, label }) => ({ id, label }))];
 function formatDate(date: Date) {

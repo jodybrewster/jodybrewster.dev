@@ -325,3 +325,17 @@ The six-panel reference supplied by the user is the current direction for Work, 
 - Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
 - Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Generated landscape imagery illustrates ideas rather than pretending to be project screenshots.
 - Verso uses the existing persisted ChatDock embedded in a two-column page. Prompt buttons only prefill the composer. Existing name entry, streaming, conversation state, and handoff behavior remain intact. Do not display a microphone unless voice actually exists.
+
+## 11. Mobile Verso refinement (September 27, 2026)
+
+The user's phone reference establishes one persistent mobile chat entry. At 720px and below, hide the header Verso button, the hero action beside the résumé, and the separate hero introduction card. ChatDock becomes an inset, rounded footer composer; focusing it expands the actual conversation above it. Keep the current cyan accent, midnight surfaces and fonts. Do not add decorative microphone or voice controls.
+
+The composer uses safe-area insets, reserves page space below the footer, and follows the visual viewport when the keyboard opens. Message and optional-name inputs stay at least 16px on phones so focusing them does not trigger iPhone auto-zoom. Constrain long messages and citation titles within their grid columns. A closed panel is inert.
+
+Featured case studies use a contained horizontal swipe row with a visible next-card edge and scroll snapping. Only the row scrolls sideways. The document stays within the viewport. Keep desktop card and navigation layouts intact.
+
+Names are optional, entered through a disclosure in the chat. A question sends immediately without a name gate. The composer exposes Stop during a request and Try again after a failed or interrupted answer. New chat resets the conversation ID. The dedicated `/chat` page retains its embedded full conversation; other mobile pages use the fixed composer.
+
+## 12. Motion (September 28, 2026)
+
+Motion explains entry and state. Page content may rise and fade once on entry; Verso expands from its fixed composer; dynamic search results fade into place. Use transform and opacity for visual movement, the shared `--ease-out` curve for entrances, and keep interface transitions under 300ms. Homepage image and copy entrances may run longer because they are infrequent marketing moments. Reduced-motion mode keeps a brief opacity fade and removes positional movement.

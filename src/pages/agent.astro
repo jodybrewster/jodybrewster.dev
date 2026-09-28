@@ -1,13 +1,13 @@
 ---
-import Base from '../layouts/Base.astro';
+import Studio from '../layouts/Studio.astro';
 import PageHeader from '../components/PageHeader.astro';
 import { flags } from '../lib/flags';
 ---
-<Base
+<Studio
   title="For agents — Jody Brewster"
   description="The three-tier agent-readable surface for jodybrewster.dev: markdown endpoints and llms.txt, an MCP server, and an A2A agent card — plus house rules for agents working against the corpus."
 >
-  <main class="page active" id="agent">
+  <main class="page active studio-container" id="agent">
     <div class="agent-shell">
       <PageHeader
         icon="i-terminal"
@@ -26,15 +26,15 @@ import { flags } from '../lib/flags';
         <p>Every essay, note, and brief is available as raw markdown. Add <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">.md</code> to any URL, or send <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">Accept: text/markdown</code>. A curated index lives at the site root.</p>
         <div class="url">
           <span><span class="url-method">GET</span> jodybrewster.dev/llms.txt</span>
-          <span class="copy" data-copy="https://jodybrewster.dev/llms.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <button class="copy" type="button" data-copy="https://jodybrewster.dev/llms.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</button>
         </div>
         <div class="url">
           <span><span class="url-method">GET</span> jodybrewster.dev/llms-full.txt</span>
-          <span class="copy" data-copy="https://jodybrewster.dev/llms-full.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <button class="copy" type="button" data-copy="https://jodybrewster.dev/llms-full.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</button>
         </div>
         <div class="url">
           <span><span class="url-method">GET</span> jodybrewster.dev/writing/runtime-is-the-new-design-surface.md</span>
-          <span class="copy" data-copy="https://jodybrewster.dev/writing/runtime-is-the-new-design-surface.md"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <button class="copy" type="button" data-copy="https://jodybrewster.dev/writing/runtime-is-the-new-design-surface.md"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</button>
         </div>
       </div>
 
@@ -47,7 +47,7 @@ import { flags } from '../lib/flags';
         <p>Six tools over the published corpus. Streamable HTTP transport. Unauthenticated for read tools; this is a public read-only surface, so OAuth would be theater.</p>
         <div class="url">
           <span><span class="url-method">POST</span> jodybrewster.dev/api/mcp</span>
-          <span class="copy" data-copy="https://jodybrewster.dev/api/mcp"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <button class="copy" type="button" data-copy="https://jodybrewster.dev/api/mcp"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</button>
         </div>
         <div class="tools">
           <span class="t">search_writing</span>
@@ -68,7 +68,7 @@ import { flags } from '../lib/flags';
         <p>If your agent speaks A2A, an agent card is published at the well-known path. Three skills: discuss writing, discuss collaboration style, recommend essays. OAuth is declared but not enforced for read skills in v0.</p>
         <div class="url">
           <span><span class="url-method">GET</span> jodybrewster.dev/.well-known/agent-card.json</span>
-          <span class="copy" data-copy="https://jodybrewster.dev/.well-known/agent-card.json"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <button class="copy" type="button" data-copy="https://jodybrewster.dev/.well-known/agent-card.json"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</button>
         </div>
       </div>
 
@@ -129,6 +129,22 @@ import { flags } from '../lib/flags';
     </div>
   </main>
 
+  <style>
+    #agent { padding-top: 52px; padding-bottom: 90px; }
+    #agent .endpoint-card { border-radius: 10px; background: var(--studio-surface); }
+    #agent .code-card { border-radius: 10px; background: var(--studio-raised); }
+    @media (max-width: 720px) {
+      #agent { padding-top: 24px; padding-bottom: 60px; }
+      #agent .endpoint-card { padding: 22px 18px; }
+      #agent .endpoint-card h3 { align-items: flex-start; flex-wrap: wrap; }
+      #agent .endpoint-card .url { align-items: start; white-space: normal; }
+      #agent .endpoint-card .url > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+      #agent .endpoint-card .url .copy { min-width: 44px; min-height: 44px; justify-content: center; }
+      #agent .code-card .head { align-items: flex-start; gap: 12px; }
+      #agent .principle-list .pp { grid-template-columns: 34px minmax(0, 1fr); gap: 12px; }
+    }
+  </style>
+
   <script is:inline>
     document.querySelectorAll('.copy[data-copy]').forEach(el => {
       el.addEventListener('click', () => {
@@ -141,4 +157,4 @@ import { flags } from '../lib/flags';
       });
     });
   </script>
-</Base>
+</Studio>

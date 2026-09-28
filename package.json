@@ -14,8 +14,8 @@
     "embed": "tsx scripts/embed.ts",
     "spotify": "tsx scripts/spotify-sync.ts",
     "spotify-auth": "tsx scripts/spotify-auth.ts",
-    "telegram:setup": "tsx scripts/telegram-setup.ts",
     "books": "tsx scripts/sync-book-covers.ts",
+    "games": "tsx scripts/sync-game-covers.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -25,6 +25,8 @@
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.0.0",
     "@astrojs/vercel": "^8.0.0",
+    "@google/genai": "^2.24.0",
+    "@jodybrewster/gemini-live": "file:vendor/jodybrewster-gemini-live-0.1.1.tgz",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",

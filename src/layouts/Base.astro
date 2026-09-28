@@ -17,10 +17,9 @@ interface Props {
   markdownHref?: string;
   bodyClass?: string;
   home?: boolean;
-  showChatDock?: boolean;
 }
 
-const { title, description, jsonLd, markdownHref, bodyClass, home = false, showChatDock = true } = Astro.props;
+const { title, description, jsonLd, markdownHref, bodyClass, home = false } = Astro.props;
 ---
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -58,7 +57,7 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false, showC
     <slot />
     <Footer />
   </div>
-  {flags.chat && showChatDock && <ChatDock />}
+  {flags.chat && <ChatDock />}
   <script>
     // Pages reached by an in-site navigation are marked, so entrances that the page change already covers
     // (a lead image that travels in from its card, the full home intro) can step aside. A full load clears it.

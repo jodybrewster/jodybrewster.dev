@@ -1,14 +1,12 @@
 /**
  * Verso: the reading assistant on the site, and the pure logic behind its prompt.
  *
- * Everything here is deliberately free of the SDK client, Redis, and the Astro
+ * Everything here is deliberately free of the Gemini client, Redis, and the Astro
  * request: the route owns the I/O, this module owns the shape of the
  * conversation. That split is what makes the multi-turn rules testable, and it
  * is why nothing below throws on a malformed log - a conversation replayed from
  * storage is untrusted input, not a guarantee.
  */
-
-import type Anthropic from '@anthropic-ai/sdk';
 
 export const VERSO_NAME = 'Verso';
 
@@ -20,8 +18,6 @@ export interface ConversationTurn {
   t: string;
   /** epoch ms */
   ts: number;
-  /** Assistant turns only: whether Jody answered or the model did. */
-  by?: 'human' | 'llm';
 }
 
 /** How much of the past goes back up with each question. Six turns is three
@@ -35,13 +31,6 @@ export const MAX_QUERY_LEN = 600;
 /** A single conversation cannot grow forever; past this the route starts a
  *  new one rather than paying to reread a transcript nobody is reading. */
 export const MAX_TURNS_PER_CONV = 20;
-
-/** Words per playback chunk. Three reads as typing; one reads as a stutter. */
-const CHUNK_WORDS = 3;
-const CHUNK_DELAY_MS = 28;
-const PLAYBACK_CAP_MS = 4000;
-/** Below this the pacing stops reading as typing and starts reading as lag. */
-const MIN_CHUNK_DELAY_MS = 4;
 
 export const SYSTEM_PROMPT = `You are ${VERSO_NAME}, the reading assistant on Jody Brewster's site, answering from his published writing, work briefs, and case studies about building useful products and AI-powered software.
 
@@ -58,14 +47,25 @@ GROUNDING RULES:
 - Treat product work, shipped interfaces, and case studies as first-class source material. When the excerpts support it, describe what Jody built, who it served, and how it moved from idea to a usable product. Do not turn every answer into a discussion of enterprise architecture.
 - If asked about specific clients, employers, ongoing projects, or things outside the provided excerpts, refuse politely and redirect to what is documented.
 
+SHOWING THE WORK:
+- This conversation is a canvas. When a visitor asks about one of Jody's projects, show it here with show_case_study instead of pointing them elsewhere: the visual when they want to see it, facts for role, scale and outcome, summary for the problem and the fix, architecture for how it works. Pick the one to three parts that answer the question, in the order they should appear, and call them before you write.
+- show_screens shows real product screens when someone wants to see what a project looks like.
+- For essays, research, lab notes and the Now page, use the matching card tool when one piece is the heart of the answer.
+- go_to_page only when the visitor asks to go to, open or read a page.
+- A general or off-topic question gets nothing on screen. Use only slugs and urls that appear in the excerpts, and copy any quoted words exactly.
+- What you show complements the prose; it does not replace it. Always answer in full sentences too, and do not describe what is on screen.
+
 STYLE:
 - Editorial, considered, lowercase-leaning where natural. Match the register of the source material.
 - 2–4 short paragraphs unless the question demands more. No headers, no bullet lists, no markdown formatting beyond italics for quotes.
 - Never invent quotes. If you don't have a quote, paraphrase and cite the source.`;
 
-/** A `MessageParam` narrowed to plain text. Pinned to the SDK type so an
- *  upstream change fails the build here rather than at the first request. */
-type PromptMessage = Anthropic.MessageParam & { role: 'user' | 'assistant'; content: string };
+/** A Gemini `Content` narrowed to one text part. Gemini calls the assistant
+ *  role `model`. */
+export interface PromptMessage {
+  role: 'user' | 'model';
+  parts: [{ text: string }];
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -76,9 +76,9 @@ export function isValidConversationId(id: unknown): id is string {
 }
 
 /**
- * Coerce a stored log into a transcript the Messages API will accept: strictly
- * alternating, opening on the user, closing on the assistant. The API rejects
- * anything else with a 400, and a conversation is easy to leave malformed - a
+ * Coerce a stored log into a transcript the model should see: strictly
+ * alternating, opening on the user, closing on the assistant. Anything else
+ * reads as a broken exchange, and a conversation is easy to leave malformed - a
  * double-send, an aborted stream, a page reload mid-answer.
  */
 export function normalizeTurns(history: ConversationTurn[]): ConversationTurn[] {
@@ -97,17 +97,10 @@ export function normalizeTurns(history: ConversationTurn[]): ConversationTurn[] 
       // into the turn it ended on so the exchange survives and the shape heals.
       previous.t = `${previous.t}\n\n${raw.t}`;
       previous.ts = typeof raw.ts === 'number' ? raw.ts : previous.ts;
-      if (raw.by === 'human' || raw.by === 'llm') previous.by = raw.by;
       continue;
     }
 
-    const turn: ConversationTurn = {
-      r: raw.r,
-      t: raw.t,
-      ts: typeof raw.ts === 'number' ? raw.ts : 0,
-    };
-    if (raw.r === 'a' && (raw.by === 'human' || raw.by === 'llm')) turn.by = raw.by;
-    turns.push(turn);
+    turns.push({ r: raw.r, t: raw.t, ts: typeof raw.ts === 'number' ? raw.ts : 0 });
   }
 
   // A transcript that opens on an answer or closes on an unanswered question
@@ -159,69 +152,14 @@ export function buildMessages(
   // Trimming by either budget can strand a leading assistant turn, so the
   // shape has to be healed after the cut, not before it.
   const messages: PromptMessage[] = normalizeTurns(turns).map(turn => ({
-    role: turn.r === 'u' ? 'user' : 'assistant',
-    content: turn.t,
+    role: turn.r === 'u' ? 'user' : 'model',
+    parts: [{ text: turn.t }],
   }));
 
   messages.push({
     role: 'user',
-    content: `Question: ${query}\n\nExcerpts from Jody's published writing:\n\n${contextBlock}`,
+    parts: [{ text: `Question: ${query}\n\nExcerpts from Jody's published writing:\n\n${contextBlock}` }],
   });
 
   return messages;
-}
-
-/**
- * Split a reply into pieces for paced playback.
- *
- * The invariant is that `chunkForTyping(x).join('') === x` for every input:
- * playback reassembles the chunks into the answer the reader keeps, so a chunker
- * that drops a space or eats a newline corrupts the transcript rather than just
- * the animation. Whitespace therefore travels attached to the word that follows
- * it, and whatever trails the last word rides on the last chunk.
- */
-export function chunkForTyping(text: string, wordsPerChunk = CHUNK_WORDS): string[] {
-  if (typeof text !== 'string' || text === '') return [];
-  const size = Number.isFinite(wordsPerChunk) && wordsPerChunk >= 1 ? Math.floor(wordsPerChunk) : CHUNK_WORDS;
-
-  const chunks: string[] = [];
-  const word = /\s*\S+/g;
-  let buffer = '';
-  let words = 0;
-  let consumed = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = word.exec(text)) !== null) {
-    buffer += match[0];
-    words += 1;
-    consumed = word.lastIndex;
-    if (words === size) {
-      chunks.push(buffer);
-      buffer = '';
-      words = 0;
-    }
-  }
-  if (buffer) chunks.push(buffer);
-
-  const tail = text.slice(consumed);
-  if (tail) {
-    if (chunks.length) chunks[chunks.length - 1] += tail;
-    else chunks.push(tail);
-  }
-
-  return chunks;
-}
-
-/**
- * How long to sleep between chunks. A short answer types at the natural rate; a
- * long one compresses so the reader is never held at a crawl waiting for text
- * that has already arrived.
- */
-export function typingDelayMs(
-  chunkCount: number,
-  perChunk = CHUNK_DELAY_MS,
-  capMs = PLAYBACK_CAP_MS,
-): number {
-  if (!Number.isFinite(chunkCount) || chunkCount <= 0) return 0;
-  return Math.max(MIN_CHUNK_DELAY_MS, Math.min(perChunk, Math.floor(capMs / chunkCount)));
 }

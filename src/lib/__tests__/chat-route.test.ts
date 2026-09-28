@@ -3,41 +3,59 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
   getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
-  isOperatorOnline: vi.fn(), readHistory: vi.fn(), conversationLength: vi.fn(),
-  appendTurn: vi.fn(), putFinal: vi.fn(), putPending: vi.fn(), claim: vi.fn(),
-  getReply: vi.fn(), closeHandoff: vi.fn(), mapTelegramMessage: vi.fn(), setLastQuestion: vi.fn(),
-  sendQuestion: vi.fn(), announceLapse: vi.fn(), modelStream: vi.fn(),
+  readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
+  generateContentStream: vi.fn(), buildCardIndex: vi.fn(),
 }));
+vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
 vi.mock('../rate-limit', () => ({
   getIpLimiter: dependencies.getIpLimiter, getGlobalLimiter: dependencies.getGlobalLimiter,
   clientIp: () => 'test-ip', isOriginAllowed: () => true,
 }));
-vi.mock('../handoff', () => ({
-  ...dependencies, HANDOFF_WINDOW_MS: 20_000, POLL_INTERVAL_MS: 1200,
+vi.mock('../conversation', () => ({
+  readHistory: dependencies.readHistory, conversationLength: dependencies.conversationLength,
+  appendTurn: dependencies.appendTurn,
 }));
-vi.mock('../telegram', () => ({
-  telegramConfigured: () => true, formatQuestionMessage: () => 'question', sendQuestion: dependencies.sendQuestion,
-}));
-vi.mock('../../pages/api/telegram', () => ({ announceLapse: dependencies.announceLapse }));
 vi.mock('../flags', () => ({ flags: { chat: true } }));
 vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? 'production' : 'test-key' }));
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class { messages = { stream: dependencies.modelStream }; },
+const { ApiError } = vi.hoisted(() => ({
+  ApiError: class extends Error { constructor(public status: number) { super(`status ${status}`); } },
+}));
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: class { models = { generateContentStream: dependencies.generateContentStream }; },
+  ThinkingLevel: { LOW: 'LOW' },
+  FunctionCallingConfigMode: { AUTO: 'AUTO', NONE: 'NONE' },
+  ApiError,
 }));
 
 import { POST } from '../../pages/api/chat';
 
 const never = () => new Promise<never>(() => {});
+const chunk = (...parts: Record<string, unknown>[]) => ({ candidates: [{ content: { role: 'model', parts } }] });
+/** A Gemini stream: resolves to an async iterator of chunks with text parts. */
 function model(chunks: string[] = ['An answer.'], stall = false) {
-  const abort = vi.fn();
-  const iterator = (async function* () {
-    for (const text of chunks) yield { type: 'content_block_delta', delta: { type: 'text_delta', text } };
+  return async () => (async function* () {
+    for (const text of chunks) yield chunk({ text });
     if (stall) await never();
   })();
-  return Object.assign(iterator, { abort, on: vi.fn() });
 }
+/** A round that ends in tool calls, as Gemini streams them. */
+function calls(...functionCalls: { name: string; args?: Record<string, unknown> }[]) {
+  return async () => (async function* () {
+    yield chunk(...functionCalls.map((call, i) => ({ functionCall: { id: `call-${i}`, ...call }, thoughtSignature: 'sig' })));
+  })();
+}
+const WORK_CARD = {
+  kind: 'work', slug: 'agentic-analytics-platform', title: 'Brand Impact Tracker', url: '/work/agentic-analytics-platform',
+  sector: 'Manufacturing', role: 'Lead Developer / Architect', duration: '2026',
+};
+const CARD_INDEX = { work: { 'agentic-analytics-platform': WORK_CARD }, articles: {}, notes: {}, now: null, pages: {}, parts: {} };
+/** The SSE frames of a finished response, parsed. */
+const frames = (text: string) => text.split('\n\n').filter(frame => frame.startsWith('data: ')).map(frame => JSON.parse(frame.slice(6)));
+/** The abort signal the route handed the SDK on its most recent call. */
+const modelSignal = (): AbortSignal =>
+  dependencies.generateContentStream.mock.lastCall![0].config.abortSignal;
 async function post(body: unknown = { query: 'PRIVATE QUESTION' }, signal?: AbortSignal) {
   const request = new Request('https://jodybrewster.dev/api/chat', {
     method: 'POST', body: JSON.stringify(body), signal,
@@ -62,14 +80,10 @@ beforeEach(() => {
   dependencies.getGlobalLimiter.mockReturnValue(null);
   dependencies.searchVectors.mockResolvedValue([]);
   dependencies.getChunkText.mockResolvedValue('source');
-  dependencies.isOperatorOnline.mockResolvedValue(false);
   dependencies.readHistory.mockResolvedValue([]);
   dependencies.conversationLength.mockResolvedValue(0);
-  dependencies.claim.mockResolvedValue(true);
-  dependencies.getReply.mockResolvedValue(null);
-  dependencies.sendQuestion.mockResolvedValue(42);
-  dependencies.announceLapse.mockResolvedValue(undefined);
-  dependencies.modelStream.mockImplementation(() => model());
+  dependencies.generateContentStream.mockImplementation(model());
+  dependencies.buildCardIndex.mockResolvedValue(CARD_INDEX);
 });
 afterEach(() => {
   vi.clearAllTimers();
@@ -90,41 +104,38 @@ describe('POST /api/chat reliability', () => {
     expect(state.settled).toBe(true);
     expect(state.text).toMatch(/"error":.*[Tt]ry again/);
     expect(state.text).not.toContain('"done":true');
-    expect(dependencies.modelStream).not.toHaveBeenCalled();
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
     expect(dependencies.searchVectors.mock.calls[0][3].aborted).toBe(true);
   });
 
   it('aborts a model that never produces its first event', async () => {
-    const stalled = model([], true);
-    dependencies.modelStream.mockReturnValue(stalled);
+    dependencies.generateContentStream.mockImplementation(model([], true));
     const state = consume(await post());
     await vi.advanceTimersByTimeAsync(60_000);
     expect(state.settled).toBe(true);
     expect(state.text).toMatch(/"error":.*[Tt]ry again/);
-    expect(stalled.abort).toHaveBeenCalled();
+    expect(modelSignal().aborted).toBe(true);
   });
 
   it('aborts model generation and closes promptly when the request disconnects', async () => {
     const disconnect = new AbortController();
-    const stalled = model([], true);
-    dependencies.modelStream.mockReturnValue(stalled);
+    dependencies.generateContentStream.mockImplementation(model([], true));
     const state = consume(await post(undefined, disconnect.signal));
     await vi.advanceTimersByTimeAsync(0);
     disconnect.abort();
     await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
-    expect(stalled.abort).toHaveBeenCalled();
-    expect(dependencies.putFinal).not.toHaveBeenCalled();
+    expect(modelSignal().aborted).toBe(true);
+    expect(dependencies.appendTurn).not.toHaveBeenCalled();
   });
 
   it('cancels upstream work when the response reader is cancelled', async () => {
-    const stalled = model([], true);
-    dependencies.modelStream.mockReturnValue(stalled);
+    dependencies.generateContentStream.mockImplementation(model([], true));
     const response = await post();
     await vi.advanceTimersByTimeAsync(0);
     void response.body!.cancel();
     await vi.advanceTimersByTimeAsync(0);
-    expect(stalled.abort).toHaveBeenCalled();
+    expect(modelSignal().aborted).toBe(true);
   });
 
   it('does not start the model after disconnected retrieval eventually resolves', async () => {
@@ -137,7 +148,7 @@ describe('POST /api/chat reliability', () => {
     finish([]);
     await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
-    expect(dependencies.modelStream).not.toHaveBeenCalled();
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
   });
 
   it('closes a complete answer even when persistence hangs', async () => {
@@ -147,7 +158,6 @@ describe('POST /api/chat reliability', () => {
     expect(state.settled).toBe(true);
     expect(state.text).toContain('An answer.');
     expect(state.text).toContain('"done":true');
-    expect(dependencies.putFinal).not.toHaveBeenCalled();
   });
 
   it('fails closed before model billing if the daily-budget guard fails', async () => {
@@ -159,7 +169,7 @@ describe('POST /api/chat reliability', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
     expect(state.text).toContain('"error":');
-    expect(dependencies.modelStream).not.toHaveBeenCalled();
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
   });
 
   it('bounds a hanging pre-stream rate limit with a 503 response', async () => {
@@ -177,7 +187,6 @@ describe('POST /api/chat reliability', () => {
     expect(state.settled).toBe(true);
     expect(state.text).toContain('"done":true');
     expect(dependencies.appendTurn).toHaveBeenCalledTimes(2);
-    expect(dependencies.putFinal).toHaveBeenCalledTimes(1);
     const logs = JSON.stringify(vi.mocked(console.info).mock.calls);
     expect(logs).toContain('retrieval');
     expect(logs).toContain('elapsedMs');
@@ -185,35 +194,188 @@ describe('POST /api/chat reliability', () => {
     expect(logs).not.toContain('PRIVATE QUESTION');
   });
 
-  it('plays a human reply and abandons speculative retrieval without model billing', async () => {
-    dependencies.isOperatorOnline.mockResolvedValue(true);
-    dependencies.searchVectors.mockImplementation(never);
-    dependencies.getReply.mockResolvedValue('A human reply.');
+  it('sends the system prompt and the grounded question to the text model', async () => {
+    dependencies.searchVectors.mockResolvedValue([{ score: 0.9, metadata: {
+      type: 'writing', slug: 'runtime', title: 'Runtime', date: '2026-01-01', url: '/writing/runtime',
+    } }]);
     const state = consume(await post());
-    await vi.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
-    expect(state.text).toContain('A human reply.');
+    const request = dependencies.generateContentStream.mock.lastCall![0];
+    expect(request.model).toMatch(/^gemini-/);
+    expect(request.config.systemInstruction).toContain('Verso');
+    const last = request.contents[request.contents.length - 1];
+    expect(last.role).toBe('user');
+    expect(last.parts[0].text).toContain('Question: PRIVATE QUESTION');
+    expect(last.parts[0].text).toContain('"Runtime"');
+    expect(state.text).toContain('"url":"/writing/runtime"');
+  });
+
+  it('moves to the next model when one is over capacity', async () => {
+    dependencies.generateContentStream
+      .mockRejectedValueOnce(new ApiError(503))
+      .mockRejectedValueOnce(new ApiError(429))
+      .mockImplementationOnce(model(['From the third.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('From the third.');
     expect(state.text).toContain('"done":true');
-    expect(dependencies.modelStream).not.toHaveBeenCalled();
-    expect(dependencies.closeHandoff).toHaveBeenCalledOnce();
+    const models = dependencies.generateContentStream.mock.calls.map(([request]) => request.model);
+    expect(new Set(models).size).toBe(3);
   });
 
-  it('falls back after the human window closes', async () => {
-    dependencies.isOperatorOnline.mockResolvedValue(true);
+  it('reports failure when every model is over capacity', async () => {
+    dependencies.generateContentStream.mockRejectedValue(new ApiError(503));
     const state = consume(await post());
-    await vi.advanceTimersByTimeAsync(21_000);
-    expect(state.settled).toBe(true);
-    expect(state.text).toContain('An answer.');
-    expect(dependencies.claim).toHaveBeenCalledWith(expect.any(String), 'llm');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toMatch(/"error":.*[Tt]ry again/);
+    expect(dependencies.generateContentStream).toHaveBeenCalledTimes(3);
   });
 
-  it('does not overwrite an unsettled human claim with a model answer', async () => {
-    dependencies.isOperatorOnline.mockResolvedValue(true);
-    dependencies.claim.mockResolvedValue(false);
+  it('does not fall back on an error that is not about capacity', async () => {
+    dependencies.generateContentStream.mockRejectedValue(new ApiError(400));
     const state = consume(await post());
-    await vi.advanceTimersByTimeAsync(21_000);
-    expect(state.settled).toBe(true);
+    await vi.advanceTimersByTimeAsync(0);
     expect(state.text).toContain('"error":');
-    expect(dependencies.modelStream).not.toHaveBeenCalled();
+    expect(dependencies.generateContentStream).toHaveBeenCalledTimes(1);
+  });
+
+  it('never splices a second model onto an answer that already started', async () => {
+    dependencies.generateContentStream.mockImplementationOnce(async () => (async function* () {
+      yield chunk({ text: 'Half an answer' });
+      throw new ApiError(503);
+    })());
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('Half an answer');
+    expect(state.text).toContain('"error":');
+    expect(dependencies.generateContentStream).toHaveBeenCalledTimes(1);
+    expect(dependencies.appendTurn).not.toHaveBeenCalled();
+  });
+
+  it('offers the card tools and names slugs and urls in the excerpts', async () => {
+    dependencies.searchVectors.mockResolvedValue([{ score: 0.9, metadata: {
+      type: 'work', slug: 'agentic-analytics-platform', title: 'Brand Impact Tracker', date: '', url: '/work/agentic-analytics-platform',
+    } }]);
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.settled).toBe(true);
+    const request = dependencies.generateContentStream.mock.lastCall![0];
+    const names = request.config.tools[0].functionDeclarations.map((tool: { name: string }) => tool.name);
+    expect(names).toEqual(['show_case_study', 'show_screens', 'go_to_page', 'show_work', 'show_writing', 'show_note', 'show_now', 'open_page']);
+    expect(request.config.tools[0].functionDeclarations[0].parametersJsonSchema.type).toBe('object');
+    expect(request.config.toolConfig.functionCallingConfig.mode).toBe('AUTO');
+    expect(request.contents.at(-1).parts[0].text).toContain('slug: agentic-analytics-platform url: /work/agentic-analytics-platform');
+  });
+
+  it('emits a card frame for a valid slug, then the answer, and persists only the prose', async () => {
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'agentic-analytics-platform' } }))
+      .mockImplementationOnce(model(['It tracks brand ', 'performance.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    const events = frames(state.text);
+    const cardAt = events.findIndex(event => event.card);
+    expect(events[cardAt].card).toEqual(WORK_CARD);
+    expect(cardAt).toBeLessThan(events.findIndex(event => event.text));
+    expect(events.at(-1)).toEqual({ done: true });
+    const second = dependencies.generateContentStream.mock.calls[1][0];
+    expect(second.model).toBe(dependencies.generateContentStream.mock.calls[0][0].model);
+    const [modelTurn, toolTurn] = second.contents.slice(-2);
+    expect(modelTurn).toMatchObject({ role: 'model', parts: [{ functionCall: { name: 'show_work' }, thoughtSignature: 'sig' }] });
+    expect(toolTurn).toMatchObject({ role: 'user', parts: [{ functionResponse: { id: 'call-0', name: 'show_work', response: { shown: true, card: WORK_CARD } } }] });
+    expect(dependencies.appendTurn.mock.calls[1][1].t).toBe('It tracks brand performance.');
+  });
+
+  it('shows no card for an unknown slug and still answers', async () => {
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'invented-project' } }, { name: 'drop_tables' }))
+      .mockImplementationOnce(model(['Nothing like that is documented.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    const events = frames(state.text);
+    expect(events.some(event => event.card)).toBe(false);
+    expect(state.text).toContain('Nothing like that is documented.');
+    expect(state.text).toContain('"done":true');
+    const responses = dependencies.generateContentStream.mock.calls[1][0].contents.at(-1).parts;
+    expect(responses.map((part: { functionResponse: { response: { shown: boolean } } }) => part.functionResponse.response.shown)).toEqual([false, false]);
+  });
+
+  it('bounds the tool loop and forces a text answer on the last round', async () => {
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'agentic-analytics-platform' } }))
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'agentic-analytics-platform' } }))
+      .mockImplementationOnce(model(['Final words.']))
+      .mockImplementation(calls({ name: 'show_now' }));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(dependencies.generateContentStream).toHaveBeenCalledTimes(3);
+    const modes = dependencies.generateContentStream.mock.calls.map(([request]) => request.config.toolConfig.functionCallingConfig.mode);
+    expect(modes).toEqual(['AUTO', 'AUTO', 'NONE']);
+    expect(frames(state.text).filter(event => event.card)).toHaveLength(1);
+    expect(state.text).toContain('Final words.');
+  });
+
+  it('never puts more than four things on screen in one answer', async () => {
+    const card = (slug: string) => ({ ...WORK_CARD, slug, url: `/work/${slug}` });
+    const slugs = ['a', 'b', 'c', 'd', 'e'];
+    dependencies.buildCardIndex.mockResolvedValue({ ...CARD_INDEX, work: Object.fromEntries(slugs.map(slug => [slug, card(slug)])) });
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls(...slugs.map(slug => ({ name: 'show_work', args: { slug } }))))
+      .mockImplementationOnce(model(['Five projects.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(frames(state.text).filter(event => event.card).map(event => event.card.slug)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('does not fall back to another model once a card has been sent', async () => {
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'agentic-analytics-platform' } }))
+      .mockRejectedValueOnce(new ApiError(503))
+      .mockImplementation(model(['From another model.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('"card":');
+    expect(state.text).toContain('"error":');
+    expect(state.text).not.toContain('From another model.');
+    expect(dependencies.generateContentStream).toHaveBeenCalledTimes(2);
+    expect(dependencies.appendTurn).not.toHaveBeenCalled();
+  });
+
+  it('still answers when the card index cannot be built', async () => {
+    dependencies.buildCardIndex.mockRejectedValue(new Error('disk'));
+    dependencies.generateContentStream
+      .mockImplementationOnce(calls({ name: 'show_work', args: { slug: 'agentic-analytics-platform' } }))
+      .mockImplementationOnce(model(['Prose only.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).not.toContain('"card":');
+    expect(state.text).toContain('Prose only.');
+    expect(state.text).toContain('"done":true');
+  });
+
+  it('separates prose written before and after a tool call', async () => {
+    dependencies.generateContentStream
+      .mockImplementationOnce(async () => (async function* () {
+        yield chunk({ text: 'Here is the project.' });
+        yield chunk({ functionCall: { name: 'show_work', args: { slug: 'agentic-analytics-platform' } } });
+      })())
+      .mockImplementationOnce(model(['It tracks brands.']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('"done":true');
+    expect(dependencies.appendTurn.mock.calls[1][1].t).toBe('Here is the project.\n\nIt tracks brands.');
+  });
+
+  it('refuses without a Gemini key rather than failing mid-stream', async () => {
+    vi.resetModules();
+    vi.doMock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? 'production' : undefined }));
+    const { POST: keyless } = await import('../../pages/api/chat');
+    const response = await keyless({ request: new Request('https://jodybrewster.dev/api/chat', {
+      method: 'POST', body: JSON.stringify({ query: 'hi' }), headers: { 'Content-Type': 'application/json' },
+    }) } as Parameters<typeof keyless>[0]) as Response;
+    expect(response.status).toBe(503);
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
+    vi.doUnmock('../env');
   });
 });

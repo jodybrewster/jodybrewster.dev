@@ -31,7 +31,6 @@ import {
   Scene,
   SRGBColorSpace,
   Texture,
-  TorusGeometry,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -42,17 +41,18 @@ import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectCom
 import type { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import type { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { CSS3DObject, CSS3DRenderer } from 'three/examples/jsm/renderers/CSS3DRenderer.js';
-import type { ShelfAlbum, ShelfBook, ShelfItem, ShelfNotebook } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame, ShelfItem } from './media';
 import { seededUnit } from './media';
 import type { ShelfStore } from './scene-state';
 import {
   albumBackTexture,
+  casePlastic,
   fallbackCoverTexture,
   fontsReady,
+  gameCoverTexture,
+  gameSpineTexture,
   loadCoverTexture,
-  notebookCoverTexture,
-  notebookPageTexture,
+  loadImage,
   pageEdgeTexture,
   plaqueTexture,
   sampleCoverPalette,
@@ -65,10 +65,10 @@ import type { SpinePalette } from './textures';
 export interface ShelfPayload {
   albums: ShelfAlbum[];
   books: ShelfBook[];
-  notebooks: ShelfNotebook[];
+  games: ShelfGame[];
   listeningLabel: string;
   libraryLabel: string;
-  notebookLabel: string;
+  gamesLabel: string;
 }
 
 export interface LibrarySceneOptions {
@@ -100,7 +100,18 @@ const ALBUM_CASE_DEPTH = ALBUM_SIZE * 0.07;
 const ALBUM_ROW_HEIGHT = ALBUM_SIZE + 0.55;
 const ALBUMS_PER_ROW = 9;
 
-const NOTEBOOK_ROW_HEIGHT = 2.58;
+/** Game cases at real size against the jewel cases: a 142mm CD case is
+ *  ALBUM_SIZE across, so this is one centimetre in world units. */
+const CM = ALBUM_SIZE / 14.2;
+const GAME_CASES: Record<GameSystem, { width: number; height: number; depth: number }> = {
+  switch: { width: 10.5 * CM, height: 17 * CM, depth: 1.0 * CM },
+  ps5: { width: 13.5 * CM, height: 17 * CM, depth: 1.4 * CM },
+  other: { width: 13.5 * CM, height: 19 * CM, depth: 1.4 * CM },
+};
+/** Five cases spread to the full width stand too far apart to read as a set.
+ *  Past this they close up rather than drift further apart. */
+const GAME_SLOT_MAX = 1.75;
+const GAME_ROW_HEIGHT = 1.92;
 const BOOK_ROW_HEIGHT = 3.44;
 
 /** Per-frame ceiling for drawing spine artwork. Comfortably inside a 60fps
@@ -140,13 +151,13 @@ const PRESENTATION = {
     tilt: { x: 0.075, y: 0.52, z: 0.05 },
     spinTurns: 0,
   },
-  notebook: {
-    // Sized against the opened spread, not the closed notebook, so the ruled
-    // page lands big enough to actually read.
-    fill: 0.84,
-    shiftX: 0,
+  game: {
+    // Turned a little toward its spine, which carries the platform band and
+    // the title, so the case reads as an object and not a flat picture.
+    fill: 0.74,
+    shiftX: -0.13,
     shiftY: 0,
-    tilt: { x: 0.05, y: -0.16, z: 0.015 },
+    tilt: { x: 0.05, y: 0.34, z: 0.02 },
     spinTurns: 0,
   },
 } as const;
@@ -163,10 +174,6 @@ const MAX_WIDTH_FIT = 1.08;
 const DRAG_SLOP = 6;
 
 const SETTLE_EPSILON = 0.0006;
-/** Seconds for the site's notebook to travel between held-open and shelved. */
-const SITE_FOLD_SECONDS = 1.05;
-/** Beat the notebook stays open on arrival before it closes. */
-const SITE_FOLD_HOLD = 0.7;
 /** Seconds for a selected item to unwind its entry spin. */
 const SPIN_SECONDS = 0.9;
 const Y_AXIS = new Vector3(0, 1, 0);
@@ -174,7 +181,7 @@ const Y_AXIS = new Vector3(0, 1, 0);
 interface ItemView {
   id: string;
   item: ShelfItem;
-  /** Pickable root. Books and albums are meshes, notebooks are groups. */
+  /** Pickable root. */
   object: Object3D;
   restPosition: Vector3;
   restQuaternion: Quaternion;
@@ -196,8 +203,6 @@ interface ItemView {
   closeUpShift: { x: number; y: number };
   /** Materials whose emissive is raised while hovered or active. */
   lit: MeshStandardMaterial[];
-  /** Notebook front cover pivot. */
-  hinge?: Object3D;
   /** Lazily swapped in when a book is opened up close. */
   coverMaterial?: MeshStandardMaterial;
   coverLoaded?: boolean;
@@ -270,29 +275,19 @@ export class LibraryScene {
    */
   #pendingSpines = new Set<string>();
   #spinePaint = 0;
+  /** Game case faces, redrawn when their box art or the webfonts land. */
+  #gameFaces = new Map<string, {
+    game: ShelfGame;
+    front: MeshPhysicalMaterial;
+    spine: MeshPhysicalMaterial;
+    frontAspect: number;
+    spineAspect: number;
+    image?: HTMLImageElement | null;
+  }>();
 
   #composer: EffectComposer | null = null;
   #gtao: GTAOPass | null = null;
   #lens: ShaderPass | null = null;
-  /** Second renderer for the live page set into the notebook. */
-  #cssRenderer: CSS3DRenderer | null = null;
-  #page: {
-    object: CSS3DObject;
-    element: HTMLElement;
-    notebookId: string;
-    parent: Object3D;
-  } | null = null;
-  /** Where a mounted page sits, keyed by notebook id. */
-  #pageSlots = new Map<string, { parent: Object3D; width: number; height: number; z: number }>();
-  #docked = false;
-  /** One-shot arrival animation: the site's notebook closing onto the shelf. */
-  #siteFold: {
-    id: string;
-    progress: number;
-    direction: 1 | -1;
-    hold: number;
-    settle: () => void;
-  } | null = null;
   #keyLight: DirectionalLight | null = null;
   #lastActive: string | null = null;
   #reduced: boolean;
@@ -407,12 +402,6 @@ export class LibraryScene {
     this.#updateCamera(0);
     if (this.#composer) this.#composer.render();
     else this.#renderer.render(this.#scene, this.#camera);
-
-    this.#updatePage();
-    // While docked the page has been lifted out of the 3D layer into a plain
-    // full-window element. Rendering the layer would stamp the scene's matrix
-    // back onto it and fight the takeover.
-    if (!this.#docked) this.#cssRenderer?.render(this.#scene, this.#camera);
   }
 
   /**
@@ -680,12 +669,12 @@ export class LibraryScene {
       }
     }
 
-    if (payload.notebooks.length) {
+    if (payload.games.length) {
       rows.push({
-        kind: 'notebook',
-        items: payload.notebooks,
-        height: NOTEBOOK_ROW_HEIGHT,
-        label: payload.notebookLabel,
+        kind: 'game',
+        items: payload.games,
+        height: GAME_ROW_HEIGHT,
+        label: payload.gamesLabel,
         bottomY: 0,
       });
     }
@@ -879,8 +868,8 @@ export class LibraryScene {
         case 'album':
           this.#buildAlbumRow(row as ShelfRow<ShelfAlbum>, rowIndex, hingeGeometry, hingeMaterial);
           break;
-        case 'notebook':
-          this.#buildNotebookRow(row as ShelfRow<ShelfNotebook>, rowIndex);
+        case 'game':
+          this.#buildGameRow(row as ShelfRow<ShelfGame>, rowIndex);
           break;
         case 'book':
           this.#buildBookRow(row as ShelfRow<ShelfBook>, rowIndex, pageMaterial);
@@ -1099,137 +1088,120 @@ export class LibraryScene {
   }
 
   /**
-   * Notebooks stand cover-out rather than spine-out. Their whole point is that
-   * the cover names a piece of writing, and a wire binding seen edge-on just
-   * reads as a ladder.
+   * Game cases stand cover-out. Spine-out, five of them would be a finger's
+   * width of red on a shelf built for eighty books; the box art is the point.
+   * They are spaced as a set rather than stretched to the walls, each set back
+   * and turned a little differently, tipped back as a propped case stands.
    */
-  #buildNotebookRow(row: ShelfRow<ShelfNotebook>, rowIndex: number): void {
+  #buildGameRow(row: ShelfRow<ShelfGame>, rowIndex: number): void {
     const count = Math.max(1, row.items.length);
-    const spacing = Math.min(1.72, (INTERIOR_WIDTH - ROW_PAD * 2) / count);
-    let x = -((count - 1) * spacing) / 2;
+    const slot = Math.min(GAME_SLOT_MAX, (INTERIOR_WIDTH - ROW_PAD * 2) / count);
+    let x = -((count - 1) * slot) / 2;
+    // One case out of true, so the row reads as put there by hand. Chosen off
+    // the ids, so it is the same case on every visit.
+    const leaning = row.items.length > 2
+      ? row.items.reduce((best, game) =>
+        seededUnit(`${game.id}-lean`) > seededUnit(`${best.id}-lean`) ? game : best).id
+      : '';
 
-    const ringGeometry = new TorusGeometry(0.052, 0.013, 6, 16);
-    const ringMaterial = new MeshStandardMaterial({
-      color: 0xc2c5c9,
-      roughness: 0.3,
-      metalness: 0.85,
-    });
-    this.#cleanup.push(() => {
-      ringGeometry.dispose();
-      ringMaterial.dispose();
-    });
-
-    for (const notebook of row.items) {
-      const width = jitter(`${notebook.id}-w`, 1.22, 1.4);
-      const height = jitter(`${notebook.id}-h`, 1.78, 2.0);
-      const thickness = jitter(`${notebook.id}-t`, 0.28, 0.4);
-      const board = 0.035;
-
-      const group = new Group();
-      group.position.set(
-        x,
-        row.bottomY + height / 2 + 0.02,
-        INTERIOR_DEPTH / 2 - thickness / 2 - jitter(`${notebook.id}-set`, 0.12, 0.3),
-      );
-      // Leaned back against the shelf, the way a display copy actually stands.
-      group.rotation.x = jitter(`${notebook.id}-tip`, -0.07, -0.03);
-      group.rotation.z = jitter(`${notebook.id}-lean`, -0.02, 0.02);
-      group.userData.id = notebook.id;
-
-      const coverTexture = notebookCoverTexture(notebook);
-      const coverMaterial = new MeshStandardMaterial({ map: coverTexture, roughness: 0.84 });
-      const backMaterial = new MeshStandardMaterial({
-        color: new Color(notebook.color),
-        roughness: 0.88,
+    for (const game of row.items) {
+      const { width, height, depth } = GAME_CASES[game.system];
+      const plastic = new MeshPhysicalMaterial({
+        color: new Color(casePlastic(game.system)),
+        roughness: 0.34,
+        metalness: 0,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.12,
+        envMapIntensity: 1.2,
       });
-      const pageTexture = notebookPageTexture(notebook);
-      const leafMaterial = new MeshStandardMaterial({ map: pageTexture, roughness: 0.94 });
-      const blockMaterial = new MeshStandardMaterial({ color: 0xeee7d6, roughness: 0.95 });
+      // Printed insert under the clear sleeve, the same finish as a jewel
+      // case's card: the clearcoat is what throws a highlight across the art.
+      const sleeve = {
+        roughness: 0.28,
+        metalness: 0,
+        clearcoat: 1,
+        clearcoatRoughness: 0.03,
+        envMapIntensity: 1.4,
+      };
+      const frontAspect = width / height;
+      const spineAspect = height / depth;
+      const front = new MeshPhysicalMaterial({ ...sleeve, map: gameCoverTexture(game, frontAspect) });
+      const spine = new MeshPhysicalMaterial({ ...sleeve, map: gameSpineTexture(game, spineAspect) });
 
-      // Page block. Its front face carries the ruled page the cover hides.
-      const block = new Mesh(new BoxGeometry(width - 0.03, height - 0.05, thickness - board * 2), [
-        blockMaterial,
-        blockMaterial,
-        blockMaterial,
-        blockMaterial,
-        leafMaterial,
-        blockMaterial,
+      const mesh = new Mesh(new BoxGeometry(width, height, depth), [
+        plastic, // +x opening edge
+        spine, // -x spine, on the left as the cover faces you
+        plastic, // +y
+        plastic, // -y
+        front, // +z cover
+        plastic, // -z back
       ]);
-      block.castShadow = true;
-      block.receiveShadow = true;
-      group.add(block);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.position.set(
+        x + jitter(`${game.id}-x`, -0.1, 0.1),
+        row.bottomY + height / 2 + 0.02,
+        INTERIOR_DEPTH / 2 - depth / 2 - jitter(`${game.id}-set`, 0.22, 0.5),
+      );
+      mesh.rotation.set(
+        jitter(`${game.id}-tip`, -0.11, -0.07),
+        jitter(`${game.id}-turn`, -0.09, 0.09),
+        game.id === leaning ? 0.06 : jitter(`${game.id}-roll`, -0.012, 0.012),
+      );
+      mesh.userData.id = game.id;
 
-      const back = new Mesh(new BoxGeometry(width, height, board), backMaterial);
-      back.position.z = -thickness / 2 + board / 2;
-      back.castShadow = true;
-      group.add(back);
-
-      // Front cover, hinged on the bound left edge like a real notebook.
-      const hinge = new Object3D();
-      hinge.position.set(-width / 2, 0, thickness / 2 - board / 2);
-      const front = new Mesh(new BoxGeometry(width, height, board), coverMaterial);
-      front.position.x = width / 2;
-      front.castShadow = true;
-      hinge.add(front);
-      group.add(hinge);
-
-      // Wire binding down that same edge.
-      const rings = Math.max(9, Math.round(height / 0.15));
-      for (let i = 0; i < rings; i += 1) {
-        const ring = new Mesh(ringGeometry, ringMaterial);
-        ring.rotation.y = Math.PI / 2;
-        ring.position.set(
-          -width / 2 + 0.03,
-          -height / 2 + 0.1 + (i * (height - 0.2)) / (rings - 1),
-          0,
-        );
-        ring.castShadow = true;
-        group.add(ring);
-      }
-
-      this.#pageSlots.set(notebook.id, {
-        parent: group,
-        width: width - 0.03,
-        height: height - 0.05,
-        z: thickness / 2 + 0.006,
-      });
-
-      this.#unit.add(group);
+      this.#unit.add(mesh);
       this.#register({
-        id: notebook.id,
-        item: notebook,
-        object: group,
+        id: game.id,
+        item: game,
+        object: mesh,
         hoverAxis: new Vector3(0, 0, 1),
-        // Already facing the reader, so it only needs to come forward and open.
         activeSpin: new Quaternion().setFromEuler(
-          new Euler(
-            PRESENTATION.notebook.tilt.x,
-            PRESENTATION.notebook.tilt.y,
-            PRESENTATION.notebook.tilt.z,
-          ),
+          new Euler(PRESENTATION.game.tilt.x, PRESENTATION.game.tilt.y, PRESENTATION.game.tilt.z),
         ),
-        // Extra room across: the cover swings out well past the notebook's own
-        // width, and the opened spread is what has to fit.
-        closeUpSize: { width: width * 1.55, height },
-        closeUpFill: PRESENTATION.notebook.fill,
-        closeUpShift: { x: PRESENTATION.notebook.shiftX, y: PRESENTATION.notebook.shiftY },
-        spinTurns: PRESENTATION.notebook.spinTurns,
-        lit: [coverMaterial, leafMaterial],
-        hinge,
+        closeUpSize: { width: width + depth, height },
+        closeUpFill: PRESENTATION.game.fill,
+        closeUpShift: { x: PRESENTATION.game.shiftX, y: PRESENTATION.game.shiftY },
+        spinTurns: PRESENTATION.game.spinTurns,
+        lit: [front, spine],
         rowIndex,
       });
 
+      this.#gameFaces.set(game.id, { game, front, spine, frontAspect, spineAspect });
+      // Five covers, all facing out and all in view: loaded up front, unlike
+      // the book jackets, which only ever show once a book is turned round.
+      if (game.cover) {
+        void loadImage(game.cover).then(image => {
+          const face = this.#gameFaces.get(game.id);
+          if (!face || this.#disposed || !image) return;
+          face.image = image;
+          this.#redrawGame(game.id);
+          this.#invalidate();
+        });
+      }
+
       this.#cleanup.push(() => {
-        coverTexture.dispose();
-        pageTexture.dispose();
-        coverMaterial.dispose();
-        backMaterial.dispose();
-        leafMaterial.dispose();
-        blockMaterial.dispose();
+        front.map?.dispose();
+        front.dispose();
+        spine.map?.dispose();
+        spine.dispose();
+        plastic.dispose();
       });
 
-      x += spacing;
+      x += slot;
     }
+  }
+
+  /** Reprints a case's faces, keeping whatever art has arrived for it. */
+  #redrawGame(id: string): void {
+    const face = this.#gameFaces.get(id);
+    if (!face || this.#disposed) return;
+    face.front.map?.dispose();
+    face.front.map = gameCoverTexture(face.game, face.frontAspect, face.image);
+    face.front.needsUpdate = true;
+    face.spine.map?.dispose();
+    face.spine.map = gameSpineTexture(face.game, face.spineAspect);
+    face.spine.needsUpdate = true;
   }
 
   #register(
@@ -1258,7 +1230,6 @@ export class LibraryScene {
     this.#renderer.setSize(width, height, false);
     this.#composer?.setPixelRatio(this.#renderer.getPixelRatio());
     this.#composer?.setSize(width, height);
-    this.#cssRenderer?.setSize(width, height);
     this.#gtao?.setSize(width, height);
     this.#camera.aspect = width / height;
 
@@ -1307,9 +1278,7 @@ export class LibraryScene {
   #updateCamera(delta: number): void {
     const targetY = this.#cameraTopY + (this.#cameraBottomY - this.#cameraTopY) * this.#scrollProgress;
 
-    // Nothing moves during the handoff: a drifting camera under a page that is
-    // itself resizing reads as the whole scene sliding.
-    if (this.#reduced || this.#siteFold || this.#docked) {
+    if (this.#reduced) {
       this.#parallaxTarget.set(0, 0);
       this.#parallax.set(0, 0);
     } else {
@@ -1547,162 +1516,6 @@ export class LibraryScene {
     });
   }
 
-  /**
-   * Sets a live DOM element into a notebook's page.
-   *
-   * Rendered by CSS3DRenderer on a second layer that shares this camera, so it
-   * is real interactive markup sitting exactly where the page is, not a picture
-   * of one. The two layers do not share a depth buffer, so the page is only
-   * shown once the notebook is open and facing the reader, and is pulled the
-   * moment the cover starts back across it.
-   */
-  mountPage(notebookId: string, element: HTMLElement): void {
-    const slot = this.#pageSlots.get(notebookId);
-    if (!slot || this.#disposed) return;
-
-    // Mounting twice would leave an orphaned layer holding a stale reference,
-    // and the stranded one never gets hidden again.
-    this.#teardownPage();
-
-    const css = new CSS3DRenderer();
-    css.setSize(this.#options.stage.clientWidth, this.#options.stage.clientHeight);
-    const layer = css.domElement;
-    layer.style.position = 'absolute';
-    layer.style.inset = '0';
-    // The layer must not swallow pointer events meant for the shelf; only the
-    // page itself takes them, and only while it is visible.
-    layer.style.pointerEvents = 'none';
-    this.#options.stage.appendChild(layer);
-
-    // CSS3D maps one CSS pixel to one world unit, so the element is authored at
-    // a readable pixel size and scaled down to the page's real dimensions.
-    const pixelWidth = 1000;
-    const pixelHeight = Math.round(pixelWidth * (slot.height / slot.width));
-    element.style.width = `${pixelWidth}px`;
-    element.style.height = `${pixelHeight}px`;
-    element.dataset.pageWidth = `${pixelWidth}px`;
-    element.dataset.pageHeight = `${pixelHeight}px`;
-    element.style.pointerEvents = 'auto';
-
-    // CSS3DRenderer only inserts the element once it is first shown, and an
-    // iframe that is not in the document never fetches. Park it in a hidden
-    // holder so the site is loaded and painted before the page is revealed.
-    const holder = document.createElement('div');
-    holder.setAttribute('aria-hidden', 'true');
-    holder.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;opacity:0';
-    holder.appendChild(element);
-    this.#options.stage.appendChild(holder);
-    this.#cleanup.push(() => holder.remove());
-
-    const object = new CSS3DObject(element);
-    object.visible = false;
-    object.position.set(0, 0, slot.z);
-    object.scale.setScalar(slot.width / pixelWidth);
-    slot.parent.add(object);
-
-    this.#cssRenderer = css;
-    this.#page = { object, element, notebookId, parent: slot.parent };
-    this.#cleanup.push(() => this.#teardownPage());
-    this.#invalidate();
-  }
-
-  #teardownPage(): void {
-    this.#page?.parent.remove(this.#page.object);
-    this.#cssRenderer?.domElement.remove();
-    this.#cssRenderer = null;
-    this.#page = null;
-  }
-
-  /** True while the page is square enough to the reader to be readable. */
-  isPageOpen(): boolean {
-    const page = this.#page;
-    if (!page) return false;
-    const view = this.#views.get(page.notebookId);
-    const open = view?.hinge ? Math.abs(view.hinge.rotation.y) : 0;
-    const engaged = this.#store.state.active === page.notebookId
-      || this.#siteFold?.id === page.notebookId;
-    // Below half open the cover starts crossing the page, and the page cannot
-    // be occluded by it, so it has to be gone before then.
-    return engaged && open > Math.PI * 0.5;
-  }
-
-  /**
-   * Plays the site's notebook between held-open and shelved.
-   *
-   * `-1` puts it away, which is the arrival animation: the shelf opens on the
-   * notebook already open in front of the reader, page showing, and closes it
-   * onto the shelf. Resolves when it lands, or on a timeout so a background tab
-   * can never strand it.
-   */
-  /** Places the folding notebook at a given point between shelf and held-open. */
-  #poseSiteFold(view: ItemView, progress: number): void {
-    const p = progress * progress * (3 - 2 * progress);
-    const position = new Vector3();
-    const quaternion = new Quaternion();
-    this.#activePose(view, position, quaternion);
-    view.object.position.lerpVectors(view.restPosition, position, p);
-    view.object.quaternion.copy(view.restQuaternion).slerp(quaternion, p);
-    view.baseQuaternion.copy(view.object.quaternion);
-    if (view.hinge) view.hinge.rotation.y = -Math.PI * 0.78 * p;
-  }
-
-  /** Releases a fold that was posed and held, letting it run. */
-  releaseSiteFold(): void {
-    if (this.#siteFold) this.#siteFold.hold = 0;
-    this.#invalidate();
-  }
-
-  playSiteFold(id: string, direction: 1 | -1, holdSeconds?: number): Promise<void> {
-    const view = this.#views.get(id);
-    if (!view || this.#disposed) return Promise.resolve();
-
-    return new Promise<void>(resolve => {
-      let done = false;
-      const settle = () => {
-        if (done) return;
-        done = true;
-        resolve();
-      };
-      this.#siteFold = {
-        id,
-        progress: direction > 0 ? 0 : 1,
-        direction,
-        hold: holdSeconds ?? (direction < 0 ? SITE_FOLD_HOLD : 0),
-        settle,
-      };
-      // Pose it now rather than on the next animation frame: callers render
-      // immediately to find where the page has landed, and an unposed notebook
-      // reports the page as shut.
-      this.#poseSiteFold(view, this.#siteFold.progress);
-      this.#animating.add(id);
-      this.#invalidate();
-      if (holdSeconds === undefined) {
-        window.setTimeout(settle, (SITE_FOLD_SECONDS + SITE_FOLD_HOLD) * 1000 + 600);
-      }
-    });
-  }
-
-  /** Shows the page only while its notebook is open and turned to the reader. */
-  #updatePage(): void {
-    const page = this.#page;
-    if (!page) return;
-    // The object is left visible so CSS3DRenderer never writes display:none on
-    // the element. The page is an iframe holding the live site, and Blink drops
-    // a display:none iframe's document and loads it again when display returns
-    // - the site would be reloading at the exact moment the book opened, which
-    // is why it was never actually seen on the page. visibility keeps the
-    // document alive and is enough to keep the page off a shut book.
-    page.object.visible = true;
-    page.element.style.visibility =
-      this.#docked || this.isPageOpen() ? 'visible' : 'hidden';
-  }
-
-  /** While docked the page has left the book and covers the viewport. */
-  setPageDocked(docked: boolean): void {
-    this.#docked = docked;
-    this.#invalidate();
-  }
-
   /** Public entry used by the overlay when a control receives focus. */
   focus(id: string): void {
     const view = this.#views.get(id);
@@ -1763,31 +1576,6 @@ export class LibraryScene {
       const isActive = active === id;
       const isHovered = hovered === id && !isActive;
 
-      // Mid-fold the notebook is driven straight off a clock, so the arrival
-      // lands on an exact frame instead of easing in from wherever it was.
-      const fold = this.#siteFold;
-      if (fold && fold.id === id) {
-        // Held open for a beat first, so the site on the inner page is actually
-        // readable before the cover comes across it.
-        if (fold.hold > 0) {
-          fold.hold -= delta;
-          this.#invalidate();
-        }
-        if (fold.hold <= 0) fold.progress = Math.min(1, Math.max(
-          0,
-          fold.progress + (delta / SITE_FOLD_SECONDS) * fold.direction,
-        ));
-
-        this.#poseSiteFold(view, fold.progress);
-
-        if (fold.progress === (fold.direction > 0 ? 1 : 0)) {
-          this.#siteFold = null;
-          fold.settle();
-          if (fold.direction < 0) settled.push(id);
-        }
-        continue;
-      }
-
       if (isActive) {
         this.#activePose(view, targetPosition, targetQuaternion);
       } else {
@@ -1814,12 +1602,6 @@ export class LibraryScene {
         view.object.quaternion.multiply(spinQuaternion.setFromAxisAngle(Y_AXIS, spinAngle));
       }
 
-      // Notebooks open their cover only once they are turned toward the reader.
-      if (view.hinge) {
-        const openTo = isActive ? -Math.PI * 0.78 : 0;
-        view.hinge.rotation.y += (openTo - view.hinge.rotation.y) * ease;
-      }
-
       // Kept low: emissive lifts blacks, and album art goes grey long before
       // the highlight reads as "lit". Hover needs it more than active, which is
       // already framed and unmistakable.
@@ -1832,10 +1614,7 @@ export class LibraryScene {
 
       const positionSettled = view.object.position.distanceToSquared(targetPosition) < SETTLE_EPSILON;
       const rotationSettled = Math.abs(view.baseQuaternion.dot(targetQuaternion)) > 0.99999;
-      const hingeSettled = !view.hinge
-        || Math.abs(view.hinge.rotation.y - (isActive ? -Math.PI * 0.78 : 0)) < 0.001;
-
-      if (positionSettled && rotationSettled && hingeSettled && !isActive) {
+      if (positionSettled && rotationSettled && !isActive) {
         view.object.position.copy(targetPosition);
         view.baseQuaternion.copy(targetQuaternion);
         view.object.quaternion.copy(targetQuaternion);
@@ -1885,6 +1664,8 @@ export class LibraryScene {
     // blocking first paint on fonts.
     for (const id of this.#spines.keys()) this.#pendingSpines.add(id);
     if (!this.#spinePaint) this.#paintSpines();
+    for (const id of this.#gameFaces.keys()) this.#redrawGame(id);
+    this.#invalidate();
   }
 
   /**
@@ -1969,6 +1750,7 @@ export class LibraryScene {
     for (const texture of this.#coverCache.values()) texture.dispose();
     this.#coverCache.clear();
     this.#spines.clear();
+    this.#gameFaces.clear();
     this.#scene.traverse(object => {
       if (object instanceof Mesh) object.geometry.dispose();
     });
@@ -1979,7 +1761,7 @@ export class LibraryScene {
 }
 
 interface ShelfRow<T extends ShelfItem = ShelfItem> {
-  kind: 'album' | 'book' | 'notebook';
+  kind: 'album' | 'book' | 'game';
   items: T[];
   height: number;
   label: string;

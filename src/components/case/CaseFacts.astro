@@ -1,0 +1,62 @@
+---
+import Icon from '../Icon.astro';
+import type { WorkPresentation } from '../../lib/work-presentation';
+
+interface Props {
+  role: string;
+  sector: string;
+  duration: string;
+  presentation?: WorkPresentation;
+  variant?: 'page' | 'chat';
+}
+const { role, sector, duration, presentation, variant = 'page' } = Astro.props;
+const chat = variant === 'chat';
+const facts = [
+  { label: 'Role', value: role, icon: 'user' },
+  { label: 'Sector', value: sector, icon: 'building' },
+  { label: 'Timeline', value: duration, icon: 'clock' },
+  ...(presentation ? [
+    { label: 'Scale', value: presentation.scale, icon: 'layers' },
+    { label: 'Outcome', value: presentation.outcome, icon: 'target' },
+  ] : []),
+];
+---
+{chat ? (
+  <aside class="case-facts is-chat" aria-label="At a glance">
+    <p class="studio-eyebrow">At a glance</p>
+    <dl>{facts.map(fact => <div class="case-fact"><Icon name={fact.icon} class="icon" /><div><dt>{fact.label}</dt><dd>{fact.value}</dd></div></div>)}</dl>
+  </aside>
+) : (
+  <aside class="case-facts" aria-labelledby="case-facts-title">
+    <h2 id="case-facts-title" class="studio-eyebrow">At a glance</h2>
+    <dl>{facts.map(fact => <div class="case-fact"><Icon name={fact.icon} class="icon" /><div><dt>{fact.label}</dt><dd>{fact.value}</dd></div></div>)}</dl>
+  </aside>
+)}
+
+<style>
+  .case-facts { border: 1px solid var(--studio-rule); border-radius: 10px; padding: 26px; background: var(--studio-surface); }
+  .case-facts h2 { margin: 0 0 24px; }
+  .case-facts dl { margin: 0; display: grid; gap: 22px; }
+  .case-fact { display: grid; grid-template-columns: 20px 1fr; align-items: start; gap: 14px; }
+  .case-fact > .icon { width: 19px; height: 19px; margin-top: 2px; color: var(--studio-muted); }
+  .case-fact dt { color: var(--studio-muted); font-size: 10px; font-weight: 500; line-height: 1.6; margin: 0 0 3px; }
+  .case-fact dd { color: var(--studio-ink); font-size: 12px; line-height: 1.6; font-weight: 400; margin: 0; }
+
+  /* The chat column is wider than the page's sidebar, so the three short facts
+     share a row and the two sentences below span it. Narrow columns fall back
+     to the page's single list. */
+  .is-chat { container-type: inline-size; padding: 20px 22px 22px; }
+  .is-chat .studio-eyebrow { margin: 0 0 18px; font-size: 10px; }
+  .is-chat dl { gap: 18px; }
+  @container (min-width: 500px) {
+    .is-chat dl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 20px; }
+    .is-chat .case-fact:nth-child(n + 4) { grid-column: 1 / -1; }
+  }
+  @media (max-width: 900px) and (min-width: 721px) {
+    .case-facts:not(.is-chat) { padding: 20px; }
+  }
+  @media (max-width: 720px) {
+    .case-facts:not(.is-chat) { padding: 22px; }
+    .case-facts:not(.is-chat) dl { gap: 18px; }
+  }
+</style>

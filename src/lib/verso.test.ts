@@ -3,21 +3,16 @@ import {
   MAX_HISTORY_CHARS,
   MAX_HISTORY_TURNS,
   buildMessages,
-  chunkForTyping,
   isValidConversationId,
   normalizeTurns,
   retrievalQuery,
-  typingDelayMs,
   type ConversationTurn,
 } from './verso';
 
 const turn = (r: 'u' | 'a', t: string, ts = 0): ConversationTurn => ({ r, t, ts });
 
-const words = (input: string): string[] => input.split(/\s+/).filter(Boolean);
-
-/** Roughly 4000 characters of ordinary prose, which is the length a long answer
- *  actually runs to. */
-const LONG_REPLY = 'lorem ipsum dolor sit amet consectetur adipiscing elit '.repeat(80).slice(0, 4000);
+/** The one text part every prompt message carries. */
+const text = (message: { parts: [{ text: string }] }): string => message.parts[0].text;
 
 describe('isValidConversationId', () => {
   it('accepts a canonical UUID', () => {
@@ -82,9 +77,10 @@ describe('normalizeTurns', () => {
     expect(turns.map(entry => entry.t)).toEqual(['ask', 'answer']);
   });
 
-  it('carries the author of an assistant turn through', () => {
-    const turns = normalizeTurns([turn('u', 'ask'), { r: 'a', t: 'answer', ts: 1, by: 'human' }]);
-    expect(turns[1].by).toBe('human');
+  it('drops fields a stored turn should not carry', () => {
+    const stored = { r: 'a', t: 'answer', ts: 1, by: 'human' } as unknown as ConversationTurn;
+    const turns = normalizeTurns([turn('u', 'ask'), stored]);
+    expect(turns[1]).toEqual({ r: 'a', t: 'answer', ts: 1 });
   });
 });
 
@@ -122,9 +118,9 @@ describe('buildMessages', () => {
       BLOCK,
     );
     expect(messages.map(message => message.role)).toEqual([
-      'user', 'assistant', 'user', 'assistant', 'user',
+      'user', 'model', 'user', 'model', 'user',
     ]);
-    expect(messages[messages.length - 1].content).toBe(
+    expect(text(messages[messages.length - 1])).toBe(
       `Question: five\n\nExcerpts from Jody's published writing:\n\n${BLOCK}`,
     );
   });
@@ -134,7 +130,7 @@ describe('buildMessages', () => {
       turn(i % 2 === 0 ? 'u' : 'a', `turn ${i}`, i));
     const messages = buildMessages(history, 'now', BLOCK);
     expect(messages).toHaveLength(MAX_HISTORY_TURNS + 1);
-    expect(messages[0].content).toBe('turn 4');
+    expect(text(messages[0])).toBe('turn 4');
     expect(messages[0].role).toBe('user');
   });
 
@@ -143,22 +139,22 @@ describe('buildMessages', () => {
       turn(i % 2 === 0 ? 'u' : 'a', String(i).repeat(800), i));
     const messages = buildMessages(history, 'now', BLOCK);
     const kept = messages.slice(0, -1);
-    expect(kept.reduce((total, message) => total + message.content.length, 0))
+    expect(kept.reduce((total, message) => total + text(message).length, 0))
       .toBeLessThanOrEqual(MAX_HISTORY_CHARS);
     // Trimming stranded turn 3, an assistant turn, at the head. It has to go.
-    expect(kept.map(message => message.role)).toEqual(['user', 'assistant']);
-    expect(kept[0].content.startsWith('4')).toBe(true);
+    expect(kept.map(message => message.role)).toEqual(['user', 'model']);
+    expect(text(kept[0]).startsWith('4')).toBe(true);
   });
 
   it('attaches the excerpts to the final message and nowhere else', () => {
     const history = Array.from({ length: 4 }, (_, i) =>
       turn(i % 2 === 0 ? 'u' : 'a', `turn ${i}`, i));
     const messages = buildMessages(history, 'now', BLOCK);
-    expect(messages.filter(message => message.content.includes(BLOCK))).toHaveLength(1);
-    expect(messages[messages.length - 1].content).toContain(BLOCK);
+    expect(messages.filter(message => text(message).includes(BLOCK))).toHaveLength(1);
+    expect(text(messages[messages.length - 1])).toContain(BLOCK);
     for (const message of messages.slice(0, -1)) {
-      expect(message.content).not.toContain(BLOCK);
-      expect(message.content).not.toContain('Excerpts from Jody');
+      expect(text(message)).not.toContain(BLOCK);
+      expect(text(message)).not.toContain('Excerpts from Jody');
     }
   });
 
@@ -166,67 +162,5 @@ describe('buildMessages', () => {
     const messages = buildMessages([], 'first question', BLOCK);
     expect(messages).toHaveLength(1);
     expect(messages[0].role).toBe('user');
-  });
-});
-
-describe('chunkForTyping', () => {
-  it('reassembles into exactly the original text', () => {
-    const inputs = [
-      '',
-      '   ',
-      '  leading',
-      'trailing  ',
-      'a  b',
-      'one two three four five six seven',
-      'first paragraph.\n\nsecond paragraph.\n\nthird.',
-      'x'.repeat(4000),
-      LONG_REPLY,
-    ];
-    for (const input of inputs) {
-      expect(chunkForTyping(input).join('')).toBe(input);
-    }
-  });
-
-  it('holds the invariant at every chunk size', () => {
-    for (const size of [1, 2, 3, 7, 50]) {
-      expect(chunkForTyping(LONG_REPLY, size).join('')).toBe(LONG_REPLY);
-    }
-  });
-
-  it('never splits a word', () => {
-    expect(chunkForTyping('one two three four five')).toEqual(['one two three', ' four five']);
-    expect(chunkForTyping(LONG_REPLY).flatMap(words)).toEqual(words(LONG_REPLY));
-  });
-
-  it('returns nothing for an empty string', () => {
-    expect(chunkForTyping('')).toEqual([]);
-  });
-
-  it('groups the requested number of words per chunk', () => {
-    const chunks = chunkForTyping(LONG_REPLY, 3);
-    expect(chunks).toHaveLength(Math.ceil(words(LONG_REPLY).length / 3));
-  });
-});
-
-describe('typingDelayMs', () => {
-  it('is zero when there is nothing to play back', () => {
-    expect(typingDelayMs(0)).toBe(0);
-    expect(typingDelayMs(-1)).toBe(0);
-  });
-
-  it('types a short reply at the natural rate', () => {
-    expect(typingDelayMs(1)).toBe(28);
-    expect(typingDelayMs(3)).toBe(28);
-    expect(typingDelayMs(100)).toBe(28);
-  });
-
-  it('keeps a long reply inside the playback cap', () => {
-    const count = chunkForTyping(LONG_REPLY).length;
-    expect(count).toBeGreaterThan(100);
-    expect(count * typingDelayMs(count)).toBeLessThanOrEqual(4000);
-  });
-
-  it('never paces so fast that the typing reads as a jump', () => {
-    expect(typingDelayMs(100000)).toBe(4);
   });
 });

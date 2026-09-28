@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   fallbackColor,
+  gameSystem,
   monthLabel,
   normalizeAlbums,
   normalizeBooks,
-  normalizeNotebooks,
+  normalizeGames,
 } from './media';
 
 describe('normalizeBooks', () => {
@@ -107,28 +108,75 @@ describe('normalizeAlbums', () => {
   });
 });
 
-describe('normalizeNotebooks', () => {
-  it('requires a title and an internal href', () => {
-    const notebooks = normalizeNotebooks([
-      { title: 'On evaluation', href: '/writing/on-evaluation', section: 'writing', excerpt: 'Some text.' },
-      { title: 'Broken', href: '', section: 'writing' },
-      { title: 'External', href: 'https://example.com', section: 'writing' },
+describe('normalizeGames', () => {
+  it('builds stable ids and drops rows missing a title or platform', () => {
+    const games = normalizeGames([
+      { title: 'Dead Cells', platform: 'Nintendo Switch' },
+      { title: "The Legend of Zelda: Link's Awakening", platform: 'Nintendo Switch' },
+      { title: 'No Platform', platform: '  ' },
+      { platform: 'PlayStation 5' },
     ]);
-    expect(notebooks.map(entry => entry.id)).toEqual(['notebook-writing-on-evaluation']);
+    expect(games.map(game => game.id)).toEqual([
+      'game-dead-cells',
+      'game-the-legend-of-zelda-links-awakening',
+    ]);
+    expect(games.map(game => game.index)).toEqual([0, 1]);
   });
 
-  it('collapses whitespace in the excerpt and truncates on a word boundary', () => {
-    const [notebook] = normalizeNotebooks([
+  it('never throws on junk rows', () => {
+    const games = normalizeGames([
+      null,
+      undefined,
+      'Fortnite',
+      42,
+      [],
+      { title: 'Fortnite', platform: 'Nintendo Switch' },
+    ] as unknown[]);
+    expect(games).toHaveLength(1);
+    expect(normalizeGames('nope' as unknown as unknown[])).toEqual([]);
+  });
+
+  it('keeps the same game on two platforms distinct', () => {
+    const games = normalizeGames([
+      { title: 'Fortnite', platform: 'Nintendo Switch' },
+      { title: 'Fortnite', platform: 'PlayStation 5' },
+    ]);
+    expect(new Set(games.map(game => game.id)).size).toBe(2);
+  });
+
+  it('carries through the note, official page and cached cover', () => {
+    const [game] = normalizeGames([
       {
-        title: 'Long one',
-        href: '/notes/long-one',
-        section: 'notes',
-        excerpt: `  ${'alpha '.repeat(200)}  `,
+        title: 'Ghost of Yotei',
+        platform: 'PlayStation 5',
+        note: '  Slow   on purpose. ',
+        url: 'https://www.playstation.com/en-us/games/ghost-of-yotei/',
+        cover: '/media/games/game-ghost-of-yotei.jpg',
       },
     ]);
-    expect(notebook.excerpt.length).toBeLessThanOrEqual(600);
-    expect(notebook.excerpt).not.toMatch(/\s{2}/);
-    expect(notebook.excerpt.endsWith(' ')).toBe(false);
+    expect(game.system).toBe('ps5');
+    expect(game.note).toBe('Slow on purpose.');
+    expect(game.url).toBe('https://www.playstation.com/en-us/games/ghost-of-yotei/');
+    expect(game.cover).toBe('/media/games/game-ghost-of-yotei.jpg');
+  });
+
+  it('refuses a non-http link and a relative cover path', () => {
+    const [game] = normalizeGames([
+      { title: 'Overwatch', platform: 'Nintendo Switch', url: 'javascript:alert(1)', cover: 'media/x.jpg' },
+    ]);
+    expect(game.url).toBeUndefined();
+    expect(game.cover).toBeUndefined();
+    expect(game.note).toBeUndefined();
+  });
+});
+
+describe('gameSystem', () => {
+  it('reads the case from the platform name', () => {
+    expect(gameSystem('Nintendo Switch')).toBe('switch');
+    expect(gameSystem('Switch 2')).toBe('switch');
+    expect(gameSystem('PlayStation 5')).toBe('ps5');
+    expect(gameSystem('PS5')).toBe('ps5');
+    expect(gameSystem('Steam Deck')).toBe('other');
   });
 });
 

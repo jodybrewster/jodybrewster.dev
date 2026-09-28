@@ -2,11 +2,10 @@
 #chat-dock [hidden] { display: none !important; }
 #chat-dock .dock-new { margin-left: auto; margin-right: 12px; padding: 8px; min-height: 40px; border: 0; background: none; color: var(--ink-soft); font: 500 11px/1.5 var(--sans); cursor: pointer; }
 #chat-dock .dock-close { align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
-#chat-dock .dock-identity { padding: 0 0 14px; color: var(--ink-soft); font: 400 12px/1.6 var(--sans); }
-#chat-dock .dock-identity summary { min-height: 32px; cursor: pointer; }
-#chat-dock .dock-identity summary span { opacity: .8; }
-#chat-dock .dock-identity label { display: block; margin: 8px 0 5px; }
-#chat-dock #chat-name { width: 100%; min-width: 0; border: 1px solid var(--rule); border-radius: 7px; padding: 10px 12px; background: var(--paper-warm); color: var(--ink); font: 400 16px/1.5 var(--sans); }
+/* Collapse reads as a control, not a mark: outlined, a heavier glyph, accent on intent. */
+#chat-dock .dock-close { border: 1px solid var(--rule); color: var(--ink-soft); }
+#chat-dock .dock-close svg { width: 18px; height: 18px; stroke-width: 2.25; }
+#chat-dock .dock-close:hover, #chat-dock .dock-close:focus-visible { color: var(--accent); border-color: var(--accent); }
 #chat-dock .dock-data-note { font: 400 10px/1.6 var(--sans); color: var(--ink-soft); margin: 0 0 20px; }
 #chat-dock .dock-recovery { margin-top: 10px; }
 #chat-dock .dock-error { color: var(--ink-soft); font: 400 13px/1.6 var(--sans); }
@@ -14,6 +13,8 @@
 #chat-dock .input-row .is-busy { background: var(--paper-warm); color: var(--ink); border: 1px solid var(--rule); }
 #chat-dock .is-busy svg { display: none; }
 #chat-dock .turn { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
+/* The speaker label sits beside the first line, not the middle of a tall answer. */
+#chat-dock .turn .who { align-self: start; }
 #chat-dock :is(.said, .answer, .source-item, .si-title) { min-width: 0; overflow-wrap: anywhere; }
 #chat-dock .source-item { align-items: start; flex-wrap: wrap; gap: 5px 10px; }
 #chat-dock .source-item .si-title { flex-basis: 150px; }
@@ -23,57 +24,97 @@
    outlines would otherwise draw a second and third box around it. The optional name field shows focus on its border. */
 #chat-dock .input-row:focus-within { border-color: var(--accent); }
 #chat-dock .input-row input:focus-visible { outline: none; box-shadow: none; }
-#chat-dock #chat-name:focus-visible { outline: none; box-shadow: none; border-color: var(--accent); }
+
+/* Verso floats at the bottom of every page except /chat: a gradient-edged pill that expands upward into the
+   conversation. On desktop it is centered at a readable width; on phones it spans the screen above the safe area. */
+body[data-chat-enabled]:not(.verso-page) { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock {
+  position: fixed;
+  inset: auto max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom) + var(--chat-keyboard-offset, 0px)) max(12px, env(safe-area-inset-left));
+  width: auto;
+  max-width: none;
+  visibility: visible;
+  pointer-events: auto;
+  /* A glowing edge that runs cyan through violet to a warm corner, drawn as a border-box gradient under the fill. */
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--paper), var(--paper)) padding-box,
+    conic-gradient(from calc(var(--edge-drift) + var(--edge-spin)), color-mix(in srgb, #fff calc(var(--edge-shine) * .6), var(--home-cyan, #00c6e7)), color-mix(in srgb, #fff var(--edge-shine), #5a8dff), var(--home-purple, #b58aff), var(--home-orange, #ff9651), var(--home-cyan, #00c6e7)) border-box;
+  animation: edge-drift 40s linear infinite;
+  box-shadow: -6px 0 22px color-mix(in srgb, var(--home-cyan, #00c6e7) 22%, transparent), 8px 4px 22px color-mix(in srgb, var(--home-orange, #ff9651) 16%, transparent), 0 10px 35px rgb(0 0 0 / .45);
+  overflow: hidden;
+}
+body[data-chat-enabled]:not(.verso-page) #chat-dock:focus-within { animation: edge-drift 40s linear infinite, edge-spin 3.2s linear infinite, edge-shine 3s ease-out 1; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock.open { border-radius: 20px; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-bar { padding: 7px; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row { gap: 8px; border: 0; border-radius: 0; background: none; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row input { border: 1px solid var(--rule); border-radius: 999px; background: color-mix(in srgb, var(--paper) 70%, #000); padding-inline: 18px; transition: border-color 180ms var(--ease-out); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row input:focus { border-color: color-mix(in srgb, var(--accent) 70%, var(--rule)); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-icon { display: none; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button { width: 48px; height: 48px; min-width: 48px; margin: 0; padding: 0; justify-content: center; border: 1px solid var(--rule); border-radius: 50%; background: color-mix(in srgb, var(--paper) 70%, #000); color: var(--ink-soft); transition: border-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 120ms var(--ease-out); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:hover, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row:focus-within button { border-color: color-mix(in srgb, var(--accent) 70%, var(--rule)); color: var(--accent); background: color-mix(in srgb, var(--paper) 70%, #000); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled:hover { background: color-mix(in srgb, var(--paper) 70%, #000); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:active { transform: scale(.94); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button .submit-label { display: none; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button.is-busy .submit-label { display: inline; font-size: 10px; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel { max-height: 0; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock.open .dock-panel { max-height: min(78dvh, calc(var(--chat-visible-height, 100dvh) - 110px)); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel-head { padding: 8px 14px 0; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-scroll { max-height: min(calc(78dvh - 52px), calc(var(--chat-visible-height, 100dvh) - 162px)); padding: 12px 18px 20px; overscroll-behavior: contain; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock { left: 0; right: 0; bottom: 24px; margin-inline: auto; width: min(760px, calc(100% - 2 * var(--site-gutter))); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding-right: 6px; color: var(--ink); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-wave { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--rule)); border-radius: 50%; background: color-mix(in srgb, var(--paper) 70%, #000); color: var(--accent); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-wave svg { width: 22px; height: 22px; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who-name { font: 600 14px/1 var(--sans); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--home-green, #31da67); }
+#chat-dock .dock-quick { display: flex; flex-wrap: wrap; gap: 7px; margin: -4px 0 16px; }
+#chat-dock .dock-quick button { min-height: 32px; padding: 6px 12px; border: 1px solid var(--rule); border-radius: 99px; background: color-mix(in srgb, var(--paper) 70%, #000); color: var(--ink-soft); font: 500 12px/1.3 var(--sans); cursor: pointer; transition: border-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+#chat-dock .dock-quick button:hover { border-color: var(--accent); color: var(--ink); }
+
+/* Voice. The mic reads as off until a session is live; connecting breathes so a
+   slow token or permission prompt never looks like a dead button. */
+#chat-dock .input-row .dock-voice { display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; background: transparent; color: var(--ink-soft); border: 1px solid var(--rule); }
+#chat-dock .input-row .dock-voice svg { width: 20px; height: 20px; }
+#chat-dock .input-row .dock-voice:hover { background: transparent; color: var(--accent); border-color: var(--accent); }
+/* Live wins over every layout's generic row-button styling (hence the two ids):
+   filled, so it reads as on at a glance, and a ring that breathes out from it
+   while the session is listening. */
+#chat-dock #dock-voice { position: relative; }
+#chat-dock #dock-voice[data-state="live"],
+#chat-dock #dock-voice[data-state="live"]:hover { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+#chat-dock #dock-voice[data-state="live"]::after { content: ""; position: absolute; inset: -1px; border: 2px solid var(--accent); border-radius: inherit; pointer-events: none; animation: dock-voice-listen 1.6s linear infinite; }
+@keyframes dock-voice-listen {
+  from { transform: scale(1); opacity: .8; }
+  to { transform: scale(1.45); opacity: 0; }
+}
+#chat-dock .input-row .dock-voice[data-state="connecting"] { animation: dock-voice-breathe 1.2s var(--ease-out) infinite alternate; }
+@keyframes dock-voice-breathe { from { opacity: 1; } to { opacity: .45; } }
+#chat-dock .dock-voice-status { max-width: var(--measure); margin: 0 auto 10px; font: 500 11px/1.5 var(--mono); letter-spacing: .06em; color: var(--ink-soft); text-align: center; }
+#chat-dock .dock-voice-status[data-tone="live"] { color: var(--accent); }
 
 @media (max-width: 720px) {
   /* Keep page panning separate from intentionally scrollable case-study cards. */
   html:has(body[data-chat-enabled]) { overflow-x: clip; overscroll-behavior-x: none; }
   body[data-chat-enabled] { max-width: 100%; }
-  body[data-chat-enabled]:not(.verso-page) { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock {
-    position: fixed;
-    inset: auto max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom) + var(--chat-keyboard-offset, 0px)) max(12px, env(safe-area-inset-left));
-    width: auto;
-    max-width: none;
-    visibility: visible;
-    pointer-events: auto;
-    /* A glowing edge that runs cyan through violet to a warm corner, drawn as a border-box gradient under the fill. */
-    border: 1.5px solid transparent;
-    border-radius: 999px;
-    background:
-      linear-gradient(var(--paper), var(--paper)) padding-box,
-      conic-gradient(from calc(var(--edge-drift) + var(--edge-spin)), color-mix(in srgb, #fff calc(var(--edge-shine) * .6), var(--home-cyan, #00c6e7)), color-mix(in srgb, #fff var(--edge-shine), #5a8dff), var(--home-purple, #b58aff), var(--home-orange, #ff9651), var(--home-cyan, #00c6e7)) border-box;
-    animation: edge-drift 40s linear infinite;
-    box-shadow: -6px 0 22px color-mix(in srgb, var(--home-cyan, #00c6e7) 22%, transparent), 8px 4px 22px color-mix(in srgb, var(--home-orange, #ff9651) 16%, transparent), 0 10px 35px rgb(0 0 0 / .45);
-    overflow: hidden;
-  }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock:focus-within { animation: edge-drift 40s linear infinite, edge-spin 3.2s linear infinite, edge-shine 3s ease-out 1; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock.open { border-radius: 20px; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-bar { padding: 7px; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row { gap: 8px; border: 0; border-radius: 0; background: none; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row input { border: 1px solid var(--rule); border-radius: 999px; background: color-mix(in srgb, var(--paper) 70%, #000); padding-inline: 18px; transition: border-color 180ms var(--ease-out); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row input:focus { border-color: color-mix(in srgb, var(--accent) 70%, var(--rule)); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-icon { display: none; }
   /* 16px avoids the input-focus zoom/pan on iPhone without disabling zoom. */
   body[data-chat-enabled] #chat-dock .input-row input { font-size: 16px; padding: 13px 8px; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button { width: 48px; height: 48px; min-width: 48px; margin: 0; padding: 0; justify-content: center; border: 1px solid var(--rule); border-radius: 50%; background: color-mix(in srgb, var(--paper) 70%, #000); color: var(--ink-soft); transition: border-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 120ms var(--ease-out); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:hover, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row:focus-within button { border-color: color-mix(in srgb, var(--accent) 70%, var(--rule)); color: var(--accent); background: color-mix(in srgb, var(--paper) 70%, #000); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled:hover { background: color-mix(in srgb, var(--paper) 70%, #000); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:active { transform: scale(.94); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button .submit-label { display: none; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button.is-busy .submit-label { display: inline; font-size: 10px; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel { max-height: 0; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock.open .dock-panel { max-height: min(62dvh, calc(var(--chat-visible-height, 100dvh) - 110px)); }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel-head { padding: 8px 14px 0; }
-  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-scroll { max-height: min(calc(62dvh - 52px), calc(var(--chat-visible-height, 100dvh) - 162px)); padding: 12px 18px 20px; overscroll-behavior: contain; }
   #chat-dock .turn { grid-template-columns: minmax(0, 1fr); gap: 5px; }
   #chat-dock .turn .said { font-size: 14px; }
   #chat-dock .turn.you .said { font: 400 14px/1.6 var(--sans); }
   #chat-dock .sources { padding: 12px; }
   #chat-dock .thinking .waited { font-size: 9px; letter-spacing: .02em; text-transform: none; }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock {
+    inset: auto max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom) + var(--chat-keyboard-offset, 0px)) max(12px, env(safe-area-inset-left));
+    width: auto;
+    margin-inline: 0;
+  }
+  body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   #chat-dock .dock-panel { transition: none; }
   #chat-dock, #chat-dock:focus-within { animation: none !important; }
+  #chat-dock .input-row .dock-voice[data-state="connecting"] { animation: none; opacity: .6; }
+  #chat-dock #dock-voice[data-state="live"]::after { animation: none; transform: scale(1.12); opacity: .5; }
 }

@@ -7,7 +7,7 @@
  * malformed record can never take the shelf down.
  */
 
-export type MediaKind = 'album' | 'book' | 'notebook';
+export type MediaKind = 'album' | 'book' | 'game';
 
 interface ShelfItemBase {
   id: string;
@@ -37,17 +37,23 @@ export interface ShelfAlbum extends ShelfItemBase {
   cover?: string;
 }
 
-export interface ShelfNotebook extends ShelfItemBase {
-  kind: 'notebook';
+/** The case a game ships in, which sets its size, plastic, and banner. */
+export type GameSystem = 'switch' | 'ps5' | 'other';
+
+export interface ShelfGame extends ShelfItemBase {
+  kind: 'game';
   title: string;
-  /** Internal route on this site. */
-  href: string;
-  section: string;
-  date?: string;
-  excerpt: string;
+  /** As written in content/games.json, e.g. `Nintendo Switch`. */
+  platform: string;
+  system: GameSystem;
+  /** One line of Jody's own, shown on the card. */
+  note?: string;
+  /** The game's official page. */
+  url?: string;
+  cover?: string;
 }
 
-export type ShelfItem = ShelfAlbum | ShelfBook | ShelfNotebook;
+export type ShelfItem = ShelfAlbum | ShelfBook | ShelfGame;
 
 /** Muted book-cloth tones. Saturated enough to read as bound cloth, quiet
  *  enough to sit beside ash paper and the one forest green. */
@@ -71,7 +77,7 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-const EXCERPT_MAX = 600;
+const NOTE_MAX = 280;
 
 /** FNV-1a. Small, fast, and stable across runs and platforms. */
 export function hash(input: string): number {
@@ -124,11 +130,6 @@ function externalUrl(value: unknown): string | undefined {
   const raw = text(value);
   if (!raw) return undefined;
   return /^https?:\/\//i.test(raw) ? raw : undefined;
-}
-
-function internalHref(value: unknown): string | undefined {
-  const raw = text(value);
-  return raw.startsWith('/') ? raw : undefined;
 }
 
 function localAsset(value: unknown): string | undefined {
@@ -229,34 +230,42 @@ export function normalizeAlbums(rows: readonly unknown[]): ShelfAlbum[] {
   return albums;
 }
 
-export function normalizeNotebooks(rows: readonly unknown[]): ShelfNotebook[] {
+/** Reads the platform name for the kind of case to draw. Anything unknown
+ *  still gets a case, just a plain one. */
+export function gameSystem(platform: string): GameSystem {
+  if (/switch/i.test(platform)) return 'switch';
+  if (/\bps5\b|playstation\s*5/i.test(platform)) return 'ps5';
+  return 'other';
+}
+
+export function normalizeGames(rows: readonly unknown[]): ShelfGame[] {
   if (!Array.isArray(rows)) return [];
   const taken = new Set<string>();
-  const notebooks: ShelfNotebook[] = [];
+  const games: ShelfGame[] = [];
 
   for (const row of rows) {
     const raw = record(row);
     if (!raw) continue;
     const title = text(raw.title);
-    const href = internalHref(raw.href);
-    const section = text(raw.section);
-    if (!title || !href || !section) continue;
+    const platform = text(raw.platform);
+    if (!title || !platform) continue;
 
     const slug = slugify(title);
     if (!slug) continue;
 
-    notebooks.push({
-      id: uniqueId(`notebook-${slugify(section)}-${slug}`, taken),
-      kind: 'notebook',
-      index: notebooks.length,
+    games.push({
+      id: uniqueId(`game-${slug}`, taken),
+      kind: 'game',
+      index: games.length,
       title,
-      href,
-      section,
-      date: text(raw.date) || undefined,
-      excerpt: tidy(raw.excerpt, EXCERPT_MAX),
-      color: fallbackColor(`${section}|${title}`),
+      platform,
+      system: gameSystem(platform),
+      note: tidy(raw.note, NOTE_MAX) || undefined,
+      url: externalUrl(raw.url),
+      cover: localAsset(raw.cover),
+      color: fallbackColor(`${platform}|${title}`),
     });
   }
 
-  return notebooks;
+  return games;
 }

@@ -7,10 +7,9 @@ interface Props {
   jsonLd?: Record<string, unknown>;
   markdownHref?: string;
   bodyClass?: string;
-  embeddedChat?: boolean;
 }
-const {bodyClass = '', embeddedChat = false, ...props} = Astro.props;
+const {bodyClass = '', ...props} = Astro.props;
 ---
-<Base {...props} bodyClass={`studio-page ${bodyClass}`} home showChatDock={!embeddedChat}>
+<Base {...props} bodyClass={`studio-page ${bodyClass}`} home>
   <slot />
 </Base>

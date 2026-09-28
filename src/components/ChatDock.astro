@@ -4,16 +4,13 @@
  * Collapsed, it's just the ask bar. Focus or submit expands a panel above it
  * with the conversation. Persists across dynamic (View Transitions) navigation.
  *
- * A reply arrives on the same stream whether the model wrote it or Jody typed
- * it himself, and a typed reply can take the better part of a minute. So the
- * client holds one turn at a time and has a waiting state built to survive a
- * brief handoff wait without reading as a dead page.
- *
- * Visitors can optionally add their name. The composer sends their first
- * question immediately; no name gate blocks a conversation.
+ * Answers stream from /api/chat, grounded in the site's own writing. Retrieval
+ * plus a model can take a while on a cold start, so the client holds one turn
+ * at a time and has a waiting state that never reads as a dead page.
  */
+import VersoPartTemplates from './VersoPartTemplates.astro';
 ---
-<div class="chat-dock" id="chat-dock" transition:persist>
+<div class="chat-dock" id="chat-dock" transition:persist="verso-dock">
   <div class="dock-panel" id="dock-panel" inert>
     <div class="dock-panel-head">
       <span class="dock-title"><svg class="icon sm"><use href="#i-bot"/></svg> Verso</span>
@@ -24,7 +21,14 @@
     </div>
     <div class="dock-scroll" id="dock-scroll">
       <div class="dock-empty" id="dock-empty">
-        <p class="dock-default-greeting">Hi, I'm Verso. Ask me about Jody’s products, the decisions behind them, or how he takes an idea into production.</p>
+        <div class="dock-default-greeting">
+          <p>Hi, I'm Verso. Ask me about Jody’s products, the decisions behind them, or how he takes an idea into production.</p>
+          <div class="dock-quick">
+            <button type="button" data-verso-open data-verso-prompt="What is Jody's experience?">Experience</button>
+            <button type="button" data-verso-open data-verso-prompt="What are Jody's featured projects?">Featured work</button>
+            <button type="button" data-verso-open data-verso-prompt="What is Jody's tech stack?">Tech stack</button>
+          </div>
+        </div>
         <div class="dock-page-welcome">
           <span class="dock-welcome-avatar" aria-hidden="true"><svg class="icon"><use href="#i-bot"/></svg></span>
           <div><p>Hi! I'm Verso. I can help you explore the products Jody has built, the decisions behind them, and the thinking that carried them into production. What would you like to know?</p>
@@ -35,24 +39,35 @@
           </div>
         </div>
       </div>
-      <details class="dock-identity" id="dock-identity">
-        <summary>Add your name <span>(optional)</span></summary>
-        <label for="chat-name">First name</label>
-        <input id="chat-name" type="text" autocomplete="given-name" maxlength="40" placeholder="Your first name" />
-      </details>
-      <p class="dock-data-note">Jody may read and respond to questions.</p>
+      <p class="dock-data-note">Verso is an AI. It answers from Jody's writing and work, and can get things wrong.</p>
       <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="polite" aria-relevant="additions"></div>
     </div>
   </div>
 
   <div class="dock-bar">
+    <p class="dock-voice-status" id="dock-voice-status" role="status" hidden></p>
     <form class="input-row" id="chat-form">
       <span class="input-icon"><svg class="icon"><use href="#i-bot"/></svg></span>
+      <!-- Who you're talking to, on the floating composer at desktop widths. The field's own label carries the name. -->
+      <span class="dock-who" aria-hidden="true">
+        <span class="dock-wave"><svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12v4M6 8v12M10 3v22M14 10v8M18 6v16M22 11v6M26 13v2" /></svg></span>
+        <span class="dock-who-name">Verso</span>
+        <span class="dock-who-dot"></span>
+      </span>
       <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" maxlength="600" placeholder="Ask Verso about my work…" aria-controls="dock-panel" aria-expanded="false" />
+      <!-- Voice: a live Gemini session, loaded on first tap. aria-pressed carries on/off; data-state adds connecting. -->
+      <button type="button" class="dock-voice" id="dock-voice" aria-label="Talk to Verso" aria-pressed="false" data-state="idle">
+        <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
+      </button>
       <!-- Keep a separate label so a running response can expose Stop. -->
       <button type="submit" aria-label="Send message"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
     </form>
   </div>
+
+  <!-- Case study parts Verso can place in the conversation. Inside the persisted
+       dock so a part keeps its styles when the conversation follows the reader
+       to another page. -->
+  <VersoPartTemplates />
 
   <template id="tpl-retry">
     <div class="dock-recovery"><p class="dock-error" role="status"></p><button type="button" class="dock-retry">Try again</button></div>
@@ -68,6 +83,64 @@
     the scoped-style hash is compiled onto it; cloneNode carries the hash with
     it, where createElement would produce an unstyled span.
   -->
+  <!--
+    Cards the model can show inside a Verso turn (src/lib/card-render.ts).
+    Templates for the same reason as the thinking indicator: the scoped style
+    hash has to be on the markup. The renderer fills [data-field] slots with
+    textContent only and removes the ones a card leaves empty.
+  -->
+  <template id="tpl-card-work">
+    <a class="vcard vcard-work">
+      <span class="vcard-body">
+        <span class="vcard-kicker">Case study</span>
+        <span class="vcard-title" data-field="title"></span>
+        <span class="vcard-text" data-field="summary"></span>
+        <span class="vcard-meta"><span data-field="role"></span><span data-field="duration"></span><span data-field="sector"></span></span>
+      </span>
+      <svg class="icon sm vcard-go" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+    </a>
+  </template>
+  <template id="tpl-card-article">
+    <a class="vcard vcard-article">
+      <img class="vcard-image" alt="" width="64" height="64" loading="lazy" decoding="async" />
+      <span class="vcard-body">
+        <span class="vcard-kicker"><span data-field="label"></span><time data-field="date"></time></span>
+        <span class="vcard-title" data-field="title"></span>
+        <span class="vcard-text" data-field="description"></span>
+      </span>
+      <svg class="icon sm vcard-go" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+    </a>
+  </template>
+  <template id="tpl-card-note">
+    <a class="vcard vcard-note">
+      <span class="vcard-body">
+        <span class="vcard-kicker"><span>Lab note</span><time data-field="date"></time><span class="vcard-state" data-field="status"></span></span>
+        <span class="vcard-title" data-field="title"></span>
+      </span>
+      <svg class="icon sm vcard-go" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+    </a>
+  </template>
+  <template id="tpl-card-now">
+    <a class="vcard vcard-now">
+      <span class="vcard-body">
+        <span class="vcard-kicker"><span>Now</span><time data-field="updated"></time></span>
+        <span class="vcard-title" data-field="title"></span>
+        <span class="vcard-text" data-field="excerpt"></span>
+      </span>
+      <svg class="icon sm vcard-go" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+    </a>
+  </template>
+  <template id="tpl-card-page">
+    <a class="vcard vcard-page">
+      <span class="vcard-body">
+        <span class="vcard-kicker" data-field="path"></span>
+        <blockquote class="vcard-quote" data-field="quote"></blockquote>
+        <span class="vcard-title" data-field="title"></span>
+        <span class="vcard-text" data-field="description"></span>
+      </span>
+      <svg class="icon sm vcard-go" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+    </a>
+  </template>
   <template id="tpl-site">
     <div class="turn site">
       <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> Verso</span>
@@ -85,6 +158,7 @@
 
 <style>
   .dock-page-welcome { display: none; }
+  .dock-who { display: none; }
   .chat-dock {
     position: fixed;
     left: 0; right: 0; bottom: 0;
@@ -201,6 +275,94 @@
     /* Still legible as three dots, just not moving. */
     .thinking .dot { animation: none; opacity: 0.5; }
     .dock-panel { transform: none; transition: opacity 150ms ease; }
+  }
+
+  /* Cards: a piece of the site, shown inside a Verso turn. The same raised
+     surface and 1px rule as the sources block, so a card reads as part of the
+     answer rather than a widget laid over it. Accent only on hover and focus. */
+  .vcard {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 460px;
+    margin: 0 0 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--paper-warm);
+    color: var(--ink);
+    text-decoration: none;
+    transition: border-color 150ms ease, transform 150ms var(--ease-out);
+  }
+  .answer + .vcard { margin-top: 4px; }
+  .vcard:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .vcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .vcard-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+  .vcard-kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    font: 500 var(--t-micro)/1.5 var(--mono);
+    letter-spacing: var(--ls-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    overflow-wrap: anywhere;
+  }
+  .vcard-kicker time::before { content: "\00B7"; margin-right: 8px; color: var(--ink-faint); }
+  .vcard-title, .vcard-text, .vcard-meta, .vcard-quote {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  .vcard-title { font: 600 14px/1.35 var(--sans); color: var(--ink); }
+  .vcard-text { font: 400 12.5px/1.5 var(--sans); color: var(--ink-soft); }
+  .vcard-meta { margin-top: 2px; font: 400 11.5px/1.5 var(--sans); color: var(--ink-soft); -webkit-line-clamp: 1; line-clamp: 1; }
+  .vcard-meta > span + span::before { content: "\00B7"; margin: 0 6px; color: var(--ink-faint); }
+  .vcard-image {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  .vcard-state {
+    padding: 0 7px;
+    border: 1px solid var(--rule);
+    border-radius: 99px;
+    letter-spacing: .04em;
+    color: var(--ink-soft);
+  }
+  .vcard-state[data-status="evergreen"] { color: var(--accent); }
+  .vcard-quote {
+    margin: 2px 0 4px;
+    padding-left: 10px;
+    border-left: 1px solid var(--rule);
+    font: italic 400 13px/1.55 var(--sans);
+    color: var(--ink);
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+  .vcard-go { flex-shrink: 0; align-self: center; color: var(--ink-faint); transition: color 150ms ease, transform 150ms var(--ease-out); }
+  .vcard:hover .vcard-go { color: var(--accent); transform: translateX(2px); }
+  @media (prefers-reduced-motion: reduce) {
+    .vcard, .vcard-go { transition: border-color 150ms ease, color 150ms ease; }
+    .vcard:hover, .vcard:hover .vcard-go { transform: none; }
+  }
+  @media (max-width: 720px) {
+    .vcard { max-width: none; padding: 11px 12px; gap: 10px; }
+    .vcard-image { width: 56px; height: 56px; }
+  }
+  /* The narrowest phones: the whole card is the link, so the arrow gives its
+     room to the date line rather than wrapping it. */
+  @media (max-width: 380px) {
+    .vcard-go { display: none; }
+    .vcard-image { width: 48px; height: 48px; }
   }
 
   /* One turn at a time, so the bar reads as unavailable while it runs. */

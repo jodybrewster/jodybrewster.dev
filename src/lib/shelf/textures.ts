@@ -1,10 +1,10 @@
 /**
  * Canvas-drawn textures for the shelf.
  *
- * Everything the scene shows is generated here except real album art and book
- * jackets, which load from the local cache in public/media. Drawing the wood,
- * spines, plaques, and notebook pages keeps the page free of binary texture
- * downloads and lets every surface inherit the site's palette.
+ * Everything the scene shows is generated here except real album art, book
+ * jackets and game box art, which load from the local cache in public/media.
+ * Drawing the wood, spines, plaques and game cases keeps the page free of
+ * binary texture downloads and lets every surface inherit the site's palette.
  *
  * Browser only: each function touches document/canvas.
  */
@@ -18,16 +18,14 @@ import {
   Texture,
   TextureLoader,
 } from 'three';
-import type { ShelfAlbum, ShelfBook, ShelfNotebook } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame } from './media';
 import { seededUnit } from './media';
 
 const DISPLAY = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
 const SANS = '"Inter", -apple-system, system-ui, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 
-const PAPER = '#f4f1e8';
 const INK = '#14181d';
-const FOREST = '#2d5d4f';
 
 function canvas(width: number, height: number) {
   const element = document.createElement('canvas');
@@ -591,133 +589,208 @@ export function albumBackTexture(album: ShelfAlbum): CanvasTexture {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Notebooks                                                                   */
+/* Game cases                                                                  */
 /* -------------------------------------------------------------------------- */
 
-/** Pressboard cover with a stamped label, in the section's cloth color. */
-export function notebookCoverTexture(notebook: ShelfNotebook): CanvasTexture {
-  const { element, ctx } = canvas(384, 512);
-  const random = noise(`${notebook.id}-cover`);
+/**
+ * What each kind of case looks like: the moulded plastic, and the printed band
+ * across the head of the insert that says which machine it is for. The mark is
+ * set in type rather than copied from a logo.
+ */
+const CASE_STYLE: Record<GameSystem, {
+  plastic: string;
+  band: string;
+  bandInk: string;
+  paper: string;
+}> = {
+  switch: { plastic: '#c3161f', band: '#e1141d', bandInk: '#ffffff', paper: '#f3f2ef' },
+  ps5: { plastic: '#1d4f9e', band: '#f5f6f8', bandInk: '#101317', paper: '#f5f6f8' },
+  other: { plastic: '#25292f', band: '#1b2026', bandInk: '#efe7d8', paper: '#ebe7de' },
+};
 
-  ctx.fillStyle = notebook.color;
-  ctx.fillRect(0, 0, 384, 512);
-  for (let i = 0; i < 12000; i += 1) {
-    ctx.fillStyle = `rgba(20, 16, 12, ${random() * 0.09})`;
-    ctx.fillRect(random() * 384, random() * 512, 2, 2);
+/** Plastic colour for the parts of the case that carry no print. */
+export function casePlastic(system: GameSystem): string {
+  return CASE_STYLE[system].plastic;
+}
+
+function caseMark(game: ShelfGame): string {
+  if (game.system === 'switch') return 'NINTENDO SWITCH';
+  if (game.system === 'ps5') return 'PS5';
+  return game.platform.toUpperCase();
+}
+
+/** The two-part mark beside the Switch wordmark, drawn as plain shapes. */
+function drawSwitchGlyph(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, ink: string) {
+  const w = size * 0.42;
+  const r = w * 0.5;
+  ctx.save();
+  ctx.fillStyle = ink;
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = size * 0.1;
+  ctx.beginPath();
+  ctx.roundRect(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, size - ctx.lineWidth, r);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(x + w + size * 0.06, y, w, size, r);
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Lays real box art into a frame. Art that is about the frame's shape, or
+ * taller, is cropped to fill it. Wider art is not: its title usually runs edge
+ * to edge, and cropping the sides cuts the name off. That is set whole across
+ * the frame over a blurred bleed of itself instead.
+ */
+function drawArt(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  const ratio = (image.naturalWidth / image.naturalHeight) / (w / h);
+  const cover = (scale: number) => {
+    const dw = image.naturalWidth * scale;
+    const dh = image.naturalHeight * scale;
+    ctx.drawImage(image, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  };
+  const fill = Math.max(w / image.naturalWidth, h / image.naturalHeight);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  if (ratio <= 1.08) {
+    cover(fill);
+  } else {
+    ctx.filter = `blur(${Math.round(w * 0.05)}px) saturate(1.1)`;
+    cover(fill * 1.15);
+    ctx.filter = 'none';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    ctx.fillRect(x, y, w, h);
+    cover(w / image.naturalWidth);
+  }
+  ctx.restore();
+}
+
+/**
+ * The front of a game case: the plastic rim, the platform band, and the box
+ * art under the clear sleeve. Canvas is cut to the face's real aspect, so
+ * nothing is stretched. Without art it prints the title on the game's cloth
+ * colour, so a missing file still reads as a finished case.
+ */
+export function gameCoverTexture(
+  game: ShelfGame,
+  aspect: number,
+  image?: HTMLImageElement | null,
+): CanvasTexture {
+  const width = 512;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  const style = CASE_STYLE[game.system];
+
+  ctx.fillStyle = style.plastic;
+  ctx.fillRect(0, 0, width, height);
+
+  const rim = Math.round(width * 0.024);
+  const ix = rim;
+  const iy = rim;
+  const iw = width - rim * 2;
+  const ih = height - rim * 2;
+  const band = Math.round(ih * (game.system === 'switch' ? 0.094 : 0.082));
+
+  ctx.fillStyle = style.band;
+  ctx.fillRect(ix, iy, iw, band);
+
+  // The mark, set small at the left of the band as the real inserts do it.
+  const markSize = band * 0.44;
+  let tx = ix + band * 0.42;
+  if (game.system === 'switch') {
+    drawSwitchGlyph(ctx, tx, iy + (band - markSize) / 2, markSize, style.bandInk);
+    tx += markSize * 1.15;
+  }
+  ctx.fillStyle = style.bandInk;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.letterSpacing = game.system === 'ps5' ? '1px' : '3px';
+  ctx.font = game.system === 'ps5'
+    ? `700 ${Math.round(band * 0.5)}px ${SANS}`
+    : `700 ${Math.round(band * 0.3)}px ${SANS}`;
+  ctx.fillText(truncate(ctx, caseMark(game), iw * 0.7), tx, iy + band / 2 + 1);
+  ctx.letterSpacing = '0px';
+
+  const ay = iy + band;
+  const ah = ih - band;
+  if (image) {
+    drawArt(ctx, image, ix, ay, iw, ah);
+  } else {
+    ctx.fillStyle = game.color;
+    ctx.fillRect(ix, ay, iw, ah);
+    const maxWidth = iw * 0.78;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#f6efe0';
+    const titleSize = fitText(ctx, game.title, maxWidth, 58, 24, size => `600 ${size}px ${DISPLAY}`);
+    ctx.font = `600 ${titleSize}px ${DISPLAY}`;
+    const lines = wrapLines(ctx, game.title, maxWidth, 4);
+    let y = ay + ah * 0.42 - ((lines.length - 1) * titleSize * 1.16) / 2;
+    for (const line of lines) {
+      ctx.fillText(line, width / 2, y);
+      y += titleSize * 1.16;
+    }
   }
 
-  ctx.fillStyle = PAPER;
-  ctx.fillRect(56, 150, 272, 150);
-  ctx.strokeStyle = 'rgba(20, 24, 29, 0.22)';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(56, 150, 272, 150);
-
-  ctx.textAlign = 'center';
-  ctx.fillStyle = FOREST;
-  ctx.font = `500 15px ${MONO}`;
-  ctx.fillText(notebook.section.toUpperCase(), 192, 182);
-
-  ctx.fillStyle = INK;
-  const titleSize = fitText(ctx, notebook.title, 236, 30, 15, size => `600 ${size}px ${DISPLAY}`);
-  ctx.font = `600 ${titleSize}px ${DISPLAY}`;
-  const lines = wrapLines(ctx, notebook.title, 236, 3);
-  let y = 224 - ((lines.length - 1) * titleSize * 1.2) / 2;
-  for (const line of lines) {
-    ctx.fillText(line, 192, y);
-    y += titleSize * 1.2;
-  }
-
-  if (notebook.date) {
-    ctx.font = `400 13px ${MONO}`;
-    ctx.fillStyle = 'rgba(20, 24, 29, 0.55)';
-    ctx.fillText(notebook.date, 192, 286);
-  }
+  // The seam where the sleeve's print meets the band.
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+  ctx.fillRect(ix, ay, iw, 1.5);
 
   return toTexture(element, 8);
 }
 
 /**
- * The ruled page revealed when a notebook opens: the real title, date, and
- * opening paragraphs of that entry, set on lined paper.
+ * The spine of the insert, seen through the sleeve: the platform band at the
+ * head, then the title running top to bottom on plain stock.
  */
-export function notebookPageTexture(notebook: ShelfNotebook): CanvasTexture {
-  const width = 1024;
-  const height = 1365;
+export function gameSpineTexture(game: ShelfGame, aspect: number): CanvasTexture {
+  const width = 64;
+  const height = Math.round(Math.max(512, Math.min(1400, width * aspect)));
   const { element, ctx } = canvas(width, height);
+  const style = CASE_STYLE[game.system];
 
-  ctx.fillStyle = PAPER;
+  ctx.fillStyle = style.plastic;
   ctx.fillRect(0, 0, width, height);
 
-  const marginX = 168;
-  const ruleTop = 300;
-  const ruleGap = 54;
+  const rim = 3;
+  ctx.fillStyle = style.paper;
+  ctx.fillRect(rim, rim, width - rim * 2, height - rim * 2);
 
-  ctx.strokeStyle = 'rgba(94, 122, 138, 0.30)';
-  ctx.lineWidth = 1.4;
-  for (let y = ruleTop; y < height - 90; y += ruleGap) {
-    ctx.beginPath();
-    ctx.moveTo(96, y);
-    ctx.lineTo(width - 88, y);
-    ctx.stroke();
+  const band = Math.round(height * 0.11);
+  ctx.fillStyle = style.band;
+  ctx.fillRect(rim, rim, width - rim * 2, band);
+  if (game.system === 'switch') {
+    drawSwitchGlyph(ctx, width / 2 - width * 0.2, rim + band / 2 - width * 0.22, width * 0.44, style.bandInk);
+  } else {
+    ctx.fillStyle = style.bandInk;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const size = fitText(ctx, caseMark(game), width * 0.8, width * 0.34, 10, value => `700 ${value}px ${SANS}`);
+    ctx.font = `700 ${size}px ${SANS}`;
+    ctx.fillText(caseMark(game), width / 2, rim + band / 2);
   }
 
-  ctx.strokeStyle = 'rgba(150, 74, 66, 0.42)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(marginX, 120);
-  ctx.lineTo(marginX, height - 70);
-  ctx.stroke();
-
-  // Punch holes for the spiral.
-  ctx.fillStyle = 'rgba(20, 24, 29, 0.16)';
-  for (let y = 130; y < height - 100; y += 118) {
-    ctx.beginPath();
-    ctx.ellipse(52, y, 15, 15, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.textAlign = 'left';
-  ctx.fillStyle = FOREST;
-  ctx.font = `500 22px ${MONO}`;
-  const stamp = notebook.date
-    ? `${notebook.section.toUpperCase()}  /  ${notebook.date}`
-    : notebook.section.toUpperCase();
-  ctx.fillText(stamp, marginX + 26, 150);
-
+  // Title runs top to bottom, the way a game spine reads.
+  ctx.save();
+  ctx.translate(width / 2, rim + band + (height - band - rim * 2) / 2);
+  ctx.rotate(Math.PI / 2);
+  const run = height - band - rim * 2 - width * 0.8;
   ctx.fillStyle = INK;
-  const titleSize = fitText(
-    ctx,
-    notebook.title,
-    width - marginX - 130,
-    58,
-    32,
-    size => `600 ${size}px ${DISPLAY}`,
-  );
-  ctx.font = `600 ${titleSize}px ${DISPLAY}`;
-  const titleLines = wrapLines(ctx, notebook.title, width - marginX - 130, 2);
-  let y = 218;
-  for (const line of titleLines) {
-    ctx.fillText(line, marginX + 26, y);
-    y += titleSize * 1.12;
-  }
-
-  ctx.font = `400 30px ${SANS}`;
-  ctx.fillStyle = 'rgba(20, 24, 29, 0.82)';
-  const bodyLines = wrapLines(
-    ctx,
-    notebook.excerpt || 'No preview available for this entry.',
-    width - marginX - 130,
-    Math.floor((height - ruleTop - 190) / ruleGap),
-  );
-  let ruleY = ruleTop + 34;
-  for (const line of bodyLines) {
-    ctx.fillText(line, marginX + 26, ruleY);
-    ruleY += ruleGap;
-  }
-
-  ctx.font = `500 24px ${MONO}`;
-  ctx.fillStyle = FOREST;
-  ctx.fillText('READ THE FULL ENTRY ->', marginX + 26, Math.min(ruleY + 44, height - 74));
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const size = fitText(ctx, game.title, run, Math.round(width * 0.4), Math.round(width * 0.2), value => `600 ${value}px ${SANS}`);
+  ctx.font = `600 ${size}px ${SANS}`;
+  ctx.fillText(truncate(ctx, game.title, run), 0, 0);
+  ctx.restore();
 
   return toTexture(element, 8);
 }
@@ -779,6 +852,22 @@ export function loadCoverTexture(url: string): Promise<Texture | null> {
       () => resolve(null),
     );
   });
+}
+
+/**
+ * Decodes a cached image for drawing onto a canvas rather than straight onto a
+ * face. Resolves to null on any failure, like loadCoverTexture.
+ */
+export async function loadImage(url: string): Promise<HTMLImageElement | null> {
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = url;
+    await image.decode();
+    return image;
+  } catch {
+    return null;
+  }
 }
 
 /** Text textures pick up the display and sans faces only once the webfonts land. */

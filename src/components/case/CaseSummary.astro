@@ -1,0 +1,36 @@
+---
+import type { WorkPresentation } from '../../lib/work-presentation';
+
+interface Props {
+  presentation: WorkPresentation;
+  variant?: 'page' | 'chat';
+}
+const { presentation, variant = 'page' } = Astro.props;
+---
+{variant === 'chat' ? (
+  <div class="case-summary is-chat">
+    <section aria-label="The Challenge"><h2>The Challenge</h2><p>{presentation.challenge}</p></section>
+    <section aria-label="The Solution"><h2>The Solution</h2><p>{presentation.solution}</p></section>
+  </div>
+) : (
+  <div class="case-summary">
+    <section aria-labelledby="challenge-title"><h2 id="challenge-title">The Challenge</h2><p>{presentation.challenge}</p></section>
+    <section aria-labelledby="solution-title"><h2 id="solution-title">The Solution</h2><p>{presentation.solution}</p></section>
+  </div>
+)}
+
+<style>
+  .case-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin: 38px 0; }
+  .case-summary h2 { font: 700 20px/1.3 var(--sans); letter-spacing: -.02em; margin: 0 0 12px; }
+  .case-summary p { font-size: 13px; line-height: 1.8; color: var(--studio-muted); margin: 0; font-weight: 400; }
+
+  /* Two columns of prose at chat width would be two narrow ones. Stacked, the
+     pair reads as one argument, with a rule marking the turn. */
+  .is-chat { grid-template-columns: 1fr; gap: 0; margin: 0; }
+  .is-chat section + section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--studio-rule); }
+  .is-chat h2 { font-size: 16px; margin-bottom: 8px; }
+  .is-chat p { font-size: 13px; line-height: 1.75; }
+  @media (max-width: 720px) {
+    .case-summary:not(.is-chat) { grid-template-columns: 1fr; gap: 25px; margin: 32px 0; }
+  }
+</style>

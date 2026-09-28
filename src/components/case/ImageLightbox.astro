@@ -1,0 +1,58 @@
+---
+/* Opens case study images full size over the page. The hero link keeps its
+   href to the image file, so without script it still shows the image. */
+---
+<dialog class="lightbox" aria-label="Image viewer">
+  <form method="dialog" class="lightbox-bar"><button class="lightbox-close" value="close">Close</button></form>
+  <img class="lightbox-img" alt="" />
+</dialog>
+
+<script>
+  // Delegated once at the document so it keeps working across soft navigations;
+  // the dialog itself is looked up per click because each page swap replaces it.
+  // Capture phase, so this runs before the ClientRouter treats the hero as a link.
+  const TARGETS = 'a[data-lightbox], .case-prose img';
+
+  document.addEventListener('click', (event) => {
+    const target = (event.target as Element | null)?.closest(TARGETS);
+    const dialog = document.querySelector<HTMLDialogElement>('dialog.lightbox');
+    if (!target || !dialog) return;
+    const img = target instanceof HTMLImageElement ? target : target.querySelector('img');
+    if (!img) return;
+    event.preventDefault();
+    const view = dialog.querySelector<HTMLImageElement>('.lightbox-img')!;
+    view.src = img.currentSrc || img.src;
+    view.alt = img.alt;
+    // Shrunk to fit the screen, a long page like the monthly brief is unreadable,
+    // so tall images keep a readable width and the viewer scrolls instead.
+    dialog.classList.toggle('is-tall', img.naturalHeight > img.naturalWidth * 1.5);
+    dialog.scrollTop = 0;
+    dialog.showModal();
+  }, { capture: true });
+
+  // A click on the backdrop lands on the dialog element itself.
+  document.addEventListener('click', (event) => {
+    const dialog = event.target;
+    if (dialog instanceof HTMLDialogElement && dialog.classList.contains('lightbox')) dialog.close();
+  });
+</script>
+
+<style is:global>
+  a[data-lightbox], .case-prose img { cursor: zoom-in; }
+  html:has(dialog.lightbox[open]) { overflow: hidden; }
+</style>
+
+<style>
+  .lightbox { max-width: none; max-height: none; width: 100%; height: 100%; margin: 0; padding: 16px; border: 0; background: transparent; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: zoom-out; }
+  .lightbox[open] { display: flex; animation: lightbox-in 180ms ease-out; }
+  .lightbox::backdrop { background: color-mix(in srgb, var(--studio-bg) 96%, transparent); }
+  .lightbox-bar { width: 100%; max-width: 1600px; display: flex; justify-content: flex-end; }
+  .lightbox-close { font: 600 11px/1 var(--sans); color: var(--studio-ink); background: var(--studio-bg); border: 1px solid var(--studio-rule); border-radius: 99px; padding: 11px 17px; cursor: pointer; }
+  .lightbox-close:hover { border-color: var(--studio-cyan); color: var(--studio-cyan); }
+  .lightbox-img { display: block; max-width: min(100%, 1600px); max-height: calc(100% - 52px); width: auto; height: auto; object-fit: contain; border: 1px solid var(--studio-rule); border-radius: 10px; background: var(--studio-surface); cursor: default; }
+  .lightbox.is-tall { justify-content: flex-start; overflow-y: auto; }
+  .lightbox.is-tall .lightbox-bar { position: sticky; top: 0; z-index: 1; }
+  .lightbox.is-tall .lightbox-img { max-height: none; }
+  @keyframes lightbox-in { from { opacity: 0; transform: scale(.98); } }
+  @media (prefers-reduced-motion: reduce) { .lightbox[open] { animation: none; } }
+</style>

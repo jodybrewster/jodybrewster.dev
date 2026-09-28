@@ -6,6 +6,7 @@ import CaseVisual from '../../components/case/CaseVisual.astro';
 import CaseFacts from '../../components/case/CaseFacts.astro';
 import CaseSummary from '../../components/case/CaseSummary.astro';
 import CaseArchitecture from '../../components/case/CaseArchitecture.astro';
+import ImageLightbox from '../../components/case/ImageLightbox.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
 
@@ -59,6 +60,7 @@ const jsonLd = {
       </section>
       <footer class="case-footer"><a href="/work" class="studio-text-link"><Icon name="arrow-left" class="icon" /> All work & case studies</a><a href={`${Astro.url.pathname.replace(/\/$/, '')}.md`} class="studio-text-link">Read as Markdown <Icon name="file" class="icon" /></a></footer>
     </article>
+    <ImageLightbox />
   </main>
 </Studio>
 

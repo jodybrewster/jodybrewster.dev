@@ -13,13 +13,14 @@ import { buildShelfPayload } from '../lib/shelf/payload';
 import '../styles/global.css';
 import '../styles/shelf.css';
 
-const { albums, books, notebooks, listeningLabel, libraryLabel, notebookLabel, siteNotebookId } =
-  await buildShelfPayload();
+const { albums, books, games, listeningLabel, libraryLabel, gamesLabel } = await buildShelfPayload();
 
 const title = 'Library - Jody Brewster';
-const description =
-  `A shelf of what Jody Brewster is reading and listening to: ${books.length} books, `
-  + `${albums.length} albums in rotation, and recent notebooks from the site.`;
+const description = games.length
+  ? `A shelf of what Jody Brewster is reading, listening to and playing: ${books.length} books, `
+    + `${albums.length} albums in rotation and the games he played this month.`
+  : `A shelf of what Jody Brewster is reading and listening to: ${books.length} books `
+    + `and ${albums.length} albums in rotation.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -87,11 +88,10 @@ const jsonLd = {
     <LibraryShelf
       albums={albums}
       books={books}
-      notebooks={notebooks}
+      games={games}
       listeningLabel={listeningLabel}
       libraryLabel={libraryLabel}
-      notebookLabel={notebookLabel}
-      siteNotebookId={siteNotebookId}
+      gamesLabel={gamesLabel}
     />
   </main>
 </body>

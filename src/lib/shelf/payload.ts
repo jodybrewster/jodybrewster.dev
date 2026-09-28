@@ -11,25 +11,16 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { getCollection } from 'astro:content';
-import {
-  monthLabel,
-  normalizeAlbums,
-  normalizeBooks,
-  normalizeNotebooks,
-  slugify,
-} from './media';
-import type { ShelfAlbum, ShelfBook, ShelfNotebook } from './media';
+import { monthLabel, normalizeAlbums, normalizeBooks, normalizeGames, slugify } from './media';
+import type { ShelfAlbum, ShelfBook, ShelfGame } from './media';
 
 export interface ShelfPayloadData {
   albums: ShelfAlbum[];
   books: ShelfBook[];
-  notebooks: ShelfNotebook[];
+  games: ShelfGame[];
   listeningLabel: string;
   libraryLabel: string;
-  notebookLabel: string;
-  /** The notebook standing in for the site itself. */
-  siteNotebookId: string;
+  gamesLabel: string;
 }
 
 async function readJson(path: string): Promise<Record<string, unknown>> {
@@ -40,25 +31,10 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   }
 }
 
-/** First real paragraph of an entry, with headings and frontmatter dropped. */
-function excerptOf(body: string | undefined): string {
-  return (body ?? '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#') && !line.startsWith('---') && !line.startsWith('!['))
-    .slice(0, 3)
-    .join(' ');
-}
-
-function dateLabel(value: Date | undefined): string | undefined {
-  return value
-    ? value.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : undefined;
-}
-
 export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   const libraryData = await readJson('content/library.json');
   const listeningData = await readJson('content/listening.json');
+  const gamesData = await readJson('content/games.json');
 
   const books = normalizeBooks((libraryData.books as unknown[]) ?? []);
 
@@ -71,58 +47,24 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   });
   const albums = normalizeAlbums(rawAlbums);
 
-  const writing = (await getCollection('writing', entry => entry.data.status === 'published'))
-    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-    .slice(0, 3)
-    .map(entry => ({
-      title: entry.data.title,
-      href: `/writing/${entry.id}`,
-      section: 'Writing',
-      date: dateLabel(entry.data.date),
-      excerpt: entry.data.description || excerptOf(entry.body),
-    }));
-
-  const research = (await getCollection('research', entry => entry.data.publish))
-    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-    .slice(0, 3)
-    .map(entry => ({
-      title: entry.data.title,
-      href: `/research/${entry.id}`,
-      section: 'Research',
-      date: dateLabel(entry.data.pubDate),
-      excerpt: entry.data.description || excerptOf(entry.body),
-    }));
-
-  const labNotes = (await getCollection('notes', entry => entry.data.publish))
-    .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
-    .slice(0, 3)
-    .map(entry => ({
-      title: entry.data.title,
-      href: `/notes/${entry.id}`,
-      section: 'Lab',
-      date: dateLabel(entry.data.date),
-      excerpt: excerptOf(entry.body),
-    }));
-
-  // The site itself sits on the shelf as a notebook. Opening it is the way home.
-  const siteNotebook = {
-    title: 'jodybrewster.dev',
-    href: '/home',
-    section: 'Site',
-    excerpt: 'The rest of the site: writing, briefs, research, and lab notes.',
-  };
-  const notebooks = normalizeNotebooks([siteNotebook, ...writing, ...research, ...labNotes]);
-  if (notebooks[0]) notebooks[0].color = '#2d5d4f';
+  // Box art is only ever local. A cover path whose file never got cached is
+  // dropped here, so the scene draws a case of its own instead of a 404.
+  const rawGames = (Array.isArray(gamesData.games) ? gamesData.games : []).map(game => {
+    const cover = (game as { cover?: unknown } | null)?.cover;
+    const cached = typeof cover === 'string' && cover.startsWith('/') && existsSync(resolve(`public${cover}`));
+    return cached ? game : { ...(game as object), cover: undefined };
+  });
+  const games = normalizeGames(rawGames);
 
   const month = monthLabel(listeningData.updated as string | undefined);
+  const gamesMonth = monthLabel(gamesData.updated as string | undefined);
 
   return {
     albums,
     books,
-    notebooks,
+    games,
     listeningLabel: month ? `LISTENING · ${month.toUpperCase()}` : 'LISTENING',
     libraryLabel: `LIBRARY · ${books.length} BOOKS`,
-    notebookLabel: `NOTEBOOKS · ${notebooks.length} ENTRIES`,
-    siteNotebookId: notebooks[0]?.id ?? '',
+    gamesLabel: gamesMonth ? `PLAYING · ${gamesMonth.toUpperCase()}` : 'PLAYING',
   };
 }

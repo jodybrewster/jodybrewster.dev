@@ -1,0 +1,40 @@
+{
+  "updated": "2026-09-28",
+  "games": [
+    {
+      "title": "Fortnite",
+      "platform": "Nintendo Switch",
+      "url": "https://www.fortnite.com/",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Fortnite_Save_The_World.jpg",
+      "cover": "/media/games/game-fortnite.jpg"
+    },
+    {
+      "title": "Dead Cells",
+      "platform": "Nintendo Switch",
+      "url": "https://dead-cells.com/",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Dead_cells_cover_art.png",
+      "cover": "/media/games/game-dead-cells.jpg"
+    },
+    {
+      "title": "The Legend of Zelda: Link's Awakening",
+      "platform": "Nintendo Switch",
+      "url": "https://zelda.nintendo.com/links-awakening/",
+      "coverSource": "https://pt.wikipedia.org/wiki/Ficheiro:The_Legend_of_Zelda_Links_Awakening_2019_capa.png",
+      "cover": "/media/games/game-the-legend-of-zelda-links-awakening.jpg"
+    },
+    {
+      "title": "Overwatch",
+      "platform": "Nintendo Switch",
+      "url": "https://overwatch.blizzard.com/",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Overwatch_2_Steam_artwork.jpg",
+      "cover": "/media/games/game-overwatch.jpg"
+    },
+    {
+      "title": "Ghost of Yōtei",
+      "platform": "PlayStation 5",
+      "url": "https://www.playstation.com/en-us/games/ghost-of-yotei/",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Ghost_of_Y%C5%8Dtei_cover_art.png",
+      "cover": "/media/games/game-ghost-of-yotei.jpg"
+    }
+  ]
+}

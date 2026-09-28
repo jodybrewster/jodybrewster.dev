@@ -73,52 +73,6 @@ html:has(> .library-page) {
   text-decoration: none;
 }
 
-/* The live site, set into the notebook's page by CSS3DRenderer. It sits on a
-   layer above the canvas, so it carries its own paper and edge shading rather
-   than picking up the scene's. */
-.library__page {
-  display: block;
-  border: 0;
-  background: var(--paper);
-  box-shadow: inset 22px 0 26px -22px rgb(40 30 16 / 0.5);
-}
-
-/* Where the page goes once it has left the book and taken the window. */
-.library__dock {
-  position: absolute;
-  inset: 0;
-  z-index: 70;
-  background: var(--plaster);
-}
-
-/* Docking never moves the page - moving an iframe in the DOM would reload the
-   site inside it - so the fullscreen state is addressed off the shelf's own
-   flag rather than off a new parent. */
-.library[data-docked] .library__page {
-  box-shadow: none;
-}
-
-.library__page.is-settling {
-  transition: transform 620ms cubic-bezier(0.16, 0.84, 0.44, 1);
-}
-
-/* Folding back wants motion the whole way in. Opening can afford to leap and
-   then ease down, but on the way back that long tail spends its last third
-   nearly stationary, which read as the page stopping and the book closing
-   afterwards - two moves instead of one.
-   The page also goes before it lands: it fades over the first stretch of the
-   travel, so what remains to watch is the book closing rather than a shrinking
-   rectangle of website. Keep these in step with FOLD_MS and FADE_MS. */
-.library__page.is-settling.is-folding {
-  transition:
-    transform 520ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 260ms cubic-bezier(0.4, 0, 1, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .library__page.is-settling { transition: none; }
-}
-
 /* -- Back to the site ------------------------------------------------------ */
 
 /* The only chrome on this page. It sits over the shelf, so it is kept faint
@@ -155,14 +109,6 @@ html:has(> .library-page) {
   color: var(--ink);
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-}
-
-/* Out of the way once the notebook has taken the window. The page docks above
-   the stage but below this, so without it the button floats over the site -
-   which carries its own nav. */
-body:has(.library[data-docked]) .library__back {
-  opacity: 0;
-  pointer-events: none;
 }
 
 /* -- Stage ---------------------------------------------------------------- */
@@ -262,12 +208,6 @@ body:has(.library[data-docked]) .library__back {
   }
 }
 
-.library__card[data-kind='notebook'] {
-  background: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 80%, #000);
-  color: #eef2ef;
-}
-
 .library__card-kind {
   margin: 0 0 10px;
   font-family: var(--mono);
@@ -275,10 +215,6 @@ body:has(.library[data-docked]) .library__back {
   letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase;
   color: var(--accent);
-}
-
-.library__card[data-kind='notebook'] .library__card-kind {
-  color: color-mix(in srgb, #eef2ef 72%, transparent);
 }
 
 .library__card-title {
@@ -297,11 +233,6 @@ body:has(.library[data-docked]) .library__back {
   color: var(--ink-soft);
 }
 
-.library__card[data-kind='notebook'] .library__card-credit,
-.library__card[data-kind='notebook'] .library__card-excerpt {
-  color: color-mix(in srgb, #eef2ef 78%, transparent);
-}
-
 .library__card-excerpt {
   margin: 12px 0 0;
   font-size: var(--t-ui);
@@ -317,7 +248,7 @@ body:has(.library[data-docked]) .library__back {
 /*
  * Both elements below set display, which beats the hidden attribute's
  * display:none from the UA sheet. Hiding them in script did nothing, so an
- * album or a book kept showing whichever notebook excerpt was rendered last.
+ * album or a book kept showing whichever game note was rendered last.
  * Attribute plus class outranks the class alone, so no !important is needed.
  */
 .library__card-excerpt[hidden],
@@ -337,11 +268,6 @@ body:has(.library[data-docked]) .library__back {
   border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
-.library__card[data-kind='notebook'] .library__card-link {
-  color: #eef2ef;
-  border-bottom-color: rgb(238 242 239 / 0.45);
-}
-
 .library__card-link::after {
   content: '\2192';
 }
@@ -358,10 +284,6 @@ body:has(.library[data-docked]) .library__back {
   font-size: var(--t-meta);
   color: var(--ink-faint);
   cursor: pointer;
-}
-
-.library__card[data-kind='notebook'] .library__card-close {
-  color: color-mix(in srgb, #eef2ef 60%, transparent);
 }
 
 .library__kbd {
@@ -484,6 +406,17 @@ body:has(.library[data-docked]) .library__back {
 
 .shelf__item--album .shelf__art {
   aspect-ratio: 1 / 1;
+}
+
+/* Box art comes in whatever shape the publisher cut it, and wide art carries
+   its title edge to edge. Shown whole rather than cropped to a jacket. */
+.shelf__item--game .shelf__art {
+  aspect-ratio: 3 / 4;
+  background: var(--ink);
+}
+
+.shelf__item--game .shelf__art img {
+  object-fit: contain;
 }
 
 .shelf__art img {

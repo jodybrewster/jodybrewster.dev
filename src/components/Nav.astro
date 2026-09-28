@@ -194,27 +194,6 @@ function isActive(href: string): boolean {
   const wantsLibrary = (e: Event) =>
     (e.target as Element | null)?.closest?.('a[href="/library"]') != null;
 
-  // This page is also read inside the shelf, as live markup on the open
-  // notebook's page. There the shelf is one layer behind the reader already, so
-  // the Library link folds the notebook shut instead of loading anything.
-  // Capture, because the router is also listening for this click.
-  let insideShelf = false;
-  try {
-    insideShelf = window.parent !== window
-      && window.parent.location.origin === location.origin;
-  } catch {
-    insideShelf = false;
-  }
-
-  if (insideShelf) {
-    document.addEventListener('click', (e) => {
-      if (!wantsLibrary(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      window.parent.postMessage({ type: 'shelf:close' }, location.origin);
-    }, { capture: true });
-  }
-
   // The shelf carries ~150KB gzipped of Three.js. Astro's prefetch pulls the
   // shelf document on hover, but the document is not the slow part, so read
   // the module URLs out of it and pull those into the cache as well. They are
@@ -244,9 +223,6 @@ function isActive(href: string): boolean {
     }
   }
 
-  // Inside the shelf the bundle is already running, so there is nothing to warm.
-  if (!insideShelf) {
-    document.addEventListener('pointerover', (e) => { if (wantsLibrary(e)) warmLibrary(); });
-    document.addEventListener('focusin', (e) => { if (wantsLibrary(e)) warmLibrary(); });
-  }
+  document.addEventListener('pointerover', (e) => { if (wantsLibrary(e)) warmLibrary(); });
+  document.addEventListener('focusin', (e) => { if (wantsLibrary(e)) warmLibrary(); });
 </script>

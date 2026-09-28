@@ -13,11 +13,13 @@ export const VERSO_NAME = 'Verso';
 /** Stored short: a conversation log is round-tripped through Redis on every
  *  turn, so the keys are one character each. */
 export interface ConversationTurn {
-  /** user | assistant */
-  r: 'u' | 'a';
+  /** user | assistant | Jody, replying from Telegram (src/lib/operator.ts) */
+  r: 'u' | 'a' | 'j';
   t: string;
   /** epoch ms */
   ts: number;
+  /** On a Jody turn only: the question he was replying to. */
+  q?: string;
 }
 
 /** How much of the past goes back up with each question. Six turns is three
@@ -88,6 +90,8 @@ export function normalizeTurns(history: ConversationTurn[]): ConversationTurn[] 
   for (const entry of history) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
     const raw = entry as ConversationTurn;
+    // Jody's replies stay out of the prompt, or Verso would quote him as if
+    // it had said them and learn to write in his voice.
     if (raw.r !== 'u' && raw.r !== 'a') continue;
     if (typeof raw.t !== 'string' || !raw.t.trim()) continue;
 

@@ -38,23 +38,19 @@ Not austere: warm, but never effusive. Not academic: rigorous, but never jargon-
 
 **Argue by doing.** A site about designing AI-native interfaces should demonstrate AI-native design. Verso, the MCP endpoint, the .md URL pattern, the agent page are not features bolted on: they are the argument made tangible. Design decisions about these surfaces should be made with the same care as the typography.
 
-**A human may be behind Verso.** Verso is one persona with two authors. Most of the time it answers from the published corpus. When Jody is available, the question reaches his phone and his reply comes back through the same stream, paced the same way, under the same name. The visitor is not told which one answered.
+**Verso is an AI, and Jody reads along.** Verso answers every question from the published corpus, and never waits for a person. Each finished question and its answer also reach Jody's phone. If he replies, the reply appears in the visitor's chat as him, under his own name, beside Verso's answer rather than in place of it. The two voices are never merged: Verso speaks about Jody in the third person, and Jody speaks as himself.
 
-Being available is a window, not a switch. `/on` puts Jody on call for ten hours and it closes by itself, because the failure that matters is not forgetting to turn it on - it is believing you are on call when you stopped being hours ago, while a visitor waits out the full window for a reply that is not coming. The window expiring is announced rather than silent, on his next contact with the bot or the next visitor question, whichever lands first.
+The dock says so plainly: Verso is an AI, it can get things wrong, and Jody sees what is asked and sometimes replies himself. Copy describing Verso says what it answers from, not what generates it, and must never suggest Jody writes Verso's answers.
 
-This is a deliberate position and it has edges worth keeping in view. Verso speaks about Jody in the third person and never as him, which holds on both paths: the site refuses voice cloning, and a human writing in the assistant's register is not a clone of anyone. What the site must not do is claim more than is true. Copy describing Verso says what it answers from, not what generates it. A page that promised answers came only from the corpus would be lying every time he picked up his phone.
-
-One line breaks that rule knowingly: the ask-bar placeholder reads "Ask Verso, Jody's AI Assistant". It asserts the mechanism rather than the behaviour, and it is the one piece of user-facing text that is false while he is typing. It is Jody's call and it stands. Anything added later should follow the rule above rather than this exception.
-
-Verso asks a first-time visitor for their name before their first question goes out, and remembers it. The reason is not personalisation - the model never sees it - but that Jody is sometimes the one answering, and answering well means knowing who is asking. The name reaches his phone and nowhere else.
+One line breaks the third-person rule knowingly: the ask-bar placeholder reads "Ask Verso about my work". It is Jody's call and it stands. Anything added later should follow the rule rather than this exception.
 
 ## Measurement
 
-The site collects two things, and neither is currently disclosed to the reader. Verso stores a visitor's first name in their browser and sends it to Telegram. Google Analytics 4 runs on every page in production builds, sending page views by hand because the router makes every navigation after the first a soft one.
+The site collects two things. Verso's questions and answers go to Jody's phone, which the dock discloses. Google Analytics 4 runs on every page in production builds, sending page views by hand because the router makes every navigation after the first a soft one.
 
 Analytics on a site whose argument is restraint deserves a stated position rather than a default. The one worth holding: measure whether the writing reaches people, not who they are. That means page views and referrers are in scope and behavioural profiling is not.
 
-There is no privacy policy. With a name field and GA4 both live, that gap is now the site's most visible unfinished edge, and it should close before the site carries real traffic.
+There is no privacy policy. With Verso transcripts and GA4 both live, that gap is now the site's most visible unfinished edge, and it should close before the site carries real traffic.
 
 **Earned authority, not borrowed credibility.** No credentials list, no employer logos, no follower counts. The quality of the thinking is the credential. The design should reinforce this by presenting ideas without scaffolding them in social proof.
 

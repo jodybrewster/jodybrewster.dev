@@ -242,13 +242,13 @@ Verso has a second interface with no visual system at all: the messages the bot 
 
 Four rules hold across every bot message.
 
-**One glance, on a phone, mid-something-else.** The first line carries the whole message; anything after it is detail he can skip. A question header is `Verso · Sarah · a3f1 · q2` because that ordering answers "who" before "which conversation".
+**One glance, on a phone, mid-something-else.** The first line carries the whole message; anything after it is detail he can skip. A turn header is `Verso · a3f1 · q2`, and a failed one adds `· no answer` on that same line, because that is the one he most needs to see.
 
-**State what happened, then what it means for him.** "Handoff expired 20m ago - the 10h window ran out. Verso is answering from the corpus again." The event, the consequence, then the way back. Never the event alone.
+**State what happened, then what it means for him.** "Sent. It shows in their chat if the page is still open." The event, then its limit. Never the event alone.
 
 **Every message is plain text, no `parse_mode`.** This is a correctness constraint before it is a stylistic one: under Markdown an unbalanced `*` in a visitor's question makes Telegram reject the message and the question vanishes silently. So no bold, no italics, no links - emphasis has to come from sentence order.
 
-**Say when nothing happened.** Silence on this channel reads as success, so a refusal, a too-late reply, or a non-text message all get an explicit line. "Nothing sent" appears verbatim wherever that is the outcome.
+**Say when nothing happened.** Silence on this channel reads as success, so a bare message that quotes no question, an expired conversation or a non-text message all get an explicit line. "Nothing sent" appears verbatim wherever that is the outcome.
 
 ## 6. Do's and Don'ts
 

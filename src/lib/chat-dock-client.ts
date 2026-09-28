@@ -12,6 +12,14 @@ function loadVoice(): Promise<VoiceModule> {
   return voiceModule;
 }
 
+interface Reply { t: string; ts: number; q?: string }
+const ASKED_KEY = 'verso:asked';
+const REPLY_SEEN_KEY = 'verso:reply-seen';
+const FAST_POLL_MS = 15_000;
+const FAST_POLL_FOR_MS = 2 * 60_000;
+const SLOW_POLL_MS = 60_000;
+const REPLY_WINDOW_MS = 30 * 60_000;
+
 let mounted: HTMLElement | null = null;
 let dispose = () => {};
 let syncMode = () => {};
@@ -68,6 +76,8 @@ export function initChatDock(): void {
   window.visualViewport?.addEventListener('scroll', sizeToKeyboard, eventOptions);
 
   const readCid = () => { try { return sessionStorage.getItem('verso:cid') || undefined; } catch { return undefined; } };
+  const readNumber = (key: string) => { try { return Number(sessionStorage.getItem(key)) || 0; } catch { return 0; } };
+  const writeNumber = (key: string, value: number) => { try { sessionStorage.setItem(key, String(value)); } catch { /* Optional. */ } };
 
   function appendTemplate(id: string, parent = conversation): HTMLElement {
     const template = dock!.querySelector<HTMLTemplateElement>(id)!;
@@ -110,6 +120,51 @@ export function initChatDock(): void {
     if (block.children.length > 1) target.append(block);
   }
 
+  /*
+   * Jody can answer a question from Telegram after Verso has. His reply lands
+   * in the conversation on the server, and the dock looks for it: often right
+   * after a question, less often as it ages, never once the tab is hidden or
+   * half an hour has passed. The last question's time is kept in the session
+   * so a reload keeps looking, and the newest reply shown so it is not shown
+   * twice.
+   */
+  let pollTimer = 0;
+  async function checkReplies(): Promise<void> {
+    const cid = readCid();
+    if (!cid || document.hidden) return;
+    let replies: unknown;
+    try {
+      const res = await fetch(`/api/replies?cid=${encodeURIComponent(cid)}`, { signal: listeners.signal });
+      if (!res.ok) return;
+      ({ replies } = await res.json() as { replies?: unknown });
+    } catch { return; }
+    // A new chat may have started while this was in flight.
+    if (readCid() !== cid || !Array.isArray(replies)) return;
+    const seen = readNumber(REPLY_SEEN_KEY);
+    const fresh = (replies as Reply[]).filter(reply => typeof reply?.t === 'string' && typeof reply.ts === 'number' && reply.ts > seen);
+    if (!fresh.length) return;
+    open(); empty.hidden = true;
+    for (const reply of fresh) {
+      const turn = appendTemplate('#tpl-jody');
+      const replyTo = turn.querySelector<HTMLElement>('.reply-to')!;
+      if (reply.q) replyTo.textContent = `Replying to "${reply.q.length > 90 ? `${reply.q.slice(0, 89)}…` : reply.q}"`;
+      else replyTo.remove();
+      renderText(turn.querySelector<HTMLElement>('.reply-body')!, reply.t);
+    }
+    writeNumber(REPLY_SEEN_KEY, Math.max(...fresh.map(reply => reply.ts)));
+    scrollToAnswer();
+  }
+  function pollReplies(): void {
+    clearTimeout(pollTimer);
+    const since = Date.now() - readNumber(ASKED_KEY);
+    if (!readCid() || since > REPLY_WINDOW_MS) return;
+    pollTimer = window.setTimeout(() => { void checkReplies().finally(pollReplies); },
+      since < FAST_POLL_FOR_MS ? FAST_POLL_MS : SLOW_POLL_MS);
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) void checkReplies(); }, eventOptions);
+  void checkReplies();
+  pollReplies();
+
   async function ask(query: string, retryTurn?: HTMLElement): Promise<void> {
     query = query.trim();
     if (!query || request) return;
@@ -149,6 +204,7 @@ export function initChatDock(): void {
       });
       if (!text.trim()) throw new Error('Nothing came back. Please try again.');
       renderSources(said, sources);
+      writeNumber(ASKED_KEY, Date.now()); pollReplies();
       // Leave only once the answer has landed, so it is there to come back to.
       if (destination) void navigate(destination);
     } catch (error) {
@@ -170,7 +226,8 @@ export function initChatDock(): void {
   dock.querySelector('#dock-close')!.addEventListener('click', closeFromButton, eventOptions);
   newChat.addEventListener('click', () => {
     if (request) return;
-    try { sessionStorage.removeItem('verso:cid'); } catch { /* Optional. */ }
+    try { for (const key of ['verso:cid', ASKED_KEY, REPLY_SEEN_KEY]) sessionStorage.removeItem(key); } catch { /* Optional. */ }
+    clearTimeout(pollTimer);
     if (voice) { voice.stopVoice(); renderer?.reset(voice.voiceSession().getSnapshot().messages); status(null); }
     conversation.replaceChildren(); empty.hidden = false; input.value = ''; input.focus({ preventScroll: true });
   }, eventOptions);
@@ -254,5 +311,5 @@ export function initChatDock(): void {
     else void loadVoice().then(start).catch(() => status('Voice could not load. You can keep typing.'));
   }, eventOptions);
 
-  dispose = () => { request?.abort(); listeners.abort(); unsubscribe(); clearInterval(countdown); };
+  dispose = () => { request?.abort(); listeners.abort(); unsubscribe(); clearInterval(countdown); clearTimeout(pollTimer); };
 }

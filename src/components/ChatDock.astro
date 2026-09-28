@@ -39,7 +39,7 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
           </div>
         </div>
       </div>
-      <p class="dock-data-note">Verso is an AI. It answers from Jody's writing and work, and can get things wrong.</p>
+      <p class="dock-data-note">Verso is an AI. It answers from Jody's writing and work, and can get things wrong. Jody sees what's asked here and sometimes replies himself.</p>
       <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="polite" aria-relevant="additions"></div>
     </div>
   </div>
@@ -71,6 +71,14 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
 
   <template id="tpl-retry">
     <div class="dock-recovery"><p class="dock-error" role="status"></p><button type="button" class="dock-retry">Try again</button></div>
+  </template>
+  <!-- A reply Jody sent from Telegram. It names the question because after a
+       reload the turn it answers is no longer on screen. -->
+  <template id="tpl-jody">
+    <div class="turn jody">
+      <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> Jody</span>
+      <div class="said"><p class="reply-to"></p><div class="reply-body"></div></div>
+    </div>
   </template>
   <template id="tpl-you">
     <div class="turn you">

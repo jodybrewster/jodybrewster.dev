@@ -101,3 +101,31 @@ export async function conversationLength(
   if (!redis) return 0;
   return guard('conversation length failed', 0, async () => redis.llen(convKey(cid)));
 }
+
+/** A reply Jody sent from Telegram, as the dock shows it. */
+export interface Reply { t: string; ts: number; q: string }
+
+export async function appendReply(
+  cid: string,
+  text: string,
+  question: string,
+  redis: RedisLike | null = getRedis(),
+): Promise<boolean> {
+  if (!redis) return false;
+  return guard('reply append failed', false, async () => {
+    const key = convKey(cid);
+    await redis.rpush(key, JSON.stringify({ r: 'j', t: text, q: question, ts: Date.now() } satisfies ConversationTurn));
+    await redis.expire(key, CONV_TTL_S);
+    return true;
+  });
+}
+
+export async function readReplies(
+  cid: string,
+  redis: RedisLike | null = getRedis(),
+): Promise<Reply[]> {
+  const turns = await readHistory(cid, redis);
+  return turns.flatMap(turn => turn.r === 'j' && typeof turn.t === 'string' && typeof turn.ts === 'number'
+    ? [{ t: turn.t, ts: turn.ts, q: typeof turn.q === 'string' ? turn.q : '' }]
+    : []);
+}

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONV_TTL_S, appendTurn, conversationLength, readHistory, type RedisLike } from './conversation';
+import { CONV_TTL_S, appendReply, appendTurn, conversationLength, readHistory, readReplies, type RedisLike } from './conversation';
+import { normalizeTurns } from './verso';
 
 /** In-memory Redis lists. Records TTLs so the expiry policy can be asserted. */
 class FakeRedis implements RedisLike {
@@ -109,5 +110,34 @@ describe('degradation', () => {
     await expect(appendTurn('c1', { r: 'u', t: 'hi', ts: 1 }, broken)).resolves.toBeUndefined();
     await expect(conversationLength('c1', broken)).resolves.toBe(0);
     expect(errors).toHaveBeenCalled();
+  });
+});
+
+describe('Jody replies', () => {
+  const cid = 'a3f1c2d4-0000-4000-8000-000000000000';
+
+  it('stores a reply in the conversation and reads back only replies', async () => {
+    const redis = new FakeRedis();
+    await appendTurn(cid, { r: 'u', t: 'What did he build?', ts: 1 }, redis);
+    await appendTurn(cid, { r: 'a', t: 'A tracker.', ts: 2 }, redis);
+    expect(await appendReply(cid, 'Happy to talk.', 'What did he build?', redis)).toBe(true);
+    const replies = await readReplies(cid, redis);
+    expect(replies).toEqual([{ t: 'Happy to talk.', ts: expect.any(Number), q: 'What did he build?' }]);
+    expect(redis.ttls.get(`chat:conv:${cid}`)).toBe(CONV_TTL_S);
+  });
+
+  it('keeps replies out of the transcript the model sees', async () => {
+    const redis = new FakeRedis();
+    await appendTurn(cid, { r: 'u', t: 'Q1', ts: 1 }, redis);
+    await appendTurn(cid, { r: 'a', t: 'A1', ts: 2 }, redis);
+    await appendReply(cid, 'From Jody', 'Q1', redis);
+    const turns = normalizeTurns(await readHistory(cid, redis));
+    expect(turns.map(turn => turn.t)).toEqual(['Q1', 'A1']);
+  });
+
+  it('reports failure without throwing when Redis is down or absent', async () => {
+    expect(await appendReply(cid, 'x', 'q', new BrokenRedis())).toBe(false);
+    expect(await appendReply(cid, 'x', 'q', null)).toBe(false);
+    expect(await readReplies(cid, null)).toEqual([]);
   });
 });

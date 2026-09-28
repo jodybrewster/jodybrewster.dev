@@ -4,476 +4,241 @@ import { searchVectors, getChunkText, type SearchHit, type SourceMetadata } from
 import { getIpLimiter, getGlobalLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
 import { getRedis } from '../../lib/redis';
 import {
-  HANDOFF_WINDOW_MS,
-  POLL_INTERVAL_MS,
-  isOperatorOnline,
-  readHistory,
-  appendTurn,
-  conversationLength,
-  putPending,
-  claim,
-  getReply,
-  putFinal,
-  mapTelegramMessage,
-  setLastQuestion,
+  HANDOFF_WINDOW_MS, POLL_INTERVAL_MS, isOperatorOnline, readHistory, appendTurn,
+  conversationLength, putPending, claim, getReply, putFinal, mapTelegramMessage,
+  setLastQuestion, closeHandoff,
 } from '../../lib/handoff';
 import { telegramConfigured, formatQuestionMessage, sendQuestion } from '../../lib/telegram';
 import { announceLapse } from './telegram';
 import {
-  SYSTEM_PROMPT,
-  MAX_QUERY_LEN,
-  MAX_TURNS_PER_CONV,
-  isValidConversationId,
-  retrievalQuery,
-  buildMessages,
-  chunkForTyping,
-  typingDelayMs,
-  type ConversationTurn,
+  SYSTEM_PROMPT, MAX_QUERY_LEN, MAX_TURNS_PER_CONV, isValidConversationId,
+  retrievalQuery, buildMessages, chunkForTyping, typingDelayMs, type ConversationTurn,
 } from '../../lib/verso';
 import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
-
-/**
- * Verso's one endpoint: retrieve, ask the human, and let the model answer when
- * he doesn't.
- *
- * The unusual shape here is that the wait IS the request. When the operator is
- * online the question goes to Telegram and this response stays open, polling
- * Redis, for up to HANDOFF_WINDOW_MS. There are no background workers on
- * Vercel and no second channel back to the browser, so the only thing that can
- * hold a visitor between "asked" and "answered" is the connection they already
- * have. Everything below is arranged around not dropping it.
- *
- * The visitor is never told which side answered. A human reply is played back
- * at the same pace the model streams at, because latency is the only tell that
- * would otherwise give it away.
- */
+import { withDeadline } from '../../lib/deadline';
 
 export const prerender = false;
-
 const MODEL = 'claude-sonnet-4-6';
-
-/** Vercel's maxDuration is 90s (astro.config.mjs). Stopping ten seconds short
- *  means the stream closes itself rather than being cut mid-frame, which would
- *  leave the client reading a body that never ends. */
-const HARD_DEADLINE_MS = 80_000;
-
-/** Idle streams get collapsed by proxies and by phones putting the radio to
- *  sleep. Nothing else travels during the handoff window, so a comment frame
- *  does the work. */
-const HEARTBEAT_MS = 10_000;
-
-/** How long to keep looking for a reply after losing the claim race at the
- *  deadline. Covers the gap between the webhook claiming and writing. */
-const REPLY_GRACE_MS = 3_000;
-
-/** The visitor's first name, for the operator's header. The client caps it too,
- *  but a client cap is a courtesy, not a constraint. */
-const MAX_NAME_LEN = 40;
-
-const DAILY_CAP_MESSAGE =
-  'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-/** The citation block the client renders under an answer. */
+const HARD_DEADLINE_MS = 80_000; // Leave ten seconds below Vercel's ceiling.
+const DAILY_CAP_MESSAGE = 'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
+const UNAVAILABLE = 'Chat is temporarily unavailable. Try again shortly.';
+const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => {
+  if (signal.aborted) { reject(signal.reason); return; }
+  const abort = () => { clearTimeout(timer); reject(signal.reason); };
+  const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
+  signal.addEventListener('abort', abort, { once: true });
+});
 interface CitedSource {
-  type: SourceMetadata['type'];
-  slug: string;
-  title: string;
-  date: string;
-  url: string;
-  score: number;
-}
-
-interface ChatBody {
-  query?: string;
-  cid?: string;
-  name?: string;
-}
-
-/**
- * The exchange before this one, for the Telegram header. Scans backwards for
- * the last answer and the question that produced it, so a log left ragged by a
- * retry still yields a usable preview instead of a mismatched pair.
- */
-function lastExchange(history: ConversationTurn[]): { prevQ?: string; prevA?: string } {
-  let prevA: string | undefined;
-  let prevQ: string | undefined;
-  for (let i = history.length - 1; i >= 0; i -= 1) {
-    const turn = history[i];
-    if (!turn || typeof turn.t !== 'string') continue;
-    if (prevA === undefined && turn.r === 'a') prevA = turn.t;
-    else if (prevA !== undefined && prevQ === undefined && turn.r === 'u') prevQ = turn.t;
-    if (prevA !== undefined && prevQ !== undefined) break;
-  }
-  return { prevQ, prevA };
+  type: SourceMetadata['type']; slug: string; title: string; date: string; url: string; score: number;
 }
 
 export const POST: APIRoute = async ({ request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
-
-  const hardDeadline = Date.now() + HARD_DEADLINE_MS;
-
-  let body: ChatBody;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response('Invalid JSON', { status: 400 });
+  const started = Date.now();
+  let body: unknown;
+  try { body = await withDeadline(() => request.json(), 4000, request.signal); }
+  catch { return new Response('Invalid JSON', { status: 400 }); }
+  if (!body || typeof body !== 'object' || Array.isArray(body) ||
+      typeof (body as { query?: unknown }).query !== 'string') {
+    return new Response('query must be a string', { status: 400 });
   }
-
-  const query = (body.query ?? '').trim();
+  const data = body as { query: string; cid?: unknown; name?: unknown };
+  const query = data.query.trim();
   if (!query) return new Response('query required', { status: 400 });
-  if (query.length > MAX_QUERY_LEN) {
-    return new Response(`query too long (max ${MAX_QUERY_LEN} chars)`, { status: 413 });
-  }
-
-  // ── visitor name ──────────────────────────────────────────
-  // Who is asking, for the header on Jody's phone. Anything that is not a
-  // usable string is dropped rather than refused: the name is a nicety and a
-  // malformed one must never cost someone their question.
-  //
-  // It travels to Telegram and nowhere else. Deliberately kept out of the
-  // system prompt, the messages, and the history written to Redis - the model
-  // has no reason to personalise an answer, and what it never reads it can
-  // never echo back or carry into a later turn.
-  const name = typeof body.name === 'string'
-    ? body.name.trim().slice(0, MAX_NAME_LEN) || undefined
-    : undefined;
-
-  // ── origin check (prod only) ──────────────────────────────
-  if (!isOriginAllowed(request)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
-  // ── fail closed without Redis, in production only ─────────
-  // Both limiters are built on the Redis client, and a null client makes them
-  // null too - which is to say no rate limiting whatsoever, on a route that
-  // spends the Anthropic key. That is a worse outcome than being down. Dev
-  // still fails open so `astro dev` runs without an Upstash account.
-  if (!getRedis() && env('VERCEL_ENV') === 'production') {
-    return new Response('Chat is temporarily unavailable. Try again shortly.', { status: 503 });
-  }
-
-  // ── per-IP rate limit ─────────────────────────────────────
-  // The limiters reach Redis directly and throw when it is unreachable - a
-  // deleted Upstash database stops resolving, which surfaces as a DNS error
-  // deep inside undici rather than as a null client. Unreachable is the same
-  // situation as absent, so it takes the same branch instead of escaping as a
-  // bare 500 with no body.
-  const ipLimiter = getIpLimiter();
-  if (ipLimiter) {
-    const ip = clientIp(request);
-    try {
-      const { success } = await ipLimiter.limit(ip);
-      if (!success) {
-        return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
-      }
-    } catch (err) {
-      console.error('[chat] ip limiter unreachable', err);
-      if (env('VERCEL_ENV') === 'production') {
-        return new Response('Chat is temporarily unavailable. Try again shortly.', { status: 503 });
-      }
-    }
-  }
-
-  // ── conversation ──────────────────────────────────────────
-  // A posted id that isn't a canonical UUID is replaced rather than repaired:
-  // it goes into Redis key names, and a fresh conversation is a cheaper
-  // failure than a poisoned key. A minted id has nothing stored under it, so
-  // both reads below are skipped for one.
-  const posted = isValidConversationId(body.cid) ? body.cid : null;
+  if (query.length > MAX_QUERY_LEN) return new Response(`query too long (max ${MAX_QUERY_LEN} chars)`, { status: 413 });
+  if (!isOriginAllowed(request)) return new Response('Forbidden', { status: 403 });
+  if (!getRedis() && env('VERCEL_ENV') === 'production') return new Response(UNAVAILABLE, { status: 503 });
+  const name = typeof data.name === 'string' ? data.name.trim().slice(0, 40) || undefined : undefined;
+  const posted = isValidConversationId(data.cid) ? data.cid : null;
   const cid = posted ?? crypto.randomUUID();
   const mid = crypto.randomUUID();
-
-  const history = posted ? await readHistory(cid) : [];
-  if (posted && (await conversationLength(cid)) >= MAX_TURNS_PER_CONV * 2) {
-    return new Response(
-      'This conversation has run long. Reload the page to start a fresh one.',
-      { status: 429 },
-    );
-  }
-
-  // ── site-wide daily budget, checked but not yet spent ─────
-  // Only the model spends this budget; a question Jody answers himself costs
-  // nothing, so an exhausted budget must not turn away a visitor he is
-  // standing by to answer. `getRemaining` reads the window without consuming
-  // from it, and the token is taken in runModel() at the moment it is earned.
-  // Presence is read once here and reused for the handoff below - the two
-  // decisions are a few milliseconds apart and share one answer.
-  const operatorOnline = await isOperatorOnline();
-
-  // A window that ran out is invisible until something looks, and this is the
-  // look that matters: someone is asking right now and he does not know he
-  // stopped being the one answering. Fire-and-forget - the visitor waits on
-  // their answer, not on his notification, and the claim inside makes it fire
-  // once no matter how many requests arrive together.
-  if (!operatorOnline) {
-    void announceLapse().catch(err => console.error('[chat] lapse notice failed', err));
-  }
-
+  const log = (stage: string, status: string) => console.info('[chat]', { mid, stage, status, elapsedMs: Date.now() - started });
   const globalLimiter = getGlobalLimiter();
-  if (globalLimiter && !operatorOnline) {
-    try {
-      const { remaining } = await globalLimiter.getRemaining('global');
-      if (remaining <= 0) {
-        return new Response(DAILY_CAP_MESSAGE, { status: 429 });
+  let history: ConversationTurn[] = [];
+  let operatorOnline = false;
+  try {
+    const denied = await withDeadline(async signal => {
+      const ipLimiter = getIpLimiter();
+      if (ipLimiter) {
+        const result = await ipLimiter.limit(clientIp(request));
+        signal.throwIfAborted();
+        if (result.reason === 'timeout') return new Response(UNAVAILABLE, { status: 503 });
+        if (!result.success) return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
       }
-    } catch (err) {
-      console.error('[chat] global limiter unreachable', err);
-      if (env('VERCEL_ENV') === 'production') {
-        return new Response('Chat is temporarily unavailable. Try again shortly.', { status: 503 });
+      history = posted ? await readHistory(cid) : [];
+      signal.throwIfAborted();
+      if (posted && await conversationLength(cid) >= MAX_TURNS_PER_CONV * 2) {
+        return new Response('This conversation has run long. Start a new chat to continue.', { status: 429 });
       }
-    }
+      signal.throwIfAborted();
+      operatorOnline = await isOperatorOnline();
+      signal.throwIfAborted();
+      if (globalLimiter && !operatorOnline) {
+        const { remaining } = await globalLimiter.getRemaining('global');
+        signal.throwIfAborted();
+        if (remaining <= 0) return new Response(DAILY_CAP_MESSAGE, { status: 429 });
+      }
+      return null;
+    }, 4000, request.signal);
+    if (denied) return denied;
+    log('setup', 'complete');
+  } catch {
+    log('setup', 'unavailable');
+    return new Response(UNAVAILABLE, { status: 503 });
   }
-
-  const anthropic = new Anthropic({ apiKey: env('ANTHROPIC_API_KEY') });
+  // Notification failure cannot hold the answer open, and never logs its payload.
+  if (!operatorOnline) void withDeadline(() => announceLapse(), 5000).catch(() => log('presence-notice', 'failed'));
+  if (!env('ANTHROPIC_API_KEY')) return new Response(UNAVAILABLE, { status: 503 });
+  const anthropic = new Anthropic({ apiKey: env('ANTHROPIC_API_KEY'), maxRetries: 0, timeout: 50_000 });
+  const lifetime = new AbortController();
+  let completed = false;
+  const disconnect = () => { if (!completed) lifetime.abort(new DOMException('Disconnected', 'AbortError')); };
+  request.signal.addEventListener('abort', disconnect, { once: true });
+  if (request.signal.aborted) disconnect();
+  const hardTimer = setTimeout(() => lifetime.abort(new DOMException('Request timed out', 'TimeoutError')),
+    Math.max(1, HARD_DEADLINE_MS - (Date.now() - started)));
   const encoder = new TextEncoder();
-
-  const stream = new ReadableStream({
+  const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      // A visitor who closes the tab cancels the stream, but not this handler.
-      // Enqueueing into a dead controller throws, and that throw would skip
-      // the persist in the finally block - so writes degrade to no-ops and
-      // the answer still lands in the transcript.
-      let live = true;
-      const write = (raw: string) => {
-        if (!live) return;
-        try {
-          controller.enqueue(encoder.encode(raw));
-        } catch {
-          live = false;
-        }
+      const send = (event: Record<string, unknown>) => {
+        try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`)); } catch { disconnect(); }
       };
-      const send = (event: Record<string, unknown>) => write(`data: ${JSON.stringify(event)}\n\n`);
-      // An SSE comment. The client skips anything that isn't a `data: ` frame.
-      const ping = () => write(': ping\n\n');
-
+      const heartbeat = setInterval(() => {
+        try { controller.enqueue(encoder.encode(': ping\n\n')); } catch { disconnect(); }
+      }, 10_000);
       let answerText = '';
       let answeredBy: 'human' | 'llm' = 'llm';
       let sources: CitedSource[] = [];
-      let retrieval: Promise<SearchHit[]> | null = null;
-
-      /**
-       * Push the question to Telegram and park on it. Returns his reply, or
-       * null if the window closed without one and the model should answer.
-       */
-      async function askOperator(): Promise<string | null> {
-        const index = Math.floor(history.length / 2) + 1;
-        await putPending(mid, { cid, q: query, ts: Date.now(), index, name });
-
-        // Retrieval runs about a second, and it is a second of dead air if it
-        // waits for the window to close. Started now, thrown away if he
-        // answers. The catch marks the rejection handled at birth: an
-        // abandoned promise that rejects later takes the process down with it,
-        // and the model path re-awaits this and handles the failure properly.
-        retrieval = searchVectors(retrievalQuery(history, query), 5);
-        retrieval.catch(() => {});
-
-        const { prevQ, prevA } = lastExchange(history);
-        const tgMessageId = await sendQuestion(formatQuestionMessage({
-          cid,
-          question: query,
-          index,
-          name,
-          prevQ,
-          prevA,
-          windowSeconds: Math.round(HANDOFF_WINDOW_MS / 1000),
-        }));
-
-        // Telegram is down, or the owner never sent the bot /start. Either way
-        // the question is on nobody's phone, so waiting on it is 40 seconds of
-        // the visitor watching nothing happen.
-        if (tgMessageId === null) return null;
-
-        await mapTelegramMessage(tgMessageId, mid);
-        await setLastQuestion(mid);
-
-        const deadline = Date.now() + HANDOFF_WINDOW_MS;
-        let nextPing = Date.now() + HEARTBEAT_MS;
-
-        while (Date.now() < deadline) {
-          await sleep(POLL_INTERVAL_MS);
-
-          // The webhook takes the claim before it writes the reply, so text
-          // being readable here means the human side has already won.
-          const reply = await getReply(mid);
-          if (reply) return reply;
-
-          if (Date.now() >= nextPing) {
-            ping();
-            nextPing = Date.now() + HEARTBEAT_MS;
-          }
+      let retrieval: Promise<SearchHit[]> | undefined;
+      let handoffStarted = false;
+      const retrieve = () => {
+        if (!retrieval) {
+          log('retrieval', 'start');
+          retrieval = withDeadline(signal => searchVectors(retrievalQuery(history, query), 5, undefined, signal), 12_000, lifetime.signal);
+          void retrieval.catch(() => {}); // A human answer can abandon retrieval.
         }
-
-        // The window is up. Both racers call claim; Redis picks one. Losing
-        // means his reply landed in the same instant, and it wins.
-        if (await claim(mid, 'llm')) return null;
-
-        // The claim is taken before the reply is written, so the text can be a
-        // beat behind the claim we just lost. Reading once and finding nothing
-        // would answer over the top of him, which is the one outcome the claim
-        // exists to prevent.
-        const graceUntil = Date.now() + REPLY_GRACE_MS;
-        while (Date.now() < graceUntil) {
-          const late = await getReply(mid);
-          if (late) return late;
-          await sleep(POLL_INTERVAL_MS);
-        }
-        return null;
-      }
-
-      /** Replay a human answer at the model's typing pace. */
-      async function playBack(text: string): Promise<void> {
-        const chunks = chunkForTyping(text);
-        const delay = typingDelayMs(chunks.length);
-        for (let i = 0; i < chunks.length; i += 1) {
-          send({ text: chunks[i] });
-          // No trailing sleep: the last chunk is followed by the close, and
-          // pausing before it is a pause the reader can only read as lag.
-          if (delay > 0 && i < chunks.length - 1) await sleep(delay);
-        }
-        // The client's renderer treats an empty array as no citation block. A
-        // human answer cites nothing, and saying so keeps the frame sequence
-        // identical to the model's.
-        send({ sources: [] });
-        send({ done: true });
-      }
-
-      async function runModel(): Promise<void> {
-        let hits: SearchHit[];
-        let contextBlock: string;
-        try {
-          hits = await (retrieval ?? searchVectors(retrievalQuery(history, query), 5));
-          const contextChunks = await Promise.all(hits.map(async h => ({
-            hit: h,
-            text: await getChunkText(h.metadata),
-          })));
-          contextBlock = contextChunks.map((c, i) => {
-            const m = c.hit.metadata;
-            return `[Source ${i + 1}] (${m.type}) "${m.title}"${m.date ? ` - ${m.date.slice(0, 10)}` : ''}\n${c.text}`;
-          }).join('\n\n---\n\n');
-        } catch (err) {
-          console.error('[chat] retrieval failed', err);
-          // Headers went out with the opening frame, so there is no status
-          // code left to say this with. Voyage's free tier is 3 RPM and 429s
-          // are the common failure, worth naming as transient.
-          const msg = err instanceof Error ? err.message : '';
-          send({
-            error: msg.includes('429')
-              ? 'Upstream embedding service is rate-limiting. Try again in a moment.'
-              : 'Retrieval failed. Try again, or read the cited writing directly.',
-          });
-          return;
-        }
-
-        // De-duplicate sources by slug for the citation block emitted at end of stream.
-        const seen = new Set<string>();
-        sources = hits.flatMap(h => {
-          const key = `${h.metadata.type}:${h.metadata.slug}`;
-          if (seen.has(key)) return [];
-          seen.add(key);
-          return [{
-            type: h.metadata.type,
-            slug: h.metadata.slug,
-            title: h.metadata.title,
-            date: h.metadata.date ? h.metadata.date.slice(0, 10) : '',
-            url: h.metadata.url,
-            score: Number(h.score.toFixed(3)),
-          }];
-        });
-
-        // Spent here and nowhere else, immediately before the only call the
-        // budget exists to cap. Everything above this line is free.
-        // An unreachable Redis must not swallow the answer: the request has
-        // already passed the guards above, so a metering failure at this point
-        // is logged and the answer still goes out. Failing closed here would
-        // turn an Upstash blip into a dead chat mid-stream.
-        if (globalLimiter) {
-          try {
-            const { success } = await globalLimiter.limit('global');
-            if (!success) {
-              send({ error: DAILY_CAP_MESSAGE });
-              return;
-            }
-          } catch (err) {
-            console.error('[chat] global limiter unreachable, answering unmetered', err);
-          }
-        }
-
-        // Not awaited: `stream()` hands back the MessageStream itself, and
-        // errors surface through the iterator below rather than here.
-        const claudeStream = anthropic.messages.stream({
-          model: MODEL,
-          max_tokens: 1024,
-          system: SYSTEM_PROMPT,
-          messages: buildMessages(history, query, contextBlock),
-        });
-
-        for await (const chunk of claudeStream) {
-          if (Date.now() > hardDeadline) {
-            console.warn('[chat] hard deadline reached, truncating model stream');
-            // Nobody will read the rest of this answer, so stop generating it.
-            // The listener is required: abort() with no handler attached
-            // rejects globally and takes the process with it.
-            claudeStream.on('abort', () => {});
-            claudeStream.abort();
-            break;
-          }
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            answerText += chunk.delta.text;
-            send({ text: chunk.delta.text });
-          }
-        }
-
-        send({ sources });
-        send({ done: true });
-      }
-
+        return retrieval;
+      };
       try {
-        // Opening frame. Carries the ids a client needs to resume, and flushes
-        // the headers so the browser has committed to the connection before
-        // the handoff window starts holding it open. The current client
-        // ignores frames it has no field for.
+        lifetime.signal.throwIfAborted();
         send({ cid, mid });
-
-        const humanReply = operatorOnline && telegramConfigured() ? await askOperator() : null;
-
+        let humanReply: string | null = null;
+        if (operatorOnline && telegramConfigured()) {
+          handoffStarted = true;
+          log('handoff', 'start');
+          retrieve();
+          humanReply = await withDeadline(async signal => {
+            const questionStart = Date.now();
+            await putPending(mid, { cid, q: query, ts: questionStart, index: Math.floor(history.length / 2) + 1, name });
+            signal.throwIfAborted();
+            const previousAnswer = history.findLast(t => t.r === 'a')?.t;
+            const previousQuestion = history.findLast(t => t.r === 'u')?.t;
+            const tgId = await sendQuestion(formatQuestionMessage({ cid, question: query,
+              index: Math.floor(history.length / 2) + 1, name, prevA: previousAnswer, prevQ: previousQuestion,
+              windowSeconds: HANDOFF_WINDOW_MS / 1000 }));
+            signal.throwIfAborted();
+            if (tgId === null) { await closeHandoff(mid); return null; }
+            await mapTelegramMessage(tgId, mid);
+            signal.throwIfAborted();
+            await setLastQuestion(mid);
+            signal.throwIfAborted();
+            while (Date.now() < questionStart + HANDOFF_WINDOW_MS) {
+              const reply = await getReply(mid);
+              signal.throwIfAborted();
+              if (reply) return reply;
+              await sleep(Math.min(POLL_INTERVAL_MS, Math.max(1, questionStart + HANDOFF_WINDOW_MS - Date.now())), signal);
+            }
+            if (await claim(mid, 'llm')) return null;
+            signal.throwIfAborted();
+            // Human claim + reply are atomic; a failed claim is never permission
+            // to overwrite an answer. Read once, or report a retryable failure.
+            const reply = await getReply(mid);
+            signal.throwIfAborted();
+            if (!reply) throw new Error('Handoff could not be settled. Try again.');
+            return reply;
+          }, HANDOFF_WINDOW_MS + 8000, lifetime.signal);
+          log('handoff', humanReply ? 'human' : 'model');
+        }
+        lifetime.signal.throwIfAborted();
         if (humanReply) {
-          answeredBy = 'human';
-          answerText = humanReply;
-          await playBack(humanReply);
+          answeredBy = 'human'; answerText = humanReply;
+          const chunks = chunkForTyping(humanReply);
+          for (let i = 0; i < chunks.length; i++) {
+            lifetime.signal.throwIfAborted(); send({ text: chunks[i] });
+            if (i < chunks.length - 1) await sleep(typingDelayMs(chunks.length), lifetime.signal);
+          }
         } else {
-          await runModel();
+          const hits = await retrieve();
+          lifetime.signal.throwIfAborted();
+          const context = await withDeadline(async signal => {
+            const chunks = await Promise.all(hits.map(async hit => ({ hit, text: await getChunkText(hit.metadata) })));
+            signal.throwIfAborted();
+            return chunks.map(({ hit, text }, i) => `[Source ${i + 1}] (${hit.metadata.type}) "${hit.metadata.title}"\n${text}`).join('\n\n---\n\n');
+          }, 3000, lifetime.signal);
+          log('retrieval', 'complete');
+          const seen = new Set<string>();
+          sources = hits.flatMap(hit => {
+            const m = hit.metadata; const key = `${m.type}:${m.slug}`;
+            if (seen.has(key)) return []; seen.add(key);
+            return [{ type: m.type, slug: m.slug, title: m.title, date: m.date?.slice(0, 10) ?? '', url: m.url, score: Number(hit.score.toFixed(3)) }];
+          });
+          if (globalLimiter) {
+            const result = await withDeadline(() => globalLimiter.limit('global'), 3000, lifetime.signal);
+            if (result.reason === 'timeout') throw new Error(UNAVAILABLE);
+            if (!result.success) throw new Error(DAILY_CAP_MESSAGE);
+          }
+          lifetime.signal.throwIfAborted();
+          log('model', 'start');
+          await withDeadline(async signal => {
+            const modelStream = anthropic.messages.stream({ model: MODEL, max_tokens: 1024,
+              system: SYSTEM_PROMPT, messages: buildMessages(history, query, context) }, { signal });
+            modelStream.on('abort', () => {});
+            const abort = () => modelStream.abort();
+            signal.addEventListener('abort', abort, { once: true });
+            try {
+              for await (const chunk of modelStream) {
+                signal.throwIfAborted();
+                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                  if (!answerText) log('model', 'first-text');
+                  answerText += chunk.delta.text; send({ text: chunk.delta.text });
+                }
+              }
+            } finally { signal.removeEventListener('abort', abort); }
+          }, 50_000, lifetime.signal);
+          log('model', 'complete');
         }
-      } catch (err) {
-        console.error('[chat] stream failed', err);
-        send({ error: 'The assistant errored. Try again, or check the cited writing directly.' });
-      } finally {
-        // Written before the close, not after: once the body ends the platform
-        // is free to freeze the function, and a persist racing that would
-        // silently lose the turn. It costs the reader a few tens of
-        // milliseconds before the citation block paints.
-        if (answerText.trim()) {
-          const ts = Date.now();
-          await appendTurn(cid, { r: 'u', t: query, ts });
-          await appendTurn(cid, { r: 'a', t: answerText, ts, by: answeredBy });
-          await putFinal(mid, { by: answeredBy, text: answerText, sources, ts });
-        }
+        lifetime.signal.throwIfAborted();
+        if (!answerText.trim()) throw new Error('Nothing came back. Try again.');
         try {
-          controller.close();
-        } catch {
-          // Already torn down by a client disconnect.
-        }
+          await withDeadline(async signal => {
+            const ts = Date.now();
+            await appendTurn(cid, { r: 'u', t: query, ts }); signal.throwIfAborted();
+            await appendTurn(cid, { r: 'a', t: answerText, ts, by: answeredBy }); signal.throwIfAborted();
+            await putFinal(mid, { by: answeredBy, text: answerText, sources, ts });
+          }, 4000, lifetime.signal);
+          log('persistence', 'complete');
+        } catch { log('persistence', 'failed'); }
+        lifetime.signal.throwIfAborted();
+        completed = true;
+        send({ sources }); send({ done: true }); log('response', 'complete');
+      } catch (error) {
+        const disconnected = lifetime.signal.aborted && lifetime.signal.reason?.name === 'AbortError';
+        log('response', disconnected ? 'disconnected' : 'failed');
+        if (!disconnected) send({ error: error instanceof Error && error.message === DAILY_CAP_MESSAGE
+          ? DAILY_CAP_MESSAGE : 'The response could not finish. Try again in a moment.' });
+      } finally {
+        clearInterval(heartbeat); clearTimeout(hardTimer);
+        request.signal.removeEventListener('abort', disconnect);
+        // Signal abandoned speculative retrieval too, including a human win.
+        lifetime.abort();
+        if (handoffStarted) await withDeadline(() => closeHandoff(mid), 2500).catch(() => log('handoff-close', 'failed'));
+        try { controller.close(); } catch { /* Reader already cancelled. */ }
       }
     },
+    cancel() { disconnect(); },
   });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-    },
-  });
+  return new Response(stream, { headers: {
+    'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'Connection': 'keep-alive',
+  } });
 };

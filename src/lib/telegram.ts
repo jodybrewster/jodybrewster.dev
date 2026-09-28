@@ -1,4 +1,5 @@
 import { env } from './env';
+import { withDeadline } from './deadline';
 
 /**
  * Telegram bot client for the chat handoff.
@@ -165,10 +166,12 @@ export async function tgCall<T = unknown>(
   const token = env('TELEGRAM_BOT_TOKEN');
 
   try {
+    return await withDeadline(async signal => {
     const res = await fetch(`${API_ROOT}/bot${token}/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal,
     });
 
     const body = (await res.json().catch(() => null)) as
@@ -181,8 +184,9 @@ export async function tgCall<T = unknown>(
     }
 
     return body.result ?? null;
+    }, 5000);
   } catch (err) {
-    console.error(`[telegram] ${method} failed`, err);
+    console.error(`[telegram] ${method} failed`, err instanceof Error ? err.name : 'Error');
     return null;
   }
 }

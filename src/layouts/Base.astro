@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import '../styles/chat-mobile.css';
 import { ClientRouter } from 'astro:transitions';
 import IconSprite from '../components/IconSprite.astro';
 import Nav from '../components/Nav.astro';
@@ -25,7 +26,7 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false, showC
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <title>{title}</title>
   <!-- Dark is a permanent design choice, including across client-side navigation. -->
@@ -50,7 +51,7 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false, showC
 
   <ClientRouter />
 </head>
-<body class={bodyClass}>
+<body class={bodyClass} data-chat-enabled={flags.chat ? '' : undefined}>
   <IconSprite />
   <div class="shell">
     {home ? <HomeNav /> : <Nav />}

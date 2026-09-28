@@ -1,17 +1,24 @@
 import { Index } from '@upstash/vector';
 import { env } from './env';
+import { getRedis } from './redis';
+import { withDeadline } from './deadline';
+import { ACTIVE_NAMESPACE_KEY } from './vector-refresh';
+import { canonicalContentId, readDoc, docToChunks, COLLECTIONS, type CollectionType } from './corpus';
 
 const VOYAGE_API = 'https://api.voyageai.com/v1/embeddings';
 const MODEL = 'voyage-3-lite';
 
 export interface SourceMetadata {
-  type: 'writing' | 'notes' | 'work';
+  type: CollectionType;
   slug: string;
   title: string;
   date: string;
   url: string;
   chunk: number;
   description?: string;
+  /** Exact text embedded at index time; never reconstructed from edited files. */
+  text?: string;
+  source?: string;
 }
 
 export interface SearchHit {
@@ -21,33 +28,34 @@ export interface SearchHit {
   data?: string;
 }
 
-let _index: Index | null = null;
-function getIndex(): Index {
-  if (_index) return _index;
+function getIndex(signal: AbortSignal): Index {
   const url = env('UPSTASH_VECTOR_REST_URL');
   const token = env('UPSTASH_VECTOR_REST_TOKEN');
   if (!url || !token) throw new Error('UPSTASH_VECTOR_REST_URL / TOKEN missing');
-  _index = new Index({ url, token });
-  return _index;
+  return new Index({ url, token, signal, retry: false });
 }
 
-export async function embedQuery(query: string): Promise<number[]> {
+export async function embedQuery(query: string, signal?: AbortSignal): Promise<number[]> {
   const key = env('VOYAGE_API_KEY');
   if (!key) throw new Error('VOYAGE_API_KEY missing');
+  return withDeadline(async requestSignal => {
   const res = await fetch(VOYAGE_API, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ input: [query], model: MODEL, input_type: 'query' }),
+    signal: requestSignal,
   });
   if (!res.ok) {
-    throw new Error(`Voyage embed failed (${res.status}): ${await res.text()}`);
+    throw new Error(`Voyage embed failed (${res.status})`);
   }
   const json = await res.json() as { data: Array<{ embedding: number[] }> };
   return json.data[0].embedding;
+  }, 8000, signal);
 }
 
-export async function searchVectors(query: string, topK = 5, filter?: { type?: SourceMetadata['type'] }): Promise<SearchHit[]> {
-  const vector = await embedQuery(query);
+export async function searchVectors(query: string, topK = 5, filter?: { type?: SourceMetadata['type'] }, signal?: AbortSignal): Promise<SearchHit[]> {
+  return withDeadline(async requestSignal => {
+  const vector = await embedQuery(query, requestSignal);
   const opts: { vector: number[]; topK: number; includeMetadata: boolean; filter?: string } = {
     vector,
     topK,
@@ -56,27 +64,34 @@ export async function searchVectors(query: string, topK = 5, filter?: { type?: S
   if (filter?.type) {
     opts.filter = `type = '${filter.type}'`;
   }
-  const results = await getIndex().query(opts);
-  return results.map(r => ({
-    id: String(r.id),
-    score: r.score,
-    metadata: r.metadata as unknown as SourceMetadata,
-  }));
+  const redis = getRedis();
+  const active = redis ? await redis.get<string>(ACTIVE_NAMESPACE_KEY) : null;
+  requestSignal.throwIfAborted();
+  const results = await getIndex(requestSignal).namespace(typeof active === 'string' ? active : '').query(opts);
+  const hits: SearchHit[] = [];
+  for (const row of results) {
+    const metadata = row.metadata as unknown as SourceMetadata;
+    if (!metadata || !COLLECTIONS.includes(metadata.type)) continue;
+    // Legacy default-namespace records used filenames as slugs. Resolve their
+    // current published entry until the first safe refresh activates snapshots.
+    if (typeof metadata.text !== 'string') {
+      const doc = await readDoc(metadata.type, canonicalContentId(`${metadata.slug}.md`));
+      if (!doc) continue;
+      const chunk = docToChunks(doc)[metadata.chunk];
+      if (!chunk) continue;
+      hits.push({ id: String(row.id), score: row.score, metadata: chunk.metadata });
+    } else hits.push({ id: String(row.id), score: row.score, metadata });
+  }
+  requestSignal.throwIfAborted();
+  return hits;
+  }, 12_000, signal);
 }
 
-/**
- * Pull the actual chunk text back from the markdown file at retrieval time.
- * Stored vectors don't carry full text (we keep the index lean); the file is
- * the source of truth.
- */
+/** Use the indexed snapshot, with a published-file fallback for legacy records. */
 export async function getChunkText(meta: SourceMetadata): Promise<string> {
-  const { readFile } = await import('node:fs/promises');
-  const { resolve } = await import('node:path');
-  const raw = await readFile(resolve(`content/${meta.type}/${meta.slug}.md`), 'utf-8');
-  const body = raw.replace(/^---\n[\s\S]*?\n---\n?/, '').trim();
-  const words = body.split(/\s+/).filter(Boolean);
-  const CHUNK = 500;
-  const OVERLAP = 50;
-  const start = meta.chunk * (CHUNK - OVERLAP);
-  return words.slice(start, start + CHUNK).join(' ');
+  if (typeof meta.text === 'string') return meta.text;
+  const doc = await readDoc(meta.type, canonicalContentId(`${meta.slug}.md`));
+  const chunk = doc && docToChunks(doc)[meta.chunk];
+  if (!chunk) throw new Error('Source is no longer published; refresh the corpus');
+  return chunk.text;
 }

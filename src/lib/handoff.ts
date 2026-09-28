@@ -21,7 +21,7 @@ import { getRedis } from './redis';
 import type { ConversationTurn } from './verso';
 
 /** How long the visitor's request waits for a human before the LLM takes it. */
-export const HANDOFF_WINDOW_MS = 40_000;
+export const HANDOFF_WINDOW_MS = 20_000;
 /** Reply poll cadence inside that window. Short enough to feel like typing. */
 export const POLL_INTERVAL_MS = 1200;
 /** Presence expires on its own so a forgotten "online" can't strand visitors. */
@@ -50,6 +50,7 @@ export interface RedisLike {
   zrem(key: string, ...members: string[]): Promise<unknown>;
   zrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
   zremrangebyscore(key: string, min: number, max: number): Promise<unknown>;
+  eval?<T = unknown>(script: string, keys: string[], args: unknown[]): Promise<T>;
 }
 
 export interface PendingQuestion {
@@ -334,6 +335,42 @@ export async function putReply(
   if (!redis) return;
   await guard<void>('reply write failed', undefined, async () => {
     await redis.set(replyKey(mid), text.slice(0, MAX_REPLY_CHARS), { ex: MSG_TTL_S });
+  });
+}
+
+/** A reply becomes claimable and readable in the same Redis operation. */
+export async function submitReply(
+  mid: string, text: string, redis: RedisLike | null = getRedis(),
+): Promise<'accepted' | 'closed' | 'unavailable'> {
+  if (!redis?.eval) return 'unavailable';
+  try {
+    const accepted = await redis.eval<number>(`
+      local pending = redis.call('GET', KEYS[1])
+      if not pending or redis.call('EXISTS', KEYS[2]) == 1 then return 0 end
+      local ok, question = pcall(cjson.decode, pending)
+      if not ok or type(question) ~= 'table' or not tonumber(question.ts) then return 0 end
+      if tonumber(question.ts) + tonumber(ARGV[3]) < tonumber(ARGV[4]) then return 0 end
+      redis.call('SET', KEYS[2], 'human', 'EX', ARGV[2])
+      redis.call('SET', KEYS[3], ARGV[1], 'EX', ARGV[2])
+      redis.call('ZREM', KEYS[4], ARGV[5])
+      return 1
+    `, [msgKey(mid), claimKey(mid), replyKey(mid), OUTSTANDING_KEY],
+    [text.slice(0, MAX_REPLY_CHARS), MSG_TTL_S, HANDOFF_WINDOW_MS, Date.now(), mid]);
+    return accepted === 1 ? 'accepted' : 'closed';
+  } catch (err) {
+    console.error('[handoff] reply transaction failed', err instanceof Error ? err.name : 'Error');
+    return 'unavailable';
+  }
+}
+
+/** A stopped request must not keep accepting replies for a departed visitor. */
+export async function closeHandoff(mid: string, redis: RedisLike | null = getRedis()): Promise<void> {
+  if (!redis?.eval) return;
+  await guard('close failed', undefined, async () => {
+    await redis.eval!(
+      "redis.call('SET', KEYS[1], 'closed', 'NX', 'EX', ARGV[1]); redis.call('ZREM', KEYS[2], ARGV[2]); return 1",
+      [claimKey(mid), OUTSTANDING_KEY], [MSG_TTL_S, mid],
+    );
   });
 }
 

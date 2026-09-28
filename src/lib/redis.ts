@@ -18,6 +18,6 @@ export function getRedis(): Redis | null {
   const url = env('UPSTASH_REDIS_REST_URL');
   const token = env('UPSTASH_REDIS_REST_TOKEN');
   if (!url || !token) return null;
-  _redis = new Redis({ url, token });
+  _redis = new Redis({ url, token, signal: () => AbortSignal.timeout(2500), retry: false });
   return _redis;
 }

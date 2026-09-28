@@ -1,14 +1,53 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   formatQuestionMessage,
   isOwnerUpdate,
   parseCommand,
   sanitizeForTelegram,
+  tgCall,
 } from './telegram';
 
 const NUL = String.fromCharCode(0);
 const BELL = String.fromCharCode(7);
 const ESC = String.fromCharCode(27);
+
+describe('Telegram transport deadline', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', 'test-token');
+    vi.stubEnv('TELEGRAM_OWNER_ID', '42');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it('aborts a stalled Telegram request after five seconds', async () => {
+    let transportSignal: AbortSignal | undefined;
+    vi.stubGlobal('fetch', vi.fn((_url, init) => new Promise((_resolve, reject) => {
+      transportSignal = init?.signal;
+      transportSignal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    })));
+    let settled = false;
+    const result = tgCall('sendMessage', { text: 'test' }).then(value => {
+      settled = true;
+      return value;
+    });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(settled).toBe(true);
+    expect(transportSignal?.aborted).toBe(true);
+    await expect(result).resolves.toBeNull();
+  });
+
+  it('clears its deadline after a successful request', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, result: { message_id: 12 } }))));
+    await expect(tgCall('sendMessage', { text: 'test' })).resolves.toEqual({ message_id: 12 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+});
 
 describe('parseCommand', () => {
   it('recognizes every owner command', () => {

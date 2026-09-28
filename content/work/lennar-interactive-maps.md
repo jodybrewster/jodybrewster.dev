@@ -1,7 +1,7 @@
 ---
 title: "Moving a thousand site maps from PDF to runtime for a national homebuilder"
 sector: "U.S. residential homebuilding"
-role: "Sr Solutions Architect"
+role: "Lead Developer / Architect"
 duration: "~ 3 months, 2024"
 pillar: "Runtime over artifact"
 sub: "Replacing designer-updated PDF community maps with a live availability platform - and retiring the bottleneck that kept them stale."

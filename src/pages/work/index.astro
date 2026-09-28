@@ -4,6 +4,7 @@ import Studio from '../../layouts/Studio.astro';
 import Icon from '../../components/Icon.astro';
 import WorkEvaluationPreview from '../../components/WorkEvaluationPreview.astro';
 import { workPresentation } from '../../lib/work-presentation';
+import { mediaTransitionName } from '../../lib/transition-names';
 
 const [briefs, portfolio] = await Promise.all([
   getCollection('work', b => !b.data.draft),
@@ -46,7 +47,7 @@ const filters = [
       <div class="work-office" aria-hidden="true"><img src="/images/studio/office.webp" alt="" width="1536" height="1024" fetchpriority="high" /></div>
       <div class="work-header-copy">
         <p class="studio-eyebrow">Case studies</p>
-        <h1>Real problems.<br />Real systems.</h1>
+        <h1 class="enter-title">Real problems.<br />Real systems.</h1>
         <p class="work-lede">Enterprise platforms, AI-powered products, and modern web systems designed for scale, adoption, and measurable business impact.</p>
       </div>
     </header>
@@ -56,11 +57,11 @@ const filters = [
         {filters.map(filter => <button type="button" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</button>)}
       </div>
       <p class="work-result-status" aria-live="polite" aria-atomic="true" data-work-status>{projects.length} projects</p>
-      <div class="work-grid" id="work-grid">
-        {projects.map(project => (
-          <article class="work-card" data-work-card data-categories={project.categories.join(' ')}>
+      <div class="work-grid enter-list" id="work-grid" style="--enter-delay: 200ms">
+        {projects.map((project, index) => (
+          <article class="work-card" style={`--i: ${index}`} data-work-card data-categories={project.categories.join(' ')}>
             <a href={project.href} class="work-card-link">
-              <div class="work-card-preview">
+              <div class="work-card-preview" transition:name={mediaTransitionName(project.href)}>
                 {project.image ? <img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="960" height="640" /> : <WorkEvaluationPreview compact />}
                 <span class="work-card-kind">{project.type}</span>
               </div>
@@ -88,14 +89,17 @@ const filters = [
     const cards = Array.from(collection.querySelectorAll<HTMLElement>('[data-work-card]'));
     const status = collection.querySelector<HTMLElement>('[data-work-status]');
     const empty = collection.querySelector<HTMLElement>('[data-work-empty]');
+    const grid = collection.querySelector<HTMLElement>('#work-grid');
     buttons.forEach(button => button.addEventListener('click', () => {
       const filter = button.dataset.filter;
       buttons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      grid?.style.setProperty('--enter-delay', '0ms');
       let visible = 0;
       cards.forEach(card => {
         const matches = filter === 'all' || card.dataset.categories?.split(' ').includes(filter ?? '');
         card.hidden = !matches;
-        if (matches) visible += 1;
+        // A card that comes back into view replays its entrance; order it by the filtered list, not the full one.
+        if (matches) card.style.setProperty('--i', String(visible++));
       });
       if (empty) empty.hidden = visible > 0;
       if (status) status.textContent = `${visible} ${visible === 1 ? 'project' : 'projects'}${filter === 'all' ? '' : ` in ${button.textContent}`}`;

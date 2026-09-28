@@ -19,10 +19,10 @@ const career = [
     <div class="about-photo" aria-hidden="true"><img src="/images/home/jody-office.webp" alt="" width="2160" height="720" fetchpriority="high" /></div>
     <section class="about-introduction" aria-labelledby="about-title">
       <p class="studio-eyebrow">About</p>
-      <h1 id="about-title">Architect.<br />Builder. Problem Solver.</h1>
+      <h1 id="about-title" class="enter-title">Architect.<br />Builder. Problem Solver.</h1>
       <p class="about-lede">I'm Jody Brewster, a Senior Solutions Architect with 15+ years of experience designing and leading enterprise platforms, AI-powered products, and modern web systems.</p>
       <p>I enjoy working at the intersection of business, technology, and people — turning ambiguous problems into clear, scalable solutions. I care about useful AI, intuitive experiences, and systems that make a real difference.</p>
-      <div class="about-principles">{principles.map(p => <div class={`principle principle-${p.tone}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}</p></div>)}</div>
+      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class={`principle principle-${p.tone}`} style={`--i: ${i}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}</p></div>)}</div>
       <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.docx" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="#contact">Let's connect <Icon name="arrow-right" class="icon" /></a></div>
       <nav class="about-explore" aria-label="More about Jody">
         <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
@@ -30,7 +30,7 @@ const career = [
     </section>
     <aside class="career-panel" aria-labelledby="career-title">
       <h2 class="studio-eyebrow" id="career-title">Career highlights</h2>
-      <ol>{career.map((job,i) => <li><span class={`career-node ${i===0?'current':''}`} aria-hidden="true"></span><h3>{job.company}</h3><p>{job.role}</p><span class="career-dates">{job.dates}</span></li>)}</ol>
+      <ol class="enter-list" style="--enter-delay: 380ms">{career.map((job,i) => <li style={`--i: ${i}`}><span class={`career-node ${i===0?'current':''}`} aria-hidden="true"></span><h3>{job.company}</h3><p>{job.role}</p><span class="career-dates">{job.dates}</span></li>)}</ol>
       <a href="/jodybrewster_resume_2026.docx" download class="studio-text-link">Full experience <Icon name="arrow-right" class="icon" /></a>
     </aside>
     <section class="about-perspective" aria-labelledby="perspective-title">

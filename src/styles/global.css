@@ -254,15 +254,36 @@
   /* Every page fills the shell like the home page; text blocks cap
      themselves for readability (see --measure). */
   .page.active { display: block; }
-  .page.active > * { animation: rise 480ms var(--ease-out) both; }
-  .page.active > *:nth-child(2) { animation-delay: 60ms; }
-  .page.active > *:nth-child(3) { animation-delay: 120ms; }
-  .page.active > *:nth-child(4) { animation-delay: 180ms; }
-  .page.active > *:nth-child(5) { animation-delay: 240ms; }
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: none; }
-  }
+
+  /* The Verso composer's gradient edge is a conic gradient turned by two angles: a slow drift that always runs
+     and a quicker spin added while the field has focus. Kept separate, the drift never restarts on focus. */
+  @property --edge-drift { syntax: '<angle>'; inherits: false; initial-value: 200deg; }
+  @property --edge-spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+  @keyframes edge-drift { to { --edge-drift: 560deg; } }
+  @keyframes edge-spin { to { --edge-spin: 360deg; } }
+  /* On focus the cool end of the gradient flares toward white, holds for a moment and fades over about three seconds. */
+  @property --edge-shine { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+  @keyframes edge-shine { 12% { --edge-shine: 90%; } 60% { --edge-shine: 75%; } to { --edge-shine: 0%; } }
+
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ── entrances ─────────────────────────────────────────────── */
+  /* Each kind of content gets its own entrance instead of one rise on every block: a title settles out of
+     soft focus, a list or grid arrives item by item (--i on each child, capped so long lists stay quick) and
+     supporting copy simply fades. Content is visible by default; these only animate from it. */
+  .enter-title { animation: enter-title 640ms var(--ease-out) both; }
+  .enter-fade { animation: enter-fade 560ms var(--ease-out) both; animation-delay: var(--enter-delay, 140ms); }
+  .enter-list > * { animation: enter-rise 520ms var(--ease-out) both; animation-delay: calc(var(--enter-delay, 120ms) + min(var(--i, 0), 8) * 50ms); }
+  @keyframes enter-title { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+  @keyframes enter-fade { from { opacity: 0; } }
+  @keyframes enter-rise { from { opacity: 0; transform: translateY(12px); } }
+
+  /* ── page changes ──────────────────────────────────────────── */
+  /* ClientRouter crossfades the page. An image named with transition:name on both pages (a card and the
+     article or case study it opens) travels from one to the other instead of fading. */
+  ::view-transition-group(*) { animation-duration: 520ms; animation-timing-function: var(--ease-out); }
+  ::view-transition-old(root) { animation-duration: 180ms; }
+  ::view-transition-new(root) { animation-duration: 280ms; }
 
   /* ── eyebrow utility ──────────────────────────────────────── */
   .eyebrow {
@@ -1312,6 +1333,6 @@
       animation-iteration-count: 1 !important;
       transition-duration: .01ms !important;
     }
-    .page.active > * { animation: reduced-fade 150ms ease both !important; }
+    .enter-title, .enter-fade, .enter-list > * { animation: reduced-fade 150ms ease both !important; }
     @keyframes reduced-fade { from { opacity: 0; } }
   }

@@ -58,11 +58,11 @@ const updatedFull = updatedDate
       </a>
 
       <p class="studio-eyebrow">/ now{updatedMonthYear && ` · ${updatedMonthYear}`}</p>
-      <h1>Now</h1>
+      <h1 class="enter-title">Now</h1>
 
       {lede && <p class="lede">{lede}</p>}
 
-      <div class="essay-body">
+      <div class="essay-body enter-fade" style="--enter-delay: 180ms">
         {rest.map(p => <p>{p}</p>)}
       </div>
 

@@ -1,5 +1,6 @@
 ---
 import Studio from './Studio.astro';
+import { mediaTransitionName } from '../lib/transition-names';
 
 interface Props {
   title: string;
@@ -49,11 +50,11 @@ const jsonLd: Record<string, unknown> = {
 <Studio title={title} description={description} markdownHref={markdownHref} jsonLd={jsonLd}>
   <main class="page active studio-container" style="padding: 72px 0 100px;">
     <article class="essay-shell">
-      <a href={sectionHref} class="back">
+      <a href={sectionHref} class="back enter-fade" style="--enter-delay: 0ms">
         <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to {sectionLabel}
       </a>
 
-      <div class="essay-meta">
+      <div class="essay-meta enter-fade" style="--enter-delay: 60ms">
         {number && (
           <span><svg class="icon sm"><use href="#i-hash"/></svg> {number}</span>
         )}
@@ -66,12 +67,12 @@ const jsonLd: Record<string, unknown> = {
         )}
       </div>
 
-      <h1 set:html={title} />
+      <h1 class="enter-title" set:html={title} />
 
-      {description && <p class="dek">{description}</p>}
-      {heroImage && <figure class="essay-hero"><img src={heroImage} alt="" width="960" height="640" loading="eager" decoding="async" /></figure>}
+      {description && <p class="dek enter-fade" style="--enter-delay: 160ms">{description}</p>}
+      {heroImage && <figure class="essay-hero" transition:name={mediaTransitionName(Astro.url.pathname)}><img src={heroImage} alt="" width="960" height="640" loading="eager" decoding="async" /></figure>}
 
-      <div class="essay-body">
+      <div class="essay-body enter-fade" style="--enter-delay: 260ms">
         <slot />
       </div>
 

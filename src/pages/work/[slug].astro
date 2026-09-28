@@ -4,6 +4,7 @@ import Studio from '../../layouts/Studio.astro';
 import Icon from '../../components/Icon.astro';
 import WorkEvaluationPreview from '../../components/WorkEvaluationPreview.astro';
 import { workPresentation } from '../../lib/work-presentation';
+import { mediaTransitionName } from '../../lib/transition-names';
 
 export async function getStaticPaths() {
   const published = await getCollection('work', b => !b.data.draft);
@@ -41,7 +42,7 @@ const jsonLd = {
     <article>
       <header class="case-header">
         <a href="/work" class="case-back"><Icon name="arrow-left" class="icon" /> Back to Work</a>
-        <h1>{title}</h1>
+        <h1 class="enter-title">{title}</h1>
         <p>{description}</p>
       </header>
 
@@ -49,7 +50,7 @@ const jsonLd = {
         <div class="case-visual-column">
           {presentation?.image ? (
             <figure class="case-figure">
-              <a class="case-image-link" href={entry.id === 'lennar-interactive-maps' ? '/portfolio/lennar-interactive-maps' : presentation.image} aria-label={entry.id === 'lennar-interactive-maps' ? 'View the Lennar product screenshots' : 'View the full-size Brand Impact Tracker interface'}>
+              <a class="case-image-link" transition:name={mediaTransitionName(Astro.url.pathname)} href={entry.id === 'lennar-interactive-maps' ? '/portfolio/lennar-interactive-maps' : presentation.image} aria-label={entry.id === 'lennar-interactive-maps' ? 'View the Lennar product screenshots' : 'View the full-size Brand Impact Tracker interface'}>
                 <img src={presentation.image} alt={presentation.alt} width="1280" height="960" fetchpriority="high" />
                 <span class="case-preview-link"><Icon name="external" class="icon" />{entry.id === 'lennar-interactive-maps' ? 'Explore product screens' : 'View full interface'}</span>
               </a>
@@ -57,7 +58,7 @@ const jsonLd = {
             </figure>
           ) : entry.id === 'pharmacy-agent-eval' ? (
             <figure class="case-figure">
-              <div class="case-evaluation-preview"><WorkEvaluationPreview /></div>
+              <div class="case-evaluation-preview" transition:name={mediaTransitionName(Astro.url.pathname)}><WorkEvaluationPreview /></div>
               <figcaption>The evaluation framework · Four dimensions of conversation quality</figcaption>
             </figure>
           ) : null}

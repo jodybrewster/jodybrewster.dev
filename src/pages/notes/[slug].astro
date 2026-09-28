@@ -39,9 +39,9 @@ const primaryTag = tagList[0] ?? '';
         )}
       </div>
 
-      <h1>{entry.data.title}</h1>
+      <h1 class="enter-title">{entry.data.title}</h1>
 
-      <div class="essay-body">
+      <div class="essay-body enter-fade" style="--enter-delay: 200ms">
         <Content />
       </div>
 

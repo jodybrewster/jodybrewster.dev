@@ -14,11 +14,11 @@ function formatDate(d: Date) {
   <main class="notes-main studio-container">
     <header class="notes-header">
       <p class="studio-eyebrow">{notes.length} published</p>
-      <h1>Lab notes.</h1>
+      <h1 class="enter-title">Lab notes.</h1>
       <p>Shorter, less finished, sometimes wrong.</p>
     </header>
 
-    <div class="notes-stack" aria-label="Published lab notes">
+    <div class="notes-stack enter-list" style="--enter-delay: 200ms" aria-label="Published lab notes">
       {notes.map((note) => {
         const excerpt = (note.body ?? '').split('\n').find(l => l.trim() && !l.startsWith('#')) ?? '';
         return (
@@ -42,6 +42,10 @@ function formatDate(d: Date) {
   .notes-header h1 { margin: 14px 0 12px; font: 300 clamp(44px, 5.5vw, 70px)/1.05 var(--headline); letter-spacing: -.02em; }
   .notes-header > p:last-child { margin: 0; color: var(--studio-muted); font-size: 16px; line-height: 1.7; }
   .notes-stack { display: grid; gap: 14px; max-width: 900px; padding-top: 28px; }
+  .notes-stack > :global(:nth-child(2)) { --i: 1; }
+  .notes-stack > :global(:nth-child(3)) { --i: 2; }
+  .notes-stack > :global(:nth-child(4)) { --i: 3; }
+  .notes-stack > :global(:nth-child(n + 5)) { --i: 4; }
   .notes-stack :global(.note) { display: block; padding: 20px 22px; border: 1px solid var(--studio-rule) !important; border-radius: 10px; background: var(--studio-surface); color: var(--studio-ink); transition: border-color 150ms, transform 150ms; }
   .notes-stack :global(.note:hover), .notes-stack :global(.note:focus-visible) { border-color: var(--studio-cyan) !important; transform: translateY(-2px); }
   .notes-stack :global(.note .tended) { display: flex; justify-content: space-between; gap: 14px; color: var(--studio-muted); font: 500 10px/1.4 var(--sans); }

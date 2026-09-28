@@ -338,4 +338,13 @@ Names are optional, entered through a disclosure in the chat. A question sends i
 
 ## 12. Motion (September 28, 2026)
 
-Motion explains entry and state. Page content may rise and fade once on entry; Verso expands from its fixed composer; dynamic search results fade into place. Use transform and opacity for visual movement, the shared `--ease-out` curve for entrances, and keep interface transitions under 300ms. Homepage image and copy entrances may run longer because they are infrequent marketing moments. Reduced-motion mode keeps a brief opacity fade and removes positional movement.
+Motion explains entry and state, and each kind of content gets its own movement instead of one rise applied to every block.
+Use transform, opacity, filter and clip-path, the shared `--ease-out` curve for entrances, and keep interface transitions under 300ms.
+
+- **Home intro.** The one staged entrance on the site. The photo pulls from soft focus to sharp while the headline rises word by word from behind its baseline, the two accent words landing last with a brief glow. Copy, actions, Verso, the capability strip and the experience strip follow in reading order, finishing inside about 1.4 seconds. Arriving from another page skips the staging for a quick fade.
+- **Entrances elsewhere.** `.enter-title` settles a page title out of soft focus, `.enter-list` staggers the children of a list or grid (`--i` per child, capped at eight steps) and `.enter-fade` fades supporting copy. Content is visible by default; these only animate from it.
+- **Card to page.** A card image and the lead image of the page it opens share a view-transition name from `mediaTransitionName()`, so the image travels between them on navigation and back. Opened directly, an article's lead image is uncovered top to bottom instead.
+- **Feedback.** Nav links draw a 1px underline in from the left and keep it on the current section. Buttons press to 97%. Client logos brighten and lift slightly under the pointer. Cards keep their existing lift and image push.
+
+Pages reached by an in-site navigation carry `data-soft-nav` on the root element, which is how the home intro and the article lead image know to step aside.
+Reduced-motion mode replaces movement with a brief opacity fade, and Astro turns view transitions off.

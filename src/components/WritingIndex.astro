@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Icon from './Icon.astro';
 import { articleImage } from '../lib/article-images';
+import { mediaTransitionName } from '../lib/transition-names';
 
 interface Props { researchOnly?: boolean; }
 const { researchOnly = false } = Astro.props;
@@ -32,7 +33,7 @@ function formatDate(date: Date) {
     <div class="writing-office" aria-hidden="true"><img src="/images/studio/office.webp" width="1536" height="1024" alt="" fetchpriority="high" /></div>
     <div class="writing-header-copy">
       <p class="studio-eyebrow">{researchOnly ? 'The research notebook' : 'Writing & research'}</p>
-      <h1>Ideas, lessons, and<br />what I’m exploring.</h1>
+      <h1 class="enter-title">Ideas, lessons, and<br />what I’m exploring.</h1>
       <p class="writing-lede">{researchOnly ? 'Landscape scans, tool comparisons, and working maps of AI, design, and agentic systems.' : 'Technical notes, architecture thinking, AI, product development, and lessons from real-world projects.'}</p>
     </div>
   </header>
@@ -45,10 +46,10 @@ function formatDate(date: Date) {
       <label class="writing-search"><span class="writing-sr-only">Search articles</span><input type="search" placeholder="Search articles…" data-writing-search aria-controls="writing-grid" autocomplete="off" /><Icon name="search" class="icon" /></label>
     </div>
     <div class="writing-results"><p aria-live="polite" aria-atomic="true" data-writing-status>{articles.length} articles</p><button type="button" data-writing-reset hidden>Clear filters <span aria-hidden="true">×</span></button></div>
-    <div class="writing-grid" id="writing-grid">
-      {articles.map(article => <article class="writing-card" data-writing-card data-categories={article.categories.join(' ')} data-search={article.search}>
+    <div class="writing-grid enter-list" id="writing-grid" style="--enter-delay: 200ms">
+      {articles.map((article, index) => <article class="writing-card" style={`--i: ${index}`} data-writing-card data-categories={article.categories.join(' ')} data-search={article.search}>
         <a href={article.href} class="writing-card-link">
-          <div class="writing-card-image"><img src={article.image} alt="" width="960" height="480" loading="lazy" decoding="async" /></div>
+          <div class="writing-card-image" transition:name={mediaTransitionName(article.href)}><img src={article.image} alt="" width="960" height="480" loading="lazy" decoding="async" /></div>
           <div class="writing-card-content"><span class="writing-card-kind">{article.kind}</span><h2>{article.title}</h2><div class="writing-card-bottom"><time datetime={article.date.toISOString().slice(0, 10)}>{formatDate(article.date)}</time><span class="studio-arrow" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span></div></div>
         </a>
       </article>)}
@@ -70,6 +71,7 @@ function formatDate(date: Date) {
     const resets = Array.from(collection.querySelectorAll<HTMLButtonElement>('[data-writing-reset]'));
     const status = collection.querySelector<HTMLElement>('[data-writing-status]');
     const empty = collection.querySelector<HTMLElement>('[data-writing-empty]');
+    const grid = collection.querySelector<HTMLElement>('#writing-grid');
     let selected = 'all';
     function updateArticles() {
       const query = search?.value.trim().toLocaleLowerCase() ?? '';
@@ -79,7 +81,8 @@ function formatDate(date: Date) {
         const matchesCategory = selected === 'all' || card.dataset.categories?.split(' ').includes(selected);
         const matchesSearch = terms.every(term => card.dataset.search?.includes(term));
         card.hidden = !(matchesCategory && matchesSearch);
-        if (!card.hidden) count += 1;
+        // A card that comes back into view replays its entrance; order it by the filtered list, not the full one.
+        if (!card.hidden) card.style.setProperty('--i', String(count++));
       });
       buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.writingFilter === selected)));
       if (empty) empty.hidden = count > 0 || cards.length === 0;
@@ -87,6 +90,9 @@ function formatDate(date: Date) {
       if (reset) reset.hidden = selected === 'all' && !query;
       if (status) status.textContent = `${count} ${count === 1 ? 'article' : 'articles'}${selected === 'all' ? '' : ` in ${buttons.find(button => button.dataset.writingFilter === selected)?.textContent}`}${query ? ` matching “${search?.value.trim()}”` : ''}`;
     }
+    // Once the reader is filtering, returning cards answer immediately instead of waiting out the page-load delay.
+    collection.addEventListener('input', () => grid?.style.setProperty('--enter-delay', '0ms'), { capture: true });
+    collection.addEventListener('click', () => grid?.style.setProperty('--enter-delay', '0ms'), { capture: true });
     buttons.forEach(button => button.addEventListener('click', () => {
       selected = button.dataset.writingFilter ?? 'all';
       updateArticles();

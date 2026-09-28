@@ -14,7 +14,7 @@ const { eyebrow, title, description, icon } = Astro.props;
 ---
 <header class="page-header">
   {eyebrow && <p class="page-eyebrow">{eyebrow}</p>}
-  <h1>
+  <h1 class="enter-title">
     {icon && <svg class="icon ph-icon"><use href={`#${icon}`}/></svg>}
     <span>{title}</span>
   </h1>

@@ -15,6 +15,10 @@
 #chat-dock .turn { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; }
 /* The speaker label sits beside the first line, not the middle of a tall answer. */
 #chat-dock .turn .who { align-self: start; }
+/* Jody, replying himself: ink rather than Verso's accent, so the two voices never read as one. */
+#chat-dock .turn.jody .who { color: var(--ink); }
+#chat-dock .turn.jody .reply-to { margin: 0 0 6px; font: 400 12px/1.5 var(--sans); color: var(--ink-faint); }
+#chat-dock .turn.jody .reply-body p { margin: 0 0 12px; }
 #chat-dock :is(.said, .answer, .source-item, .si-title) { min-width: 0; overflow-wrap: anywhere; }
 #chat-dock .source-item { align-items: start; flex-wrap: wrap; gap: 5px 10px; }
 #chat-dock .source-item .si-title { flex-basis: 150px; }

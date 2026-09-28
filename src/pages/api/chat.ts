@@ -13,6 +13,7 @@ import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
+import { notifyTurn } from '../../lib/operator';
 
 export const prerender = false;
 /**
@@ -30,6 +31,8 @@ const MODEL_DEADLINE_MS = 40_000; // Covers every round of the tool loop, not ea
 /** Rounds that may call card tools; the round after them must answer in text. */
 const MAX_TOOL_ROUNDS = 2;
 const MAX_CARDS = 4;
+/** Telegram is a notice to Jody. It may not hold the visitor's answer for long. */
+const NOTIFY_DEADLINE_MS = 3000;
 const TOOLS = [{ functionDeclarations: VERSO_TOOL_DECLARATIONS.map(({ name, description, parameters }) =>
   ({ name, description, parametersJsonSchema: parameters })) }];
 const DAILY_CAP_MESSAGE = 'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
@@ -97,6 +100,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (request.signal.aborted) disconnect();
   const hardTimer = setTimeout(() => lifetime.abort(new DOMException('Request timed out', 'TimeoutError')),
     Math.max(1, HARD_DEADLINE_MS - (Date.now() - started)));
+  const turnIndex = history.filter(turn => turn.r === 'u').length + 1;
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -206,20 +210,27 @@ export const POST: APIRoute = async ({ request }) => {
         log('model', 'complete');
         lifetime.signal.throwIfAborted();
         if (!answerText.trim()) throw new Error('Nothing came back. Try again.');
-        try {
-          await withDeadline(async signal => {
+        // Both before the done frame: once the response closes the function
+        // can be frozen, and a notice sent after it would be lost.
+        await Promise.all([
+          withDeadline(async signal => {
             const ts = Date.now();
             await appendTurn(cid, { r: 'u', t: query, ts }); signal.throwIfAborted();
             await appendTurn(cid, { r: 'a', t: answerText, ts });
-          }, 4000, lifetime.signal);
-          log('persistence', 'complete');
-        } catch { log('persistence', 'failed'); }
+          }, 4000, lifetime.signal).then(() => log('persistence', 'complete'), () => log('persistence', 'failed')),
+          withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, answer: answerText }, signal),
+            NOTIFY_DEADLINE_MS, lifetime.signal).catch(() => log('notify', 'failed')),
+        ]);
         lifetime.signal.throwIfAborted();
         completed = true;
         send({ sources }); send({ done: true }); log('response', 'complete');
       } catch (error) {
         const disconnected = lifetime.signal.aborted && lifetime.signal.reason?.name === 'AbortError';
         log('response', disconnected ? 'disconnected' : 'failed');
+        // Jody hears about the questions Verso could not answer, too. Not
+        // bound to the lifetime, which a timeout has already aborted.
+        if (!disconnected) await withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true }, signal),
+          NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed'));
         if (!disconnected) send({ error: error instanceof Error && error.message === DAILY_CAP_MESSAGE
           ? DAILY_CAP_MESSAGE : 'The response could not finish. Try again in a moment.' });
       } finally {

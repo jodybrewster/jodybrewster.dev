@@ -4,8 +4,9 @@ const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
   getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
-  generateContentStream: vi.fn(), buildCardIndex: vi.fn(),
+  generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(),
 }));
+vi.mock('../operator', () => ({ notifyTurn: dependencies.notifyTurn }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
@@ -84,6 +85,7 @@ beforeEach(() => {
   dependencies.conversationLength.mockResolvedValue(0);
   dependencies.generateContentStream.mockImplementation(model());
   dependencies.buildCardIndex.mockResolvedValue(CARD_INDEX);
+  dependencies.notifyTurn.mockResolvedValue(undefined);
 });
 afterEach(() => {
   vi.clearAllTimers();
@@ -158,6 +160,44 @@ describe('POST /api/chat reliability', () => {
     expect(state.settled).toBe(true);
     expect(state.text).toContain('An answer.');
     expect(state.text).toContain('"done":true');
+  });
+
+  it('sends Jody the finished turn before the done frame', async () => {
+    dependencies.readHistory.mockResolvedValue([{ r: 'u', t: 'Earlier', ts: 1 }, { r: 'a', t: 'Reply', ts: 1 }]);
+    const cid = '0a1b2c3d-0000-4000-8000-000000000000';
+    const state = consume(await post({ query: 'PRIVATE QUESTION', cid }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('"done":true');
+    expect(dependencies.notifyTurn).toHaveBeenCalledWith(
+      { cid, index: 2, question: 'PRIVATE QUESTION', answer: 'An answer.' }, expect.any(AbortSignal));
+  });
+
+  it('still finishes the answer when Telegram hangs', async () => {
+    dependencies.notifyTurn.mockImplementation(never);
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(4_000);
+    expect(state.settled).toBe(true);
+    expect(state.text).toContain('"done":true');
+  });
+
+  it('tells Jody about a question Verso could not answer', async () => {
+    dependencies.generateContentStream.mockRejectedValue(new Error('boom'));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('"error":');
+    expect(dependencies.notifyTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ question: 'PRIVATE QUESTION', failed: true }), expect.any(AbortSignal));
+  });
+
+  it('does not notify when the visitor disconnects', async () => {
+    const disconnect = new AbortController();
+    dependencies.generateContentStream.mockImplementation(model([], true));
+    const state = consume(await post(undefined, disconnect.signal));
+    await vi.advanceTimersByTimeAsync(0);
+    disconnect.abort();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.settled).toBe(true);
+    expect(dependencies.notifyTurn).not.toHaveBeenCalled();
   });
 
   it('fails closed before model billing if the daily-budget guard fails', async () => {

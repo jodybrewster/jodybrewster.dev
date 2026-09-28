@@ -265,6 +265,18 @@
   @property --edge-shine { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
   @keyframes edge-shine { 12% { --edge-shine: 90%; } 60% { --edge-shine: 75%; } to { --edge-shine: 0%; } }
 
+  /* The closing line of a hero headline: a step heavier than the light lines above it, washed from orange through
+     pink and violet to cyan. */
+  .text-gradient {
+    font-weight: 500;
+    background: linear-gradient(90deg, var(--home-orange, var(--studio-orange)) 0%, var(--home-pink, var(--studio-pink)) 38%, var(--home-purple, var(--studio-purple)) 68%, var(--home-cyan, var(--studio-cyan)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
   .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   /* ── entrances ─────────────────────────────────────────────── */

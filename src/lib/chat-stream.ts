@@ -1,6 +1,8 @@
+import type { Card } from './verso-tools';
+
 export interface ChatSource { type: string; url: string; title: string; date?: string }
 export interface ChatEvent {
-  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; error?: string; done?: boolean;
+  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; card?: Card; error?: string; done?: boolean;
 }
 interface ChatOptions {
   onEvent: (event: ChatEvent) => void;
@@ -9,7 +11,7 @@ interface ChatOptions {
   fetcher?: typeof fetch;
 }
 export async function requestChat(
-  body: { query: string; cid?: string; name?: string }, options: ChatOptions,
+  body: { query: string; cid?: string }, options: ChatOptions,
 ): Promise<void> {
   const controller = new AbortController();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
@@ -23,7 +25,7 @@ export async function requestChat(
   };
   const onAbort = () => stop('Stopped. You can try again when you’re ready.');
   options.signal?.addEventListener('abort', onAbort, { once: true });
-  const timer = setTimeout(() => stop('That took too long. Please try again.'), options.timeoutMs ?? 85_000);
+  const timer = setTimeout(() => stop('That took too long. Please try again.'), options.timeoutMs ?? 60_000);
 
   async function receive(): Promise<void> {
     if (options.signal?.aborted) { onAbort(); return; }

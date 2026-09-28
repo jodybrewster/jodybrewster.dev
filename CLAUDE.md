@@ -43,7 +43,7 @@ npm run books      # resolve book catalog links + cache covers → content/libra
 npm test           # vitest run
 ```
 
-Unit tests live under `src/lib/**/*.test.ts` and cover the shelf, Verso transport/routes, handoff, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
+Unit tests live under `src/lib/**/*.test.ts` and cover the shelf, Verso transport/routes, conversation history, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
 Type-check with `npx astro check`.
 
 ## Architecture
@@ -70,7 +70,7 @@ Content lives in two places:
 
 ### Pages
 
-Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/chat`, `/now`. The `/chat` page calls API routes in `src/pages/api/` that use the Anthropic SDK + Upstash Vector for RAG over the site's own content.
+Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/now`. Verso, the chat, is a popup on every page (not a route; `/chat` and `/ask` redirect home). It calls `src/pages/api/chat.ts`, which uses Gemini + Upstash Vector for RAG over the site's own content.
 
 The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. A new piece without a dedicated image gets a studio illustration picked from its slug.
 
@@ -82,29 +82,27 @@ The `src/pages/` subdirectories exist but are mostly empty — pages are activel
 
 ### Verso (the chat)
 
-The chat persona is named Verso and it has two authors. Most of the time `/api/chat` answers from the corpus. When the operator is present, the visitor's question is pushed to Telegram and **the same request holds its SSE response open**, polling Redis for a human reply. Vercel has no background jobs, so the wait has to be the request itself; `maxDuration: 90` in `astro.config.mjs` covers the 20s window plus a model stream after it, and it is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
+The chat persona is named Verso. `/api/chat` answers with Google Gemini (`gemini-3.8-flash`, via `@google/genai`), grounded in the site's own corpus: each question is embedded, the top excerpts from Upstash Vector ride on the final user message, and the answer streams back over SSE. The route holds itself to a 55-second deadline inside `maxDuration: 60` in `astro.config.mjs`, which is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
 
-The visitor is never told which author answered. That is deliberate, and three things hold it together:
+Verso used to have two authors: a Telegram handoff let Jody answer as Verso while he was on call. That was removed when the chat moved to Gemini. Copy must stay true to that: Verso is an AI, the dock and the chat page say so, and nothing may suggest Jody reads or answers questions. The ask-bar placeholder ("Ask Verso about my work") is a deliberate exception, chosen by him.
 
-1. **The claim key is the whole concurrency design.** `SET chat:msg:<mid>:claim <who> NX EX 3600` is the only arbiter of the race. The webhook validates a pending question and saves its `human` claim and reply together in one Redis script; the route claims `llm` at the deadline. A closed or expired target refuses a reply. The loser reads what the winner wrote. No locks, no doubled answers, no lost ones.
-2. **A human reply is word-chunked and paced** (`chunkForTyping` / `typingDelayMs` in `src/lib/verso.ts`) so it types out like the model. A verbatim reply landing as one instant block next to a model reply that types for eight seconds is the tell.
-3. **Copy must stay true on both paths.** Nothing user-facing may claim answers come only from the corpus, because that is false whenever Jody is typing. The ask-bar placeholder is the one deliberate exception, chosen by him.
+Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly into Gemini `Content`). `src/lib/conversation.ts` is the Redis history store under `chat:conv:<cid>`, distinct from the `rl:chat:*` prefix that `@upstash/ratelimit` owns. The route is deliberately thin so the decisions stay unit-testable.
 
-Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly, typing cadence). `src/lib/handoff.ts` is the Redis state layer under a `chat:` namespace, distinct from the `rl:chat:*` prefix that `@upstash/ratelimit` owns. `src/lib/telegram.ts` is the Bot API client plus pure formatters. The two routes are deliberately thin so the decisions stay unit-testable.
+The conversation ID lives in `sessionStorage` under `verso:cid`. New chat clears it.
 
-Verso sends the first question immediately. Visitors may add a first name through an optional disclosure; it is remembered in `localStorage` under `verso:name`. The conversation ID lives in `sessionStorage` under `verso:cid`. Names go to the Telegram header and pending-question state, never into model prompts or conversation history. New chat clears the conversation ID.
+The server enforces an independent 55-second request deadline, plus shorter setup/retrieval/model/persistence deadlines. The browser times out after 60 seconds, supports Stop and Retry, and consumes `done` as a terminal frame. Stage logs contain message IDs and timing, never question text. A timed-out rate-limit fallback is refused.
 
-The server enforces an independent 80-second request deadline, plus shorter setup/retrieval/model/persistence deadlines. The browser times out after 85 seconds, supports Stop and Retry, and consumes `done` as a terminal frame. Stage logs contain message IDs and timing, never question text. A timed-out rate-limit fallback is refused. Human handoff waits 20 seconds; accepted Telegram replies are stored atomically and are acknowledged as accepted, not as displayed.
-
-On phones, one fixed safe-area-aware composer replaces the header button, hero action and introduction card. The panel expands above it; 16px inputs prevent iPhone focus zoom. The desktop introduction and dedicated `/chat` layout remain available. Conversation DOM is persisted across Astro navigation.
+On phones, one fixed safe-area-aware composer replaces the header button, hero action and introduction card. The panel expands above it; 16px inputs prevent iPhone focus zoom. Conversation DOM is persisted across Astro navigation.
 
 `npm run embed -- --dry-run` validates the complete five-collection corpus without network access. Production Vercel builds refresh it after the application build: stage a new namespace, verify all vectors, then atomically switch `chat:corpus:active`. Never reset the active namespace. See `docs/verso-evaluation.md` for rollback and answer-quality checks.
 
-`/on` opens a 10-hour window (`PRESENCE_TTL_S`). It closes by Redis TTL, and **an expiring key runs nothing** - there is no moment to hook a notification onto. So `chat:presence:until` holds the end time and deliberately outlives the presence key it describes; `claimPresenceLapse()` reads it via GETDEL, so whichever request notices first is the only one that reports it. Both the webhook and the chat route call it, which means the notice arrives either on his next message to the bot or when a visitor asks - the second being the case worth catching, since someone is waiting and he does not know he stopped being the one answering. An explicit `/off` clears the marker: he already knows.
+Gotchas: conversation history is read server-side from Redis and never accepted from the client, or a caller could fabricate assistant turns into the prompt. An *unreachable* Redis is not the same as an absent one: a deleted database throws a DNS error out of the rate limiter, which is why those calls are wrapped and answer 503 in production rather than a bare 500.
 
-Replies are routed by `reply_to_message.message_id`. A bare message names no target, so `chat:pending` - a sorted set of questions still waiting, scored by ask time - decides what happens: exactly one open question keeps the convenience, two or more are refused with the list of who is waiting. Claiming removes the entry whichever side won, and the set is pruned by score on read, because a request that dies mid-flight never removes itself.
+**Cards.** The model can show the site's own content inline: `show_work`, `show_writing`, `show_note`, `show_now` and `open_page`, declared once in `src/lib/verso-tools.ts` (pure, browser-safe) and used by both the text route and voice. `resolveCard` only returns cards for slugs and urls that exist in the card index (`src/lib/cards.ts`, served statically at `/verso-cards.json`), and `open_page` keeps a quote only if it appears verbatim in that page, so the model can pick a card but never invent one or put words in Jody's mouth. The text route runs at most two tool rounds, sends each card as a `{ card }` SSE frame and only takes the model fallback before anything, text or card, has been sent. Cards render from `<template>`s in `ChatDock.astro` through `src/lib/card-render.ts`, text via `textContent` only.
 
-Gotchas: messages go to Telegram with **no `parse_mode`** - under Markdown an unbalanced `*` in a visitor's question makes Telegram 400 and the question vanishes silently. Conversation history is read server-side from Redis and never accepted from the client, or a caller could fabricate assistant turns into the prompt. An *unreachable* Redis is not the same as an absent one: a deleted database throws a DNS error out of the rate limiter, which is why those calls are wrapped and answer 503 in production rather than a bare 500.
+**Voice.** The mic in the dock opens a Gemini Live session (`gemini-3.8-live`) that runs browser to Google, using `@jodybrewster/gemini-live` (built from the gemini-live-nextjs repo). The server's only lever is the ephemeral token from `/api/live-token`: single use, rate limited per IP and site-wide (`rl:voice:*`), and locked to Verso's model, voice prompt (`src/lib/verso-voice.ts`) and tools. `lockAdditionalFields` must stay unset: Google rejects `[]` with "field_mask is invalid" once tools are locked. In the browser, `search_site` calls `/api/corpus` and never renders; the `show_*` tools resolve against `/verso-cards.json`. The session lives at module scope in `src/lib/live/voice.ts`, so it survives soft navigation with the dock, ends itself after five minutes (`VOICE_SESSION_MS`) and shows a countdown. The voice chunk is preloaded at idle rather than on tap because iOS only lets audio start inside the tap handler itself (`unlockAudio()` runs before any await). Voice turns are never sent to the server, so the text chat cannot see what was said aloud; accepting client transcripts would reopen the fabricated-history hole above. Typing and voice never run at once.
+
+`@jodybrewster/gemini-live` is currently installed from a local tarball (`file:../gemini-live-nextjs/...`). Before deploying, publish it to GitHub Packages (tag `gemini-live-v0.1.0` in that repo), switch the dependency to the published version, and add an `.npmrc` plus `NPM_TOKEN` in Vercel, or Vercel cannot install it.
 
 ### The /library shelf
 
@@ -145,11 +143,11 @@ Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via 
 ### AI / RAG (env vars required)
 
 The chat page and search features use:
-- `ANTHROPIC_API_KEY` — Claude API for the chat interface
+- `GEMINI_API_KEY` - Gemini API for Verso, the chat (text answers and voice tokens)
+- `ANTHROPIC_API_KEY` - Claude API for the MCP server's ask tool (`src/pages/api/mcp.ts`)
 - `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
 - `UPSTASH_VECTOR_*` — vector store for semantic search over content
 - `UPSTASH_REDIS_*` — caching/rate limiting
-- `TELEGRAM_*` — the Verso handoff: bot token, owner id, webhook secret. Questions arrive on Jody's phone; his reply goes back to the visitor as Verso. Without these the chat degrades to model-only.
 
 Copy `.env.example` to `.env` and fill in keys to use these features locally.
 

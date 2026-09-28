@@ -6,8 +6,8 @@ import { env } from './env';
  * is absent, so every caller shares the same contract: no Redis means the
  * feature that needs it degrades, it does not throw.
  *
- * Rate limiting (lib/rate-limit.ts) and the chat handoff (lib/handoff.ts) both
- * sit on this client.
+ * Rate limiting (lib/rate-limit.ts) and chat history (lib/conversation.ts)
+ * both sit on this client.
  */
 let _redis: Redis | null = null;
 let _checked = false;

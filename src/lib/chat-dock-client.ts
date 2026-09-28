@@ -1,4 +1,16 @@
 import { requestChat, type ChatSource } from './chat-stream';
+import { navigate } from 'astro:transitions/client';
+import { renderCard } from './card-render';
+
+type VoiceModule = typeof import('./live/voice') & typeof import('./live/voice-dock');
+let voiceModule: Promise<VoiceModule> | null = null;
+/** Voice code loads when the browser is idle, not on the first tap: iOS only
+ *  lets audio start inside the tap handler itself, so it must already be here. */
+function loadVoice(): Promise<VoiceModule> {
+  voiceModule ??= Promise.all([import('./live/voice'), import('./live/voice-dock')]).then(([a, b]) => ({ ...a, ...b }));
+  voiceModule.catch(() => { voiceModule = null; });
+  return voiceModule;
+}
 
 let mounted: HTMLElement | null = null;
 let dispose = () => {};
@@ -15,7 +27,6 @@ export function initChatDock(): void {
   const eventOptions = { signal: listeners.signal };
   const form = dock.querySelector<HTMLFormElement>('#chat-form')!;
   const input = dock.querySelector<HTMLInputElement>('#chat-q')!;
-  const nameInput = dock.querySelector<HTMLInputElement>('#chat-name')!;
   const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
   const submitLabel = submit.querySelector<HTMLElement>('.submit-label')!;
   const panel = dock.querySelector<HTMLElement>('#dock-panel')!;
@@ -25,17 +36,15 @@ export function initChatDock(): void {
   const newChat = dock.querySelector<HTMLButtonElement>('#dock-new')!;
   let request: AbortController | null = null;
   let trigger: HTMLElement | null = null;
-  const embedded = () => document.body.classList.contains('verso-page');
 
   function sync(): void {
-    const open = embedded() || dock!.classList.contains('open');
+    const open = dock!.classList.contains('open');
     panel.inert = !open;
     input.setAttribute('aria-expanded', String(open));
     document.querySelectorAll('[data-verso-open]').forEach(el => el.setAttribute('aria-expanded', String(open)));
   }
   function open(): void { dock!.classList.add('open'); sync(); }
   function close(restoreFocus = false): void {
-    if (embedded()) return;
     dock!.classList.remove('open');
     input.blur();
     sync();
@@ -52,7 +61,6 @@ export function initChatDock(): void {
     dock!.style.setProperty('--chat-keyboard-offset', `${Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)}px`);
   }
   syncMode = () => {
-    if (embedded()) dock!.classList.add('open');
     sync(); sizeToKeyboard();
   };
   syncMode();
@@ -60,10 +68,6 @@ export function initChatDock(): void {
   window.visualViewport?.addEventListener('scroll', sizeToKeyboard, eventOptions);
 
   const readCid = () => { try { return sessionStorage.getItem('verso:cid') || undefined; } catch { return undefined; } };
-  try { nameInput.value = localStorage.getItem('verso:name') || ''; } catch { /* Storage is optional. */ }
-  nameInput.addEventListener('change', () => {
-    try { localStorage.setItem('verso:name', nameInput.value.trim().slice(0, 40)); } catch { /* Optional. */ }
-  }, eventOptions);
 
   function appendTemplate(id: string, parent = conversation): HTMLElement {
     const template = dock!.querySelector<HTMLTemplateElement>(id)!;
@@ -75,6 +79,8 @@ export function initChatDock(): void {
   function busy(value: boolean): void {
     input.disabled = value;
     newChat.disabled = value;
+    // A typed answer and a voice session never run at once.
+    dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = value;
     submitLabel.textContent = value ? 'Stop' : 'Ask';
     submit.setAttribute('aria-label', value ? 'Stop response' : 'Send message');
     submit.classList.toggle('is-busy', value);
@@ -109,7 +115,6 @@ export function initChatDock(): void {
     if (!query || request) return;
     request = new AbortController();
     busy(true); open(); empty.hidden = true;
-    dock!.querySelector<HTMLDetailsElement>('#dock-identity')!.open = false;
     if (!retryTurn) appendTemplate('#tpl-you').querySelector<HTMLElement>('.said')!.textContent = query;
     const turn = retryTurn ?? appendTemplate('#tpl-site');
     if (retryTurn) {
@@ -122,9 +127,10 @@ export function initChatDock(): void {
     input.value = ''; scrollToAnswer();
     let text = '';
     let sources: ChatSource[] = [];
+    let destination: string | null = null;
     const timer = setTimeout(() => { if (waited) waited.hidden = false; }, 12_000);
     try {
-      await requestChat({ query, cid: readCid(), name: nameInput.value.trim().slice(0, 40) || undefined }, {
+      await requestChat({ query, cid: readCid() }, {
         signal: request.signal,
         onEvent(event) {
           if (typeof event.cid === 'string') { try { sessionStorage.setItem('verso:cid', event.cid); } catch { /* Optional. */ } }
@@ -132,11 +138,19 @@ export function initChatDock(): void {
           if (typeof event.text === 'string' && event.text) {
             clearTimeout(timer); text += event.text; renderText(answer, text); scrollToAnswer();
           }
+          if (event.card?.kind === 'navigate') destination = event.card.url;
+          if (event.card) {
+            // In order of arrival: ahead of the prose if it has not started, after it otherwise.
+            const card = renderCard(dock!, event.card);
+            if (card) { if (text) said.append(card); else answer.before(card); scrollToAnswer(); }
+          }
           if (Array.isArray(event.sources)) sources = event.sources;
         },
       });
       if (!text.trim()) throw new Error('Nothing came back. Please try again.');
       renderSources(said, sources);
+      // Leave only once the answer has landed, so it is there to come back to.
+      if (destination) void navigate(destination);
     } catch (error) {
       if (!text) answer.replaceChildren();
       const recovery = appendTemplate('#tpl-retry', said);
@@ -149,13 +163,15 @@ export function initChatDock(): void {
 
   form.addEventListener('submit', event => {
     event.preventDefault();
-    if (request) request.abort(); else void ask(input.value);
+    if (request) { request.abort(); return; }
+    void ask(input.value);
   }, eventOptions);
   input.addEventListener('focus', open, eventOptions);
   dock.querySelector('#dock-close')!.addEventListener('click', closeFromButton, eventOptions);
   newChat.addEventListener('click', () => {
     if (request) return;
     try { sessionStorage.removeItem('verso:cid'); } catch { /* Optional. */ }
+    if (voice) { voice.stopVoice(); renderer?.reset(voice.voiceSession().getSnapshot().messages); status(null); }
     conversation.replaceChildren(); empty.hidden = false; input.value = ''; input.focus({ preventScroll: true });
   }, eventOptions);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeFromButton(); }, eventOptions);
@@ -163,10 +179,80 @@ export function initChatDock(): void {
     const target = event.target instanceof Element ? event.target : null;
     const opener = target?.closest<HTMLElement>('[data-verso-open]');
     if (opener) {
-      trigger = opener; open();
-      if (!request && opener.dataset.versoPrompt) input.value = opener.dataset.versoPrompt;
+      trigger = opener;
+      const prompt = opener.dataset.versoPrompt;
+      open();
+      if (!request && prompt) input.value = prompt;
       input.focus({ preventScroll: true });
     } else if (target && !dock!.contains(target)) close();
   }, eventOptions);
-  dispose = () => { request?.abort(); listeners.abort(); };
+
+  const voiceButton = dock.querySelector<HTMLButtonElement>('#dock-voice')!;
+  const voiceStatus = dock.querySelector<HTMLElement>('#dock-voice-status')!;
+  const placeholder = input.placeholder;
+  let voice: VoiceModule | null = null;
+  let unsubscribe = () => {};
+  let countdown = 0;
+  let renderer: ReturnType<VoiceModule['createVoiceRenderer']> | null = null;
+  function status(text: string | null, tone: 'live' | 'note' = 'note'): void {
+    voiceStatus.hidden = !text; voiceStatus.textContent = text ?? ''; voiceStatus.dataset.tone = tone;
+  }
+  function paintVoice(): void {
+    if (!voice) return;
+    const snapshot = voice.voiceSession().getSnapshot();
+    const connecting = snapshot.connectionStatus === 'connecting';
+    const live = snapshot.isConnected;
+    voiceButton.dataset.state = connecting ? 'connecting' : live ? 'live' : 'idle';
+    voiceButton.setAttribute('aria-pressed', String(live || connecting));
+    voiceButton.setAttribute('aria-label', live || connecting ? 'End voice conversation' : 'Talk to Verso');
+    // One conversation at a time: typing waits while Verso is listening.
+    input.disabled = live || connecting || Boolean(request);
+    input.placeholder = live || connecting ? 'Voice is on' : placeholder;
+    clearInterval(countdown);
+    if (connecting) status('Connecting…');
+    else if (live && snapshot.media.audio.isStreaming) {
+      const tick = () => {
+        const left = Math.max(0, (snapshot.endsAt ?? Date.now()) - Date.now());
+        const clock = `${Math.floor(left / 60_000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
+        status(snapshot.endsAt ? `Listening · ${clock} left` : 'Listening', 'live');
+      };
+      tick(); countdown = window.setInterval(tick, 1000);
+    } else if (!live) {
+      const ended = voice.endedMessage(snapshot.endReason);
+      if (ended || voiceStatus.dataset.tone === 'live') status(ended);
+    }
+    renderer?.update(snapshot.messages);
+  }
+  function attachVoice(module: VoiceModule): void {
+    if (voice) return;
+    voice = module;
+    renderer = module.createVoiceRenderer({
+      dock: dock!, conversation,
+      appendTemplate: id => appendTemplate(id),
+      beforeRender: () => { open(); empty.hidden = true; },
+      navigate: url => { void navigate(url); },
+      scroll: scrollToAnswer,
+    });
+    const session = module.voiceSession();
+    // A session carried across navigation keeps its transcript on screen already.
+    renderer.reset(session.getSnapshot().messages);
+    unsubscribe = session.subscribe(paintVoice);
+    paintVoice();
+  }
+  const idle = window.requestIdleCallback ?? ((run: () => void) => window.setTimeout(run, 1200));
+  idle(() => { void loadVoice().then(attachVoice).catch(() => {}); });
+  voiceButton.addEventListener('click', () => {
+    if (voice && voiceButton.getAttribute('aria-pressed') === 'true') { voice.stopVoice(); status(null); return; }
+    if (request) return;
+    open(); status('Connecting…');
+    const start = (module: VoiceModule) => {
+      attachVoice(module);
+      module.startVoice().catch(error => { module.stopVoice(); status(module.voiceErrorMessage(error)); });
+    };
+    // Already loaded: start inside this tap so iOS lets audio play.
+    if (voice) start(voice);
+    else void loadVoice().then(start).catch(() => status('Voice could not load. You can keep typing.'));
+  }, eventOptions);
+
+  dispose = () => { request?.abort(); listeners.abort(); unsubscribe(); clearInterval(countdown); };
 }

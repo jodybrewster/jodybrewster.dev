@@ -10,7 +10,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 - **Content:** Markdown files synced from an Obsidian vault
 - **Fonts:** Barlow Semi Condensed (thin display headlines), Plus Jakarta Sans (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
-- **AI/Chat:** Verso, the site's chat. Anthropic Claude API + Upstash Vector (RAG over site content), with an optional human handoff: `/on` to the bot puts him on call for ten hours, a question then reaches him on Telegram and his reply goes back on the same stream. The window closes by itself and says so, rather than leaving a visitor waiting on someone who stopped being available hours ago. Visitors may optionally add a name; it is remembered in their browser and used for the Telegram header, never shown to the model. Mobile pages have one fixed chat composer with Stop and Retry controls. See `CLAUDE.md` for how the race between the two answers is settled.
+- **AI/Chat:** Verso, the site's chat. Google Gemini + Upstash Vector (RAG over site content), streamed over SSE with conversation history held server-side in Upstash Redis. Mobile pages have one fixed chat composer with Stop and Retry controls. See `CLAUDE.md` for the details.
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
 - **Analytics:** Google Analytics 4 (`G-4DLGJN6CZ5`) loaded directly, production builds only
 
@@ -33,7 +33,7 @@ The site opens on `/home`, not on `/`. The root is a redirect (declared in `astr
 | `/home` | The editorial home page — the site's front door |
 | `/library` | A Three.js shelf of books, albums, and notebooks. Its own full-bleed document, no masthead or footer, pinned to the light palette, and the only page that loads Three.js |
 | `/writing`, `/notes`, `/work`, `/portfolio`, `/research` | Index and `[slug]` pages per collection |
-| `/now`, `/about`, `/agent`, `/chat`, `/search` | Standalone pages |
+| `/now`, `/about`, `/agent`, `/search` | Standalone pages |
 
 The `jodybrewster.dev` notebook on the shelf holds a live iframe of `/home` and opens into it, so the shelf stays running behind the site rather than unloading. See `CLAUDE.md` for the rules that keep that iframe alive.
 
@@ -63,11 +63,11 @@ Design tokens and visual language are documented in [`DESIGN.md`](DESIGN.md). St
 Copy `.env.example` to `.env` and fill in keys to run the full feature set locally:
 
 ```
-ANTHROPIC_API_KEY=     # Claude API — chat interface
+GEMINI_API_KEY=        # Gemini API - Verso, the chat
+ANTHROPIC_API_KEY=     # Claude API - the MCP server's ask tool
 VOYAGE_API_KEY=        # Embeddings for RAG
 UPSTASH_VECTOR_*=      # Vector store
 UPSTASH_REDIS_*=       # Rate limiting / caching
-TELEGRAM_*=            # Verso handoff: bot token, owner id, webhook secret
 PREVIEW_PASSWORD=      # Basic auth gate (remove for public launch)
 ```
 

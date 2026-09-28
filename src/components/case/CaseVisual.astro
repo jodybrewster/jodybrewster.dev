@@ -1,0 +1,80 @@
+---
+import Icon from '../Icon.astro';
+import WorkEvaluationPreview from '../WorkEvaluationPreview.astro';
+import type { WorkPresentation } from '../../lib/work-presentation';
+import { hasCaseVisual } from '../../lib/verso-parts';
+
+interface Props {
+  slug: string;
+  presentation?: WorkPresentation;
+  /** View-transition name, set on the work page only. Two elements may never share one, so the chat copy omits it. */
+  transitionName?: string;
+  variant?: 'page' | 'chat';
+}
+const { slug, presentation, transitionName, variant = 'page' } = Astro.props;
+const chat = variant === 'chat';
+const isLennar = slug === 'lennar-interactive-maps';
+const href = isLennar ? '/portfolio/lennar-interactive-maps' : presentation?.image;
+const label = isLennar ? 'View the Lennar product screenshots' : 'View the full-size Brand Impact Tracker interface';
+const cta = isLennar ? 'Explore product screens' : 'View full interface';
+const loading = chat ? { loading: 'lazy' as const, decoding: 'async' as const } : { fetchpriority: 'high' as const };
+---
+{hasCaseVisual(slug, presentation) && (presentation?.image ? (
+  <figure class:list={['case-figure', { 'is-chat': chat }]}>
+    {transitionName ? (
+      <a class="case-image-link" transition:name={transitionName} href={href} aria-label={label}>
+        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} />
+        <span class="case-preview-link"><Icon name="external" class="icon" />{cta}</span>
+      </a>
+    ) : (
+      <a class="case-image-link" href={href} aria-label={label}>
+        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} />
+        <span class="case-preview-link"><Icon name="external" class="icon" />{cta}</span>
+      </a>
+    )}
+    <figcaption>{presentation.imageNote}</figcaption>
+  </figure>
+) : (
+  <figure class:list={['case-figure', { 'is-chat': chat }]}>
+    {transitionName ? (
+      <div class="case-evaluation-preview" transition:name={transitionName}><WorkEvaluationPreview /></div>
+    ) : (
+      <div class="case-evaluation-preview"><WorkEvaluationPreview compact={chat} /></div>
+    )}
+    <figcaption>The evaluation framework · Four dimensions of conversation quality</figcaption>
+  </figure>
+))}
+
+<style>
+  .case-figure { margin: 0 0 15px; }
+  .case-image-link { position: relative; display: block; overflow: hidden; border-radius: 10px; border: 1px solid var(--studio-rule); background: var(--studio-surface); }
+  .case-image-link img { display: block; width: 100%; height: auto; transition: transform 400ms; }
+  .case-image-link:hover img { transform: scale(1.02); }
+  .case-preview-link { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; border: 1px solid var(--studio-rule); border-radius: 99px; padding: 11px 17px; font-size: 11px; font-weight: 600; color: var(--studio-ink); background: var(--studio-bg); }
+  .case-preview-link .icon { width: 15px; height: 15px; }
+  .case-figure figcaption { font-family: var(--sans); font-size: 10px; line-height: 1.5; color: var(--studio-muted); padding: 10px 1px 0; }
+  .case-evaluation-preview { aspect-ratio: 4 / 3; border: 1px solid var(--studio-rule); border-radius: 10px; overflow: hidden; }
+
+  /* In a conversation the figure is one block among others: the chat owns the
+     spacing around it, and the pill sits in the corner so it covers less of a
+     smaller image. */
+  .is-chat { margin: 0; container-type: inline-size; }
+  .is-chat .case-preview-link { bottom: 12px; left: auto; right: 12px; transform: none; padding: 8px 13px; }
+  .is-chat .case-preview-link .icon { width: 13px; height: 13px; }
+  .is-chat figcaption { padding-top: 8px; }
+  .is-chat .case-evaluation-preview { aspect-ratio: auto; }
+  /* The diagram's own narrow rules key off the viewport, which a chat column on
+     a desktop never reaches, so the column width applies them here instead. */
+  @container (max-width: 420px) {
+    .is-chat .case-preview-link { bottom: 10px; right: 10px; padding: 7px 11px; font-size: 10px; gap: 6px; }
+    .is-chat .case-evaluation-preview :global(.work-evaluation) { padding: 16px 14px; }
+    .is-chat .case-evaluation-preview :global(.evaluation-body) { gap: 10px; }
+    .is-chat .case-evaluation-preview :global(.evaluation-type) { display: none; }
+    .is-chat .case-evaluation-preview :global(.evaluation-conversation) { font-size: 10px; gap: 6px; }
+    .is-chat .case-evaluation-preview :global(.evaluation-rule) { font-size: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .case-image-link img { transition: none; }
+    .case-image-link:hover img { transform: none; }
+  }
+</style>

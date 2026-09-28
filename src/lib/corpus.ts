@@ -9,6 +9,7 @@ export interface Frontmatter {
   title?: string; date?: string; pubDate?: string; description?: string;
   status?: string; publish?: boolean; draft?: boolean; slug?: string;
   sector?: string; role?: string; duration?: string; pillar?: string; tags?: string[];
+  images?: unknown[];
 }
 export const COLLECTIONS = ['writing', 'notes', 'work', 'research', 'portfolio'] as const;
 export type CollectionType = typeof COLLECTIONS[number];

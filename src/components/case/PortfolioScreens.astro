@@ -1,0 +1,64 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Icon from '../Icon.astro';
+
+interface Props {
+  slug: string;
+  title: string;
+  images: { src: string; alt: string; caption?: string }[];
+}
+const { slug, title, images } = Astro.props;
+
+// Intrinsic size straight from the PNG header, so each lazy image reserves its
+// box before it loads and the conversation does not jump when it arrives.
+function pngSize(src: string): { width: number; height: number } {
+  try {
+    const head = readFileSync(join(process.cwd(), 'public', src)).subarray(0, 24);
+    if (head.toString('ascii', 12, 16) === 'IHDR') return { width: head.readUInt32BE(16), height: head.readUInt32BE(20) };
+  } catch {}
+  return { width: 1600, height: 1000 };
+}
+const screens = images.map(image => ({ ...image, ...pngSize(image.src) }));
+const single = screens.length === 1;
+---
+<figure class:list={['portfolio-screens', { single }]} aria-label={`${title}: product screens`}>
+  <div class="screens-head">
+    <span class="screens-label">Product screens · {screens.length}</span>
+    <a class="screens-link" href={`/portfolio/${slug}`}>Open project <Icon name="arrow-right" class="icon" /></a>
+  </div>
+  <ul class="screens-strip" tabindex={single ? undefined : 0} aria-label={single ? undefined : 'Scroll for more screens'}>
+    {screens.map(screen => (
+      <li class="screen">
+        <a class="screen-frame" href={screen.src} aria-label={`Open full size: ${screen.alt}`}>
+          <img src={screen.src} alt={screen.alt} width={screen.width} height={screen.height} loading="lazy" decoding="async" />
+        </a>
+        {screen.caption && <p class="screen-caption">{screen.caption}</p>}
+      </li>
+    ))}
+  </ul>
+</figure>
+
+<style>
+  .portfolio-screens { margin: 0; min-width: 0; }
+  .screens-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin: 0 0 10px; }
+  .screens-label { font-size: 10px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--studio-muted); }
+  .screens-link { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--studio-cyan); border: none; white-space: nowrap; }
+  .screens-link .icon { width: 13px; height: 13px; transition: transform 150ms; }
+  .screens-link:hover .icon { transform: translateX(2px); }
+
+  /* One screen per view with the next one's edge showing, so the strip says it
+     scrolls without a control. Only the strip moves sideways. */
+  .screens-strip { list-style: none; margin: 0; padding: 0 0 10px; display: grid; grid-auto-flow: column; grid-auto-columns: 84%; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: 0; scrollbar-width: thin; scrollbar-color: var(--studio-rule) transparent; }
+  .screens-strip:focus-visible { outline: 1px solid var(--studio-cyan); outline-offset: 4px; border-radius: 10px; }
+  .single .screens-strip { grid-auto-columns: 100%; padding-bottom: 0; overflow: visible; }
+  .screen { scroll-snap-align: start; min-width: 0; }
+  .screen-frame { display: block; aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid var(--studio-rule); border-radius: 10px; background: var(--studio-surface); }
+  .screen-frame img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: transform 400ms; }
+  .screen-frame:hover img { transform: scale(1.02); }
+  .screen-caption { margin: 8px 1px 0; font-size: 10px; line-height: 1.5; color: var(--studio-muted); }
+  @media (prefers-reduced-motion: reduce) {
+    .screen-frame img, .screens-link .icon { transition: none; }
+    .screen-frame:hover img, .screens-link:hover .icon { transform: none; }
+  }
+</style>

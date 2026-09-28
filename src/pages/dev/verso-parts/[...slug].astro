@@ -1,0 +1,55 @@
+---
+import Studio from '../../../layouts/Studio.astro';
+import VersoPartTemplates from '../../../components/VersoPartTemplates.astro';
+
+// Same shape as /drafts: a rest-param route with no paths outside dev, so a
+// production build writes nothing and the URL 404s. A plain page would ship.
+export async function getStaticPaths() {
+  if (!import.meta.env.DEV) return [];
+  return [{ params: { slug: undefined } }];
+}
+---
+<Studio title="Verso parts - local only" description="Every Verso part template, cloned into mock chat columns. Dev server only.">
+  <main id="main-content" class="parts-main studio-container">
+    <p class="studio-eyebrow">Dev only</p>
+    <h1>Verso parts</h1>
+    <p class="parts-lede">Each template cloned into a 560px and a 360px chat column, the way the conversation will place it.</p>
+    <div class="parts-list" data-parts-list></div>
+    <VersoPartTemplates />
+  </main>
+</Studio>
+
+<script is:inline>
+  const list = document.querySelector('[data-parts-list]');
+  for (const template of document.querySelectorAll('template[id^="gen-"]')) {
+    const row = document.createElement('section');
+    row.className = 'parts-row';
+    row.dataset.id = template.id;
+    const label = document.createElement('p');
+    label.className = 'parts-label';
+    label.textContent = template.id;
+    row.append(label);
+    const columns = document.createElement('div');
+    columns.className = 'parts-columns';
+    for (const width of [560, 360]) {
+      const column = document.createElement('div');
+      column.className = 'parts-column';
+      column.style.width = `${width}px`;
+      column.dataset.width = String(width);
+      column.append(template.content.cloneNode(true));
+      columns.append(column);
+    }
+    row.append(columns);
+    list.append(row);
+  }
+</script>
+
+<style>
+  .parts-main { padding-top: 32px; padding-bottom: 64px; }
+  h1 { font: 400 32px/1.15 var(--headline); letter-spacing: -.01em; margin: 0 0 8px; }
+  .parts-lede { margin: 0 0 32px; font-size: 13px; color: var(--studio-muted); }
+  :global(.parts-row) { padding: 24px 0; border-top: 1px solid var(--studio-rule); }
+  :global(.parts-label) { margin: 0 0 12px; font: 500 11px/1.5 var(--mono); color: var(--studio-muted); }
+  :global(.parts-columns) { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+  :global(.parts-column) { flex: none; max-width: 100%; padding: 16px; border: 1px dashed var(--studio-rule); border-radius: 10px; box-sizing: content-box; }
+</style>

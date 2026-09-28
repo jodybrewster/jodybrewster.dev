@@ -8,10 +8,15 @@ import { env } from './env';
 let _ipLimiter: Ratelimit | null = null;
 
 // Site-wide: 75 chats / day across everyone. Sized so we run out of our quota
-// before the Anthropic monthly spend cap kicks in, giving users a graceful
-// 429 ("daily limit, try tomorrow") instead of an opaque upstream failure.
-// Only the model path spends this; a question Jody answers himself is free.
+// before the Gemini spend cap kicks in, giving users a graceful 429 ("daily
+// limit, try tomorrow") instead of an opaque upstream failure.
 let _globalLimiter: Ratelimit | null = null;
+
+// Voice is billed per minute of audio, so it is metered per session rather
+// than per message: a few sessions a day per visitor, and a site-wide ceiling
+// that a scripted token farm hits long before the bill does.
+let _voiceIpLimiter: Ratelimit | null = null;
+let _voiceGlobalLimiter: Ratelimit | null = null;
 
 export function getIpLimiter(): Ratelimit | null {
   if (_ipLimiter) return _ipLimiter;
@@ -37,6 +42,32 @@ export function getGlobalLimiter(): Ratelimit | null {
     prefix: 'rl:chat:global',
   });
   return _globalLimiter;
+}
+
+export function getVoiceIpLimiter(): Ratelimit | null {
+  if (_voiceIpLimiter) return _voiceIpLimiter;
+  const redis = getRedis();
+  if (!redis) return null;
+  _voiceIpLimiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(3, '24 h'),
+    analytics: false,
+    prefix: 'rl:voice:ip',
+  });
+  return _voiceIpLimiter;
+}
+
+export function getVoiceGlobalLimiter(): Ratelimit | null {
+  if (_voiceGlobalLimiter) return _voiceGlobalLimiter;
+  const redis = getRedis();
+  if (!redis) return null;
+  _voiceGlobalLimiter = new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(40, '24 h'),
+    analytics: false,
+    prefix: 'rl:voice:global',
+  });
+  return _voiceGlobalLimiter;
 }
 
 export function clientIp(request: Request): string {

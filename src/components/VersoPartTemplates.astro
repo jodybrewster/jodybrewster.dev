@@ -1,0 +1,42 @@
+---
+import { getCollection } from 'astro:content';
+import CaseVisual from './case/CaseVisual.astro';
+import CaseFacts from './case/CaseFacts.astro';
+import CaseSummary from './case/CaseSummary.astro';
+import CaseArchitecture from './case/CaseArchitecture.astro';
+import PortfolioScreens from './case/PortfolioScreens.astro';
+import { workPresentation } from '../lib/work-presentation';
+import { hasCaseVisual, partTemplateId, partsFor } from '../lib/verso-parts';
+
+// Inert copies of the case-study sections for Verso to clone into a
+// conversation. partsFor decides what exists here and in the chat's index
+// alike, so the model can only name a template that is on the page.
+const work = (await getCollection('work', entry => !entry.data.draft)).flatMap(entry => {
+  const presentation = workPresentation[entry.id];
+  return partsFor({
+    type: 'work', slug: entry.id, title: presentation?.title ?? entry.data.title, url: `/work/${entry.id}`,
+    hasPresentation: Boolean(presentation), hasVisual: hasCaseVisual(entry.id, presentation), imageCount: 0,
+  }).map(index => ({ index, entry, presentation: presentation! }));
+});
+const portfolio = (await getCollection('portfolio')).flatMap(entry => partsFor({
+  type: 'portfolio', slug: entry.id, title: entry.data.title, url: `/portfolio/${entry.id}`,
+  hasPresentation: false, hasVisual: false, imageCount: entry.data.images.length,
+}).map(index => ({ index, entry })));
+---
+{work.map(({ index, entry, presentation }) => index.parts.map(part => (
+  <template id={partTemplateId(index.key, part)}>
+    <div class="gen-part" data-part={part} data-slug={entry.id}>
+      {part === 'visual' && <CaseVisual slug={entry.id} presentation={presentation} variant="chat" />}
+      {part === 'facts' && <CaseFacts role={entry.data.role} sector={entry.data.sector} duration={entry.data.duration} presentation={presentation} variant="chat" />}
+      {part === 'summary' && <CaseSummary presentation={presentation} variant="chat" />}
+      {part === 'architecture' && <CaseArchitecture slug={entry.id} presentation={presentation} variant="chat" />}
+    </div>
+  </template>
+)))}
+{portfolio.map(({ index, entry }) => (
+  <template id={partTemplateId(index.key)}>
+    <div class="gen-part" data-part="screens" data-slug={entry.id}>
+      <PortfolioScreens slug={entry.id} title={entry.data.title} images={entry.data.images} />
+    </div>
+  </template>
+))}

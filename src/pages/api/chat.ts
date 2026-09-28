@@ -1,34 +1,39 @@
 import type { APIRoute } from 'astro';
-import Anthropic from '@anthropic-ai/sdk';
-import { searchVectors, getChunkText, type SearchHit, type SourceMetadata } from '../../lib/rag';
+import { ApiError, FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type Content, type Part } from '@google/genai';
+import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag';
 import { getIpLimiter, getGlobalLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
 import { getRedis } from '../../lib/redis';
-import {
-  HANDOFF_WINDOW_MS, POLL_INTERVAL_MS, isOperatorOnline, readHistory, appendTurn,
-  conversationLength, putPending, claim, getReply, putFinal, mapTelegramMessage,
-  setLastQuestion, closeHandoff,
-} from '../../lib/handoff';
-import { telegramConfigured, formatQuestionMessage, sendQuestion } from '../../lib/telegram';
-import { announceLapse } from './telegram';
+import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
 import {
   SYSTEM_PROMPT, MAX_QUERY_LEN, MAX_TURNS_PER_CONV, isValidConversationId,
-  retrievalQuery, buildMessages, chunkForTyping, typingDelayMs, type ConversationTurn,
+  retrievalQuery, buildMessages, type ConversationTurn,
 } from '../../lib/verso';
 import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
+import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
+import { buildCardIndex } from '../../lib/cards';
 
 export const prerender = false;
-const MODEL = 'claude-sonnet-4-6';
-const HARD_DEADLINE_MS = 80_000; // Leave ten seconds below Vercel's ceiling.
+/**
+ * Tried in order. Google answers 503 "high demand" per model, and one model
+ * can be saturated while its neighbour is fine, so a capacity error moves to
+ * the next one. Each gets a single attempt: the SDK's own retry backs off for
+ * seconds per try and would spend the whole deadline on the first model.
+ */
+const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+/** Capacity and quota errors. Anything else is a real failure and ends the turn. */
+const isRetryable = (error: unknown) =>
+  error instanceof ApiError && (error.status === 503 || error.status === 429);
+const HARD_DEADLINE_MS = 55_000; // Leave five seconds below Vercel's ceiling.
+const MODEL_DEADLINE_MS = 40_000; // Covers every round of the tool loop, not each call.
+/** Rounds that may call card tools; the round after them must answer in text. */
+const MAX_TOOL_ROUNDS = 2;
+const MAX_CARDS = 4;
+const TOOLS = [{ functionDeclarations: VERSO_TOOL_DECLARATIONS.map(({ name, description, parameters }) =>
+  ({ name, description, parametersJsonSchema: parameters })) }];
 const DAILY_CAP_MESSAGE = 'The chat has hit its daily cap. Come back tomorrow, or read the cited writing directly.';
 const UNAVAILABLE = 'Chat is temporarily unavailable. Try again shortly.';
-const sleep = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, reject) => {
-  if (signal.aborted) { reject(signal.reason); return; }
-  const abort = () => { clearTimeout(timer); reject(signal.reason); };
-  const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
-  signal.addEventListener('abort', abort, { once: true });
-});
 interface CitedSource {
   type: SourceMetadata['type']; slug: string; title: string; date: string; url: string; score: number;
 }
@@ -43,20 +48,18 @@ export const POST: APIRoute = async ({ request }) => {
       typeof (body as { query?: unknown }).query !== 'string') {
     return new Response('query must be a string', { status: 400 });
   }
-  const data = body as { query: string; cid?: unknown; name?: unknown };
+  const data = body as { query: string; cid?: unknown };
   const query = data.query.trim();
   if (!query) return new Response('query required', { status: 400 });
   if (query.length > MAX_QUERY_LEN) return new Response(`query too long (max ${MAX_QUERY_LEN} chars)`, { status: 413 });
   if (!isOriginAllowed(request)) return new Response('Forbidden', { status: 403 });
   if (!getRedis() && env('VERCEL_ENV') === 'production') return new Response(UNAVAILABLE, { status: 503 });
-  const name = typeof data.name === 'string' ? data.name.trim().slice(0, 40) || undefined : undefined;
   const posted = isValidConversationId(data.cid) ? data.cid : null;
   const cid = posted ?? crypto.randomUUID();
   const mid = crypto.randomUUID();
   const log = (stage: string, status: string) => console.info('[chat]', { mid, stage, status, elapsedMs: Date.now() - started });
   const globalLimiter = getGlobalLimiter();
   let history: ConversationTurn[] = [];
-  let operatorOnline = false;
   try {
     const denied = await withDeadline(async signal => {
       const ipLimiter = getIpLimiter();
@@ -72,9 +75,7 @@ export const POST: APIRoute = async ({ request }) => {
         return new Response('This conversation has run long. Start a new chat to continue.', { status: 429 });
       }
       signal.throwIfAborted();
-      operatorOnline = await isOperatorOnline();
-      signal.throwIfAborted();
-      if (globalLimiter && !operatorOnline) {
+      if (globalLimiter) {
         const { remaining } = await globalLimiter.getRemaining('global');
         signal.throwIfAborted();
         if (remaining <= 0) return new Response(DAILY_CAP_MESSAGE, { status: 429 });
@@ -87,10 +88,8 @@ export const POST: APIRoute = async ({ request }) => {
     log('setup', 'unavailable');
     return new Response(UNAVAILABLE, { status: 503 });
   }
-  // Notification failure cannot hold the answer open, and never logs its payload.
-  if (!operatorOnline) void withDeadline(() => announceLapse(), 5000).catch(() => log('presence-notice', 'failed'));
-  if (!env('ANTHROPIC_API_KEY')) return new Response(UNAVAILABLE, { status: 503 });
-  const anthropic = new Anthropic({ apiKey: env('ANTHROPIC_API_KEY'), maxRetries: 0, timeout: 50_000 });
+  if (!env('GEMINI_API_KEY')) return new Response(UNAVAILABLE, { status: 503 });
+  const ai = new GoogleGenAI({ apiKey: env('GEMINI_API_KEY'), httpOptions: { retryOptions: { attempts: 1 } } });
   const lifetime = new AbortController();
   let completed = false;
   const disconnect = () => { if (!completed) lifetime.abort(new DOMException('Disconnected', 'AbortError')); };
@@ -108,114 +107,110 @@ export const POST: APIRoute = async ({ request }) => {
         try { controller.enqueue(encoder.encode(': ping\n\n')); } catch { disconnect(); }
       }, 10_000);
       let answerText = '';
-      let answeredBy: 'human' | 'llm' = 'llm';
       let sources: CitedSource[] = [];
-      let retrieval: Promise<SearchHit[]> | undefined;
-      let handoffStarted = false;
-      const retrieve = () => {
-        if (!retrieval) {
-          log('retrieval', 'start');
-          retrieval = withDeadline(signal => searchVectors(retrievalQuery(history, query), 5, undefined, signal), 12_000, lifetime.signal);
-          void retrieval.catch(() => {}); // A human answer can abandon retrieval.
-        }
-        return retrieval;
-      };
       try {
         lifetime.signal.throwIfAborted();
         send({ cid, mid });
-        let humanReply: string | null = null;
-        if (operatorOnline && telegramConfigured()) {
-          handoffStarted = true;
-          log('handoff', 'start');
-          retrieve();
-          humanReply = await withDeadline(async signal => {
-            const questionStart = Date.now();
-            await putPending(mid, { cid, q: query, ts: questionStart, index: Math.floor(history.length / 2) + 1, name });
-            signal.throwIfAborted();
-            const previousAnswer = history.findLast(t => t.r === 'a')?.t;
-            const previousQuestion = history.findLast(t => t.r === 'u')?.t;
-            const tgId = await sendQuestion(formatQuestionMessage({ cid, question: query,
-              index: Math.floor(history.length / 2) + 1, name, prevA: previousAnswer, prevQ: previousQuestion,
-              windowSeconds: HANDOFF_WINDOW_MS / 1000 }));
-            signal.throwIfAborted();
-            if (tgId === null) { await closeHandoff(mid); return null; }
-            await mapTelegramMessage(tgId, mid);
-            signal.throwIfAborted();
-            await setLastQuestion(mid);
-            signal.throwIfAborted();
-            while (Date.now() < questionStart + HANDOFF_WINDOW_MS) {
-              const reply = await getReply(mid);
-              signal.throwIfAborted();
-              if (reply) return reply;
-              await sleep(Math.min(POLL_INTERVAL_MS, Math.max(1, questionStart + HANDOFF_WINDOW_MS - Date.now())), signal);
-            }
-            if (await claim(mid, 'llm')) return null;
-            signal.throwIfAborted();
-            // Human claim + reply are atomic; a failed claim is never permission
-            // to overwrite an answer. Read once, or report a retryable failure.
-            const reply = await getReply(mid);
-            signal.throwIfAborted();
-            if (!reply) throw new Error('Handoff could not be settled. Try again.');
-            return reply;
-          }, HANDOFF_WINDOW_MS + 8000, lifetime.signal);
-          log('handoff', humanReply ? 'human' : 'model');
+        log('retrieval', 'start');
+        const hits = await withDeadline(signal => searchVectors(retrievalQuery(history, query), 5, undefined, signal), 12_000, lifetime.signal);
+        lifetime.signal.throwIfAborted();
+        const context = await withDeadline(async signal => {
+          const chunks = await Promise.all(hits.map(async hit => ({ hit, text: await getChunkText(hit.metadata) })));
+          signal.throwIfAborted();
+          return chunks.map(({ hit: { metadata: m }, text }, i) =>
+            `[Source ${i + 1}] (${m.type}) "${m.title}" slug: ${m.slug} url: ${m.url}\n${text}`).join('\n\n---\n\n');
+        }, 3000, lifetime.signal);
+        log('retrieval', 'complete');
+        const seen = new Set<string>();
+        sources = hits.flatMap(hit => {
+          const m = hit.metadata; const key = `${m.type}:${m.slug}`;
+          if (seen.has(key)) return []; seen.add(key);
+          return [{ type: m.type, slug: m.slug, title: m.title, date: m.date?.slice(0, 10) ?? '', url: m.url, score: Number(hit.score.toFixed(3)) }];
+        });
+        if (globalLimiter) {
+          const result = await withDeadline(() => globalLimiter.limit('global'), 3000, lifetime.signal);
+          if (result.reason === 'timeout') throw new Error(UNAVAILABLE);
+          if (!result.success) throw new Error(DAILY_CAP_MESSAGE);
         }
         lifetime.signal.throwIfAborted();
-        if (humanReply) {
-          answeredBy = 'human'; answerText = humanReply;
-          const chunks = chunkForTyping(humanReply);
-          for (let i = 0; i < chunks.length; i++) {
-            lifetime.signal.throwIfAborted(); send({ text: chunks[i] });
-            if (i < chunks.length - 1) await sleep(typingDelayMs(chunks.length), lifetime.signal);
-          }
-        } else {
-          const hits = await retrieve();
-          lifetime.signal.throwIfAborted();
-          const context = await withDeadline(async signal => {
-            const chunks = await Promise.all(hits.map(async hit => ({ hit, text: await getChunkText(hit.metadata) })));
+        log('model', 'start');
+        const contents: Content[] = buildMessages(history, query, context);
+        const shown = new Set<string>();
+        let cardIndex: ReturnType<typeof buildCardIndex> | null = null;
+        await withDeadline(async signal => {
+          /** One model call: streams its text out, returns every part for the transcript. */
+          const round = async (model: string, final: boolean): Promise<Part[]> => {
+            const modelStream = await ai.models.generateContentStream({
+              model, contents,
+              config: {
+                systemInstruction: SYSTEM_PROMPT,
+                maxOutputTokens: 1024,
+                thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+                tools: TOOLS,
+                toolConfig: { functionCallingConfig: { mode: final ? FunctionCallingConfigMode.NONE : FunctionCallingConfigMode.AUTO } },
+                abortSignal: signal,
+              },
+            });
+            const parts: Part[] = [];
+            let opened = false;
+            for await (const chunk of modelStream) {
+              signal.throwIfAborted();
+              const chunkParts = chunk.candidates?.[0]?.content?.parts ?? [];
+              parts.push(...chunkParts);
+              let text = chunkParts.filter(part => typeof part.text === 'string' && !part.thought).map(part => part.text).join('');
+              if (!text) continue;
+              if (!answerText) log('model', `first-text:${model}`);
+              // Text before and after a tool call is one answer in two rounds.
+              else if (!opened && !/\s$/.test(answerText)) text = `\n\n${text.trimStart()}`;
+              opened = true; answerText += text; send({ text });
+            }
+            return parts;
+          };
+          /** A card for each call that names something real, and what to tell the model. */
+          const answerCalls = async (parts: Part[]): Promise<Part[]> => {
+            cardIndex ??= buildCardIndex();
+            const index = await cardIndex.catch(() => null);
             signal.throwIfAborted();
-            return chunks.map(({ hit, text }, i) => `[Source ${i + 1}] (${hit.metadata.type}) "${hit.metadata.title}"\n${text}`).join('\n\n---\n\n');
-          }, 3000, lifetime.signal);
-          log('retrieval', 'complete');
-          const seen = new Set<string>();
-          sources = hits.flatMap(hit => {
-            const m = hit.metadata; const key = `${m.type}:${m.slug}`;
-            if (seen.has(key)) return []; seen.add(key);
-            return [{ type: m.type, slug: m.slug, title: m.title, date: m.date?.slice(0, 10) ?? '', url: m.url, score: Number(hit.score.toFixed(3)) }];
-          });
-          if (globalLimiter) {
-            const result = await withDeadline(() => globalLimiter.limit('global'), 3000, lifetime.signal);
-            if (result.reason === 'timeout') throw new Error(UNAVAILABLE);
-            if (!result.success) throw new Error(DAILY_CAP_MESSAGE);
-          }
-          lifetime.signal.throwIfAborted();
-          log('model', 'start');
-          await withDeadline(async signal => {
-            const modelStream = anthropic.messages.stream({ model: MODEL, max_tokens: 1024,
-              system: SYSTEM_PROMPT, messages: buildMessages(history, query, context) }, { signal });
-            modelStream.on('abort', () => {});
-            const abort = () => modelStream.abort();
-            signal.addEventListener('abort', abort, { once: true });
-            try {
-              for await (const chunk of modelStream) {
+            return parts.flatMap(part => part.functionCall ? [part.functionCall] : []).map(({ id, name = '', args = {} }) => {
+              let response: Record<string, unknown>;
+              const card: Card | null = index && resolveCard(index, name, args);
+              if (!card) response = { shown: false, reason: index ? 'Nothing on the site matches that. Do not mention a card.' : 'Cards are unavailable.' };
+              else if (shown.has(card.url)) response = { shown: false, reason: 'That card is already shown.' };
+              else if (shown.size >= MAX_CARDS) response = { shown: false, reason: 'That is enough on screen for one answer. Answer in prose.' };
+              else { shown.add(card.url); send({ card }); response = { shown: true, card }; }
+              log('card', `${response.shown ? 'shown' : 'refused'}:${name}`);
+              return { functionResponse: { ...(id ? { id } : {}), name, response } };
+            });
+          };
+          let committed: string | null = null;
+          for (let step = 0; step <= MAX_TOOL_ROUNDS; step++) {
+            const final = step === MAX_TOOL_ROUNDS;
+            let parts: Part[] = [];
+            // Once a model has answered a round, the rest of the loop stays on it.
+            const models: string[] = committed ? [committed] : MODELS;
+            for (const [attempt, model] of models.entries()) {
+              try { parts = await round(model, final); committed = model; break; } catch (error) {
+                // Status only: an SDK message can quote the prompt back.
+                const status = error instanceof ApiError ? error.status : error instanceof Error ? error.name : 'unknown';
+                log('model', `failed:${model}:${status}`);
+                // Once text or a card has gone out, switching models would
+                // splice two answers together. Only a clean failure moves on.
+                if (committed || answerText || shown.size || !isRetryable(error) || attempt === models.length - 1) throw error;
                 signal.throwIfAborted();
-                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                  if (!answerText) log('model', 'first-text');
-                  answerText += chunk.delta.text; send({ text: chunk.delta.text });
-                }
               }
-            } finally { signal.removeEventListener('abort', abort); }
-          }, 50_000, lifetime.signal);
-          log('model', 'complete');
-        }
+            }
+            if (final || !parts.some(part => part.functionCall)) return;
+            contents.push({ role: 'model', parts }, { role: 'user', parts: await answerCalls(parts) });
+          }
+        }, MODEL_DEADLINE_MS, lifetime.signal);
+        log('model', 'complete');
         lifetime.signal.throwIfAborted();
         if (!answerText.trim()) throw new Error('Nothing came back. Try again.');
         try {
           await withDeadline(async signal => {
             const ts = Date.now();
             await appendTurn(cid, { r: 'u', t: query, ts }); signal.throwIfAborted();
-            await appendTurn(cid, { r: 'a', t: answerText, ts, by: answeredBy }); signal.throwIfAborted();
-            await putFinal(mid, { by: answeredBy, text: answerText, sources, ts });
+            await appendTurn(cid, { r: 'a', t: answerText, ts });
           }, 4000, lifetime.signal);
           log('persistence', 'complete');
         } catch { log('persistence', 'failed'); }
@@ -230,9 +225,7 @@ export const POST: APIRoute = async ({ request }) => {
       } finally {
         clearInterval(heartbeat); clearTimeout(hardTimer);
         request.signal.removeEventListener('abort', disconnect);
-        // Signal abandoned speculative retrieval too, including a human win.
         lifetime.abort();
-        if (handoffStarted) await withDeadline(() => closeHandoff(mid), 2500).catch(() => log('handoff-close', 'failed'));
         try { controller.close(); } catch { /* Reader already cancelled. */ }
       }
     },

@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const deps = vi.hoisted(() => ({
   env: {} as Record<string, string | undefined>,
-  sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(), logEntries: vi.fn(),
+  sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(), logEntries: vi.fn(), appendTurn: vi.fn(), goLive: vi.fn(), takeHeld: vi.fn(),
 }));
 vi.mock('../env', () => ({ env: (key: string) => deps.env[key] }));
 vi.mock('../flags', () => ({ flags: { chat: true } }));
-vi.mock('../conversation', () => ({ appendReply: deps.appendReply }));
+vi.mock('../conversation', () => ({ appendReply: deps.appendReply, appendTurn: deps.appendTurn }));
 vi.mock('../transcripts', () => ({ logEntries: deps.logEntries }));
-vi.mock('../operator', () => ({ resolveTelegramMessage: deps.resolveTelegramMessage }));
+vi.mock('../operator', () => ({
+  resolveTelegramMessage: deps.resolveTelegramMessage, goLive: deps.goLive, takeHeld: deps.takeHeld, LIVE_WINDOW_MS: 120_000,
+}));
 vi.mock('../telegram', async importOriginal => ({
   ...await importOriginal<typeof import('../telegram')>(), sendNotice: deps.sendNotice,
 }));
@@ -35,6 +37,8 @@ beforeEach(() => {
   deps.env = { TELEGRAM_WEBHOOK_SECRET: SECRET, TELEGRAM_OWNER_ID: '42' };
   deps.appendReply.mockResolvedValue(true);
   deps.resolveTelegramMessage.mockResolvedValue({ cid, q: 'What did he build?' });
+  deps.goLive.mockResolvedValue(Date.now() + 120_000);
+  deps.takeHeld.mockResolvedValue(null);
 });
 
 describe('POST /api/telegram', () => {
@@ -55,6 +59,22 @@ describe('POST /api/telegram', () => {
     expect(deps.appendReply).toHaveBeenCalledWith(cid, 'Happy to talk more.', 'What did he build?');
     expect(deps.logEntries).toHaveBeenCalledWith(cid, [{ r: 'j', t: 'Happy to talk more.', ts: expect.any(Number) }]);
     expect(notices()[0]).toMatch(/^Sent\./);
+    expect(deps.goLive).toHaveBeenCalledWith(cid);
+    expect(notices()[0]).toContain('Verso waits 2 min');
+  });
+
+  it('answers a held question: it joins the thread before the reply', async () => {
+    deps.takeHeld.mockResolvedValue({ q: 'And rates?', ts: 5 });
+    await post(fromOwner({ text: 'Depends on scope.', reply_to_message: { message_id: 501 } }));
+    expect(deps.appendTurn).toHaveBeenCalledWith(cid, { r: 'u', t: 'And rates?', ts: 5 });
+    expect(deps.appendReply).toHaveBeenCalledWith(cid, 'Depends on scope.', 'And rates?');
+    expect(deps.appendTurn.mock.invocationCallOrder[0]).toBeLessThan(deps.appendReply.mock.invocationCallOrder[0]);
+  });
+
+  it('does not go live when the reply could not be saved', async () => {
+    deps.appendReply.mockResolvedValue(false);
+    await post(fromOwner({ text: 'Hi', reply_to_message: { message_id: 501 } }));
+    expect(deps.goLive).not.toHaveBeenCalled();
   });
 
   it('refuses a bare message rather than guessing who it is for', async () => {

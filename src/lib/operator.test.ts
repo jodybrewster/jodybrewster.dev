@@ -8,7 +8,7 @@ vi.mock('./telegram', async importOriginal => ({
 }));
 vi.mock('./redis', () => ({ getRedis: () => null }));
 
-import { notifyTurn, resolveTelegramMessage, type OperatorRedis } from './operator';
+import { LIVE_WINDOW_MS, goLive, holdQuestion, liveUntil, notifyTurn, resolveTelegramMessage, takeHeld, type OperatorRedis } from './operator';
 import { CONV_TTL_S } from './conversation';
 
 class FakeRedis implements OperatorRedis {
@@ -16,6 +16,7 @@ class FakeRedis implements OperatorRedis {
   readonly ttls = new Map<string, number>();
   async set(key: string, value: unknown, opts: { ex: number }) { this.store.set(key, value); this.ttls.set(key, opts.ex); return 'OK'; }
   async get<T>(key: string) { return (this.store.get(key) ?? null) as T | null; }
+  async del(...keys: string[]) { let n = 0; for (const key of keys) if (this.store.delete(key)) n++; return n; }
 }
 
 const cid = 'a3f1c2d4-0000-4000-8000-000000000000';
@@ -50,7 +51,7 @@ describe('notifyTurn', () => {
   });
 
   it('survives a Redis failure', async () => {
-    const redis = { set: vi.fn().mockRejectedValue(new Error('down')), get: vi.fn() };
+    const redis = { set: vi.fn().mockRejectedValue(new Error('down')), get: vi.fn(), del: vi.fn() };
     await expect(notifyTurn(turn, undefined, redis)).resolves.toBeUndefined();
   });
 });
@@ -69,6 +70,32 @@ describe('resolveTelegramMessage', () => {
     redis.store.set('chat:tg:3', 'not json');
     expect(await resolveTelegramMessage(9, redis)).toBeNull();
     expect(await resolveTelegramMessage(3, redis)).toBeNull();
-    expect(await resolveTelegramMessage(1, { set: vi.fn(), get: vi.fn().mockRejectedValue(new Error('down')) })).toBeNull();
+    expect(await resolveTelegramMessage(1, { set: vi.fn(), get: vi.fn().mockRejectedValue(new Error('down')), del: vi.fn() })).toBeNull();
+  });
+});
+
+describe('Jody live in a conversation', () => {
+  it('opens a window that ends LIVE_WINDOW_MS from now and expires with it', async () => {
+    const redis = new FakeRedis();
+    const until = await goLive(cid, redis);
+    expect(until).toBeGreaterThan(Date.now() + LIVE_WINDOW_MS - 1000);
+    expect(redis.ttls.get(`chat:live:${cid}`)).toBe(LIVE_WINDOW_MS / 1000);
+    expect(await liveUntil(cid, redis)).toBe(until);
+  });
+
+  it('is not live without a window, after it ends or when Redis fails', async () => {
+    const redis = new FakeRedis();
+    expect(await liveUntil(cid, redis)).toBeNull();
+    redis.store.set(`chat:live:${cid}`, Date.now() - 1);
+    expect(await liveUntil(cid, redis)).toBeNull();
+    expect(await liveUntil(cid, { set: vi.fn(), get: vi.fn().mockRejectedValue(new Error('down')), del: vi.fn() })).toBeNull();
+  });
+
+  it('holds one question and hands it over once', async () => {
+    const redis = new FakeRedis();
+    await holdQuestion(cid, 'First', redis);
+    await holdQuestion(cid, 'Second', redis);
+    expect(await takeHeld(cid, redis)).toEqual({ q: 'Second', ts: expect.any(Number) });
+    expect(await takeHeld(cid, redis)).toBeNull();
   });
 });

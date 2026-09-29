@@ -31,6 +31,8 @@ export interface TranscriptEntry {
   page?: string;
   /** On a visitor turn Verso could not answer. */
   failed?: boolean;
+  /** On a visitor turn held for Jody while he was live in the conversation. */
+  held?: boolean;
 }
 
 export interface Transcript { cid: string; last: number; entries: TranscriptEntry[] }
@@ -133,7 +135,7 @@ export function formatTranscripts(transcripts: Transcript[], opts: { since: numb
     const meta = [stamp(transcript.entries[0].ts), transcript.cid.slice(0, 4), first?.page && `from ${first.page}`].filter(Boolean);
     lines.push(`## ${meta.join(' · ')}`, '');
     for (const entry of transcript.entries) {
-      const tags = entry.r === 'u' ? [entry.topic, entry.failed && 'no answer'].filter(Boolean) : [];
+      const tags = entry.r === 'u' ? [entry.topic, entry.held && 'held for Jody', entry.failed && 'no answer'].filter(Boolean) : [];
       lines.push(`${SPEAKERS[entry.r]}${tags.length ? ` (${tags.join(', ')})` : ''}:`, '', entry.t.trim(), '');
     }
   }

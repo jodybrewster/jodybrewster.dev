@@ -80,6 +80,13 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
       <div class="said"><p class="reply-to"></p><div class="reply-body"></div></div>
     </div>
   </template>
+  <!-- Jody is live: Verso holds the next question for him. -->
+  <template id="tpl-live">
+    <p class="dock-live" role="status"></p>
+  </template>
+  <template id="tpl-wait">
+    <div class="dock-wait"><p class="dock-wait-text" role="status"></p><button type="button" class="dock-retry">Ask Verso now</button></div>
+  </template>
   <template id="tpl-you">
     <div class="turn you">
       <span class="who"><svg class="icon sm"><use href="#i-user"/></svg> You</span>

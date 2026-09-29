@@ -2,7 +2,7 @@ import type { Card } from './verso-tools';
 
 export interface ChatSource { type: string; url: string; title: string; date?: string }
 export interface ChatEvent {
-  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; card?: Card; topic?: string; error?: string; done?: boolean;
+  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; card?: Card; topic?: string; hold?: { until?: number }; error?: string; done?: boolean;
 }
 interface ChatOptions {
   onEvent: (event: ChatEvent) => void;
@@ -11,7 +11,7 @@ interface ChatOptions {
   fetcher?: typeof fetch;
 }
 export async function requestChat(
-  body: { query: string; cid?: string; page?: string }, options: ChatOptions,
+  body: { query: string; cid?: string; page?: string; fallback?: boolean }, options: ChatOptions,
 ): Promise<void> {
   const controller = new AbortController();
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;

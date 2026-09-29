@@ -73,12 +73,21 @@ The dock checks for replies for 30 minutes after the visitor's last question, so
 Replies work for 24 hours, the life of the conversation.
 A message that is not a reply to a question, a sticker or an expired conversation gets "Nothing sent" back.
 
+After you reply, Verso pauses in that conversation for 2 minutes so you can keep talking.
+The visitor sees a note that you're here.
+If they ask something in that window, Verso doesn't answer: the question comes to your phone marked `waiting on you`, and their chat shows a countdown with an "Ask Verso now" button.
+Your reply answers it and restarts the 2 minutes.
+If you don't reply in time, or they choose not to wait, Verso answers as usual.
+
 Setup:
 
 1. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID` and `TELEGRAM_WEBHOOK_SECRET` in Vercel (Production) and in `.env`.
 2. Send `/start` to the bot once from your own account, or every send fails with 403.
 3. Run `npm run telegram:setup` to point the bot at `https://jodybrewster.dev/api/telegram`.
 4. If nothing arrives, `npm run telegram:setup -- --info` shows Telegram's last delivery error.
+
+The webhook has to be on `www.jodybrewster.dev`: the bare domain redirects there, and Telegram treats a redirect as a failed delivery.
+Deploys go out with `vercel deploy --prod`, since the project is not connected to GitHub; `.vercelignore` keeps `.env` out of the upload.
 
 Voice conversations stay in the browser, so they are not sent to Telegram or logged.
 
@@ -96,6 +105,7 @@ No event carries anything a visitor typed.
 | `chat_open` | `trigger` (bar, suggestion, button, reply) | The chat panel opens |
 | `chat_question` | `source`, `outcome`, `topic`, `turn` | A question finishes: done, error, timeout or stopped |
 | `chat_new` | none | Someone starts a new chat |
+| `chat_wait` | `result` (reply, timeout, skip, cancel) | A question held for Jody stops waiting |
 | `chat_reply_seen` | `count` | A reply from Jody shows up in a visitor's chat |
 | `card_click` | `kind`, `path` | Someone follows a card, case study part or source Verso showed |
 | `voice_start`, `voice_end` | `seconds`, `reason` | A voice session starts or ends |

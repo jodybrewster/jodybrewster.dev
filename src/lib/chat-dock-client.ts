@@ -17,6 +17,8 @@ interface Reply { t: string; ts: number; q?: string }
 const ASKED_KEY = 'verso:asked';
 const REPLY_SEEN_KEY = 'verso:reply-seen';
 const FAST_POLL_MS = 15_000;
+/** While Jody is live in the conversation, his next message should land within seconds. */
+const LIVE_POLL_MS = 3_000;
 const FAST_POLL_FOR_MS = 2 * 60_000;
 const SLOW_POLL_MS = 60_000;
 const REPLY_WINDOW_MS = 30 * 60_000;
@@ -80,6 +82,7 @@ export function initChatDock(): void {
   window.visualViewport?.addEventListener('resize', sizeToKeyboard, eventOptions);
   window.visualViewport?.addEventListener('scroll', sizeToKeyboard, eventOptions);
 
+  const placeholder = input.placeholder;
   const readCid = () => { try { return sessionStorage.getItem('verso:cid') || undefined; } catch { return undefined; } };
   const readNumber = (key: string) => { try { return Number(sessionStorage.getItem(key)) || 0; } catch { return 0; } };
   const writeNumber = (key: string, value: number) => { try { sessionStorage.setItem(key, String(value)); } catch { /* Optional. */ } };
@@ -134,20 +137,31 @@ export function initChatDock(): void {
    * twice.
    */
   let pollTimer = 0;
-  async function checkReplies(): Promise<void> {
+  /** When Jody's window in this conversation ends; 0 when he is not in it. */
+  let liveUntil = 0;
+  let liveTimer = 0;
+  let checking: Promise<number> | null = null;
+  /** Shows new replies and returns how many there were. Calls overlap, so they share one request. */
+  function checkReplies(): Promise<number> {
+    checking ??= fetchReplies().finally(() => { checking = null; });
+    return checking;
+  }
+  async function fetchReplies(): Promise<number> {
     const cid = readCid();
-    if (!cid || document.hidden) return;
+    if (!cid || document.hidden) return 0;
     let replies: unknown;
+    let live: unknown;
     try {
       const res = await fetch(`/api/replies?cid=${encodeURIComponent(cid)}`, { signal: listeners.signal });
-      if (!res.ok) return;
-      ({ replies } = await res.json() as { replies?: unknown });
-    } catch { return; }
+      if (!res.ok) return 0;
+      ({ replies, liveUntil: live } = await res.json() as { replies?: unknown; liveUntil?: unknown });
+    } catch { return 0; }
     // A new chat may have started while this was in flight.
-    if (readCid() !== cid || !Array.isArray(replies)) return;
+    if (readCid() !== cid || !Array.isArray(replies)) return 0;
     const seen = readNumber(REPLY_SEEN_KEY);
     const fresh = (replies as Reply[]).filter(reply => typeof reply?.t === 'string' && typeof reply.ts === 'number' && reply.ts > seen);
-    if (!fresh.length) return;
+    showLive(typeof live === 'number' ? live : 0, fresh.length > 0);
+    if (!fresh.length) return 0;
     open('reply'); empty.hidden = true;
     track('chat_reply_seen', { count: fresh.length });
     for (const reply of fresh) {
@@ -158,14 +172,78 @@ export function initChatDock(): void {
       renderText(turn.querySelector<HTMLElement>('.reply-body')!, reply.t);
     }
     writeNumber(REPLY_SEEN_KEY, Math.max(...fresh.map(reply => reply.ts)));
+    // The note belongs under his newest reply.
+    const note = conversation.querySelector('.dock-live');
+    if (note) conversation.append(note);
     scrollToAnswer();
+    return fresh.length;
+  }
+  /**
+   * While Jody is live, a note under his reply says so and Verso holds the next
+   * question for him. The note goes when his window does. A question held for
+   * him has its own waiting state, so the note steps aside for that.
+   */
+  function showLive(until: number, replied: boolean): void {
+    liveUntil = until > Date.now() ? until : 0;
+    clearTimeout(liveTimer);
+    let note = conversation.querySelector<HTMLElement>('.dock-live');
+    if (!liveUntil || waiting) { note?.remove(); return; }
+    if (!note && !replied && !conversation.querySelector('.turn.jody')) return;
+    note ??= appendTemplate('#tpl-live');
+    const minutes = Math.max(1, Math.round((liveUntil - Date.now()) / 60_000));
+    note.textContent = `Jody is here and may reply. Verso will pick up in ${minutes} min if he doesn't.`;
+    liveTimer = window.setTimeout(() => showLive(0, false), liveUntil - Date.now());
+    pollReplies();
   }
   function pollReplies(): void {
     clearTimeout(pollTimer);
     const since = Date.now() - readNumber(ASKED_KEY);
-    if (!readCid() || since > REPLY_WINDOW_MS) return;
+    const live = liveUntil > Date.now();
+    if (!readCid() || (since > REPLY_WINDOW_MS && !live)) return;
     pollTimer = window.setTimeout(() => { void checkReplies().finally(pollReplies); },
-      since < FAST_POLL_FOR_MS ? FAST_POLL_MS : SLOW_POLL_MS);
+      live ? LIVE_POLL_MS : since < FAST_POLL_FOR_MS ? FAST_POLL_MS : SLOW_POLL_MS);
+  }
+
+  /*
+   * A question asked while Jody is live is held for him. The Verso turn shows
+   * that it is waiting on him, with the time left and a way to ask Verso now.
+   * It resolves when his reply arrives, the time runs out, the visitor skips
+   * the wait, or the conversation is cleared.
+   */
+  let waiting: ((how: 'cancel') => void) | null = null;
+  function waitForJody(turn: HTMLElement, until: number): Promise<'reply' | 'timeout' | 'skip' | 'cancel'> {
+    conversation.querySelector('.dock-live')?.remove();
+    const answer = turn.querySelector<HTMLElement>('.answer')!;
+    answer.replaceChildren();
+    const box = appendTemplate('#tpl-wait', answer);
+    const line = box.querySelector<HTMLElement>('.dock-wait-text')!;
+    input.disabled = true; input.placeholder = 'Waiting for Jody…';
+    dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = true;
+    scrollToAnswer();
+    return new Promise(resolve => {
+      let tick = 0;
+      let poll = 0;
+      const finish = (how: 'reply' | 'timeout' | 'skip' | 'cancel') => {
+        if (!waiting) return;
+        waiting = null;
+        clearInterval(tick); clearInterval(poll);
+        input.disabled = false; input.placeholder = placeholder;
+        dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = false;
+        track('chat_wait', { result: how });
+        resolve(how);
+      };
+      waiting = finish;
+      const paint = () => {
+        const left = Math.max(0, until - Date.now());
+        if (!left) { finish('timeout'); return; }
+        const clock = `${Math.floor(left / 60_000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`;
+        line.textContent = `Jody is here and will likely reply. If he doesn't, Verso answers in ${clock}.`;
+      };
+      paint();
+      tick = window.setInterval(paint, 1000);
+      poll = window.setInterval(() => { void checkReplies().then(count => { if (count) finish('reply'); }); }, LIVE_POLL_MS);
+      box.querySelector('button')!.addEventListener('click', () => finish('skip'), eventOptions);
+    });
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) void checkReplies(); }, eventOptions);
   void checkReplies();
@@ -173,10 +251,10 @@ export function initChatDock(): void {
 
   /** The prompt a suggestion button put in the field, so a question sent unedited counts as that suggestion. */
   let suggested: string | null = null;
-  async function ask(query: string, retryTurn?: HTMLElement): Promise<void> {
+  async function ask(query: string, retryTurn?: HTMLElement, fallback = false): Promise<void> {
     query = query.trim();
-    if (!query || request) return;
-    const source = retryTurn ? 'retry' : query === suggested ? 'suggestion' : 'typed';
+    if (!query || request || waiting) return;
+    const source = fallback ? 'fallback' : retryTurn ? 'retry' : query === suggested ? 'suggestion' : 'typed';
     suggested = null;
     let topic: string | undefined;
     let outcome = 'done';
@@ -195,9 +273,10 @@ export function initChatDock(): void {
     let text = '';
     let sources: ChatSource[] = [];
     let destination: string | null = null;
+    let holdUntil = 0;
     const timer = setTimeout(() => { if (waited) waited.hidden = false; }, 12_000);
     try {
-      await requestChat({ query, cid: readCid(), page: location.pathname }, {
+      await requestChat({ query, cid: readCid(), page: location.pathname, ...(fallback ? { fallback } : {}) }, {
         signal: request.signal,
         onEvent(event) {
           if (typeof event.cid === 'string') { try { sessionStorage.setItem('verso:cid', event.cid); } catch { /* Optional. */ } }
@@ -213,10 +292,12 @@ export function initChatDock(): void {
           }
           if (Array.isArray(event.sources)) sources = event.sources;
           if (typeof event.topic === 'string') topic = event.topic;
+          if (typeof event.hold?.until === 'number') holdUntil = event.hold.until;
         },
       });
-      if (!text.trim()) throw new Error('Nothing came back. Please try again.');
-      renderSources(said, sources);
+      if (holdUntil) outcome = 'held';
+      else if (!text.trim()) throw new Error('Nothing came back. Please try again.');
+      if (!holdUntil) renderSources(said, sources);
       writeNumber(ASKED_KEY, Date.now()); pollReplies();
       // Leave only once the answer has landed, so it is there to come back to.
       if (destination) void navigate(destination);
@@ -231,6 +312,11 @@ export function initChatDock(): void {
       clearTimeout(timer); request = null; busy(false); scrollToAnswer();
       track('chat_question', { source, outcome, topic, turn: conversation.querySelectorAll('.turn.you').length });
     }
+    if (!holdUntil) return;
+    const how = await waitForJody(turn, holdUntil);
+    // His reply is already on screen below this turn, which has nothing left to say.
+    if (how === 'reply') turn.remove();
+    else if (how !== 'cancel') await ask(query, turn, true);
   }
 
   form.addEventListener('submit', event => {
@@ -242,6 +328,7 @@ export function initChatDock(): void {
   dock.querySelector('#dock-close')!.addEventListener('click', closeFromButton, eventOptions);
   newChat.addEventListener('click', () => {
     if (request) return;
+    waiting?.('cancel'); showLive(0, false);
     try { for (const key of ['verso:cid', ASKED_KEY, REPLY_SEEN_KEY]) sessionStorage.removeItem(key); } catch { /* Optional. */ }
     clearTimeout(pollTimer);
     if (voice) { voice.stopVoice(); renderer?.reset(voice.voiceSession().getSnapshot().messages); status(null); }
@@ -271,7 +358,6 @@ export function initChatDock(): void {
 
   const voiceButton = dock.querySelector<HTMLButtonElement>('#dock-voice')!;
   const voiceStatus = dock.querySelector<HTMLElement>('#dock-voice-status')!;
-  const placeholder = input.placeholder;
   let voice: VoiceModule | null = null;
   let unsubscribe = () => {};
   let countdown = 0;
@@ -342,5 +428,5 @@ export function initChatDock(): void {
     else void loadVoice().then(start).catch(() => status('Voice could not load. You can keep typing.'));
   }, eventOptions);
 
-  dispose = () => { request?.abort(); listeners.abort(); unsubscribe(); clearInterval(countdown); clearTimeout(pollTimer); };
+  dispose = () => { request?.abort(); waiting?.('cancel'); listeners.abort(); unsubscribe(); clearInterval(countdown); clearTimeout(pollTimer); clearTimeout(liveTimer); };
 }

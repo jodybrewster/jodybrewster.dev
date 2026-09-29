@@ -83,14 +83,18 @@ export function formatTurnMessage(opts: {
   answer?: string;
   failed?: boolean;
   topic?: string;
+  waitSeconds?: number;
 }): string {
-  const tag = [`Verso · ${String(opts.cid).slice(0, 4)} · q${opts.index}`, opts.topic].filter(Boolean).join(' · ');
-  const header = opts.failed ? `${tag} · no answer` : tag;
+  const waiting = typeof opts.waitSeconds === 'number';
+  const status = opts.failed ? 'no answer' : waiting ? 'waiting on you' : undefined;
+  const header = [`Verso · ${String(opts.cid).slice(0, 4)} · q${opts.index}`, opts.topic, status].filter(Boolean).join(' · ');
   const question = sanitizeForTelegram(opts.question);
   const answer = sanitizeForTelegram(opts.answer, ANSWER_MAX);
   const middle = opts.failed
     ? 'Verso could not answer this one.'
-    : `Verso said:\n${answer}`;
+    : waiting
+      ? `Verso answers in ${Math.round(opts.waitSeconds! / 60) || 1} min if you don't.`
+      : `Verso said:\n${answer}`;
   return `${header}\n\n${question}\n\n${middle}\n\nReply to this message to answer them in the chat.`;
 }
 

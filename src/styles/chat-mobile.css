@@ -21,9 +21,10 @@
 #chat-dock .turn.jody .reply-body p { margin: 0 0 12px; }
 #chat-dock .dock-live { margin: -12px 0 0 72px; font: 400 12px/1.5 var(--sans); color: var(--ink-soft); }
 #chat-dock .dock-wait-text { margin: 0 0 10px; color: var(--ink-soft); font: 400 14px/1.6 var(--sans); }
-#chat-dock :is(.said, .answer, .source-item, .si-title) { min-width: 0; overflow-wrap: anywhere; }
-#chat-dock .source-item { align-items: start; flex-wrap: wrap; gap: 5px 10px; }
-#chat-dock .source-item .si-title { flex-basis: 150px; }
+#chat-dock :is(.said, .answer) { min-width: 0; overflow-wrap: anywhere; }
+/* Links Verso names in its answer: the essay link treatment, accent on the words, rule underneath. */
+#chat-dock .answer a { color: var(--accent); border-bottom: 1px solid var(--rule); }
+#chat-dock .answer a:hover, #chat-dock .answer a:focus-visible { border-bottom-color: var(--accent); }
 #chat-dock .input-row { min-width: 0; }
 #chat-dock .input-row input { min-width: 0; }
 /* The composer shows focus on its whole row, so the text field itself carries no ring of its own; page-level focus
@@ -109,7 +110,6 @@ body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-who-dot { width: 8px; 
   #chat-dock .dock-live { margin-left: 0; }
   #chat-dock .turn .said { font-size: 14px; }
   #chat-dock .turn.you .said { font: 400 14px/1.6 var(--sans); }
-  #chat-dock .sources { padding: 12px; }
   #chat-dock .thinking .waited { font-size: 9px; letter-spacing: .02em; text-transform: none; }
   body[data-chat-enabled]:not(.verso-page) #chat-dock {
     inset: auto max(12px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom) + var(--chat-keyboard-offset, 0px)) max(12px, env(safe-area-inset-left));

@@ -2,7 +2,7 @@ import type { Card } from './verso-tools';
 
 export interface ChatSource { type: string; url: string; title: string; date?: string }
 export interface ChatEvent {
-  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; card?: Card; topic?: string; hold?: { until?: number }; error?: string; done?: boolean;
+  text?: string; cid?: string; mid?: string; sources?: ChatSource[]; card?: Card; topic?: string; links?: string[]; hold?: { until?: number }; error?: string; done?: boolean;
 }
 interface ChatOptions {
   onEvent: (event: ChatEvent) => void;

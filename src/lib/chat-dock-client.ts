@@ -1,7 +1,8 @@
-import { requestChat, type ChatSource } from './chat-stream';
+import { requestChat } from './chat-stream';
 import { navigate } from 'astro:transitions/client';
 import { renderCard } from './card-render';
 import { track } from './track';
+import { renderAnswer } from './verso-links';
 
 type VoiceModule = typeof import('./live/voice') & typeof import('./live/voice-dock');
 let voiceModule: Promise<VoiceModule> | null = null;
@@ -103,29 +104,8 @@ export function initChatDock(): void {
     submit.setAttribute('aria-label', value ? 'Stop response' : 'Send message');
     submit.classList.toggle('is-busy', value);
   }
-  function renderText(target: HTMLElement, text: string): void {
-    target.innerHTML = text.split(/\n{2,}/).filter(Boolean).map(p =>
-      `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>').replace(/\n/g, '<br>')}</p>`).join('');
-  }
-  function renderSources(target: HTMLElement, sources: ChatSource[]): void {
-    const block = document.createElement('div');
-    block.className = 'sources';
-    const heading = document.createElement('p');
-    heading.className = 'h';
-    heading.textContent = 'Explore the sources';
-    block.append(heading);
-    for (const source of sources) {
-      if (!source || typeof source.url !== 'string' || typeof source.title !== 'string') continue;
-      const url = new URL(source.url, location.origin);
-      if (url.origin !== location.origin || !source.url.startsWith('/') || source.url.startsWith('//')) continue;
-      const link = document.createElement('a');
-      link.className = 'source-item'; link.href = url.pathname;
-      const tag = document.createElement('span'); tag.className = 'si-tag'; tag.textContent = source.type;
-      const title = document.createElement('span'); title.className = 'si-title'; title.textContent = source.title;
-      link.append(tag, title); block.append(link);
-    }
-    if (block.children.length > 1) target.append(block);
+  function renderText(target: HTMLElement, text: string, links: ReadonlySet<string> | null = null): void {
+    target.innerHTML = renderAnswer(text, links);
   }
 
   /*
@@ -271,7 +251,7 @@ export function initChatDock(): void {
     const waited = turn.querySelector<HTMLElement>('.waited')!;
     input.value = ''; scrollToAnswer();
     let text = '';
-    let sources: ChatSource[] = [];
+    let links: string[] = [];
     let destination: string | null = null;
     let holdUntil = 0;
     const timer = setTimeout(() => { if (waited) waited.hidden = false; }, 12_000);
@@ -290,14 +270,15 @@ export function initChatDock(): void {
             const card = renderCard(dock!, event.card);
             if (card) { if (text) said.append(card); else answer.before(card); scrollToAnswer(); }
           }
-          if (Array.isArray(event.sources)) sources = event.sources;
+          if (Array.isArray(event.links)) links = event.links.filter(link => typeof link === 'string');
           if (typeof event.topic === 'string') topic = event.topic;
           if (typeof event.hold?.until === 'number') holdUntil = event.hold.until;
         },
       });
       if (holdUntil) outcome = 'held';
       else if (!text.trim()) throw new Error('Nothing came back. Please try again.');
-      if (!holdUntil) renderSources(said, sources);
+      // Links are drawn once the route has confirmed each one is a real page.
+      if (links.length) renderText(answer, text, new Set(links));
       writeNumber(ASKED_KEY, Date.now()); pollReplies();
       // Leave only once the answer has landed, so it is there to come back to.
       if (destination) void navigate(destination);
@@ -348,12 +329,15 @@ export function initChatDock(): void {
     } else if (target && !dock!.contains(target)) close();
   }, eventOptions);
 
-  // Which of what Verso put on screen people follow: cards, case study parts, sources.
+  // Which of what Verso put on screen people follow: cards, case study parts, links in the answer.
+  // Following one collapses the chat so the page it opens is what the reader sees; the
+  // conversation stays in the dock for when they come back.
   conversation.addEventListener('click', event => {
     const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
     if (!link || link.origin !== location.origin) return;
-    const kind = link.className.match(/\bvcard-(\w+)/)?.[1] ?? (link.classList.contains('source-item') ? 'source' : 'link');
+    const kind = link.className.match(/\bvcard-(\w+)/)?.[1] ?? (link.closest('.answer') ? 'inline' : 'link');
     track('card_click', { kind, path: link.pathname });
+    close();
   }, eventOptions);
 
   const voiceButton = dock.querySelector<HTMLButtonElement>('#dock-voice')!;

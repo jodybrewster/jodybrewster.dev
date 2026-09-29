@@ -23,7 +23,7 @@ const career = [
       <p class="about-lede">I'm Jody Brewster, a hands-on technical leader with 15+ years of experience building web, mobile, data and enterprise software, with a strong focus on AI-powered products and agentic systems.</p>
       <p>I like being close to the code: turning ideas into working products, figuring out where AI actually creates value and building the engineering around it so the result can survive beyond a demo.</p>
       <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class={`principle principle-${p.tone}`} style={`--i: ${i}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
-      <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.docx" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="/work">See what I'm building <Icon name="arrow-right" class="icon" /></a></div>
+      <div class="about-actions"><a class="studio-button studio-button-primary" href="/jodybrewster_resume_2026.pdf" download>Download Résumé <Icon name="file" class="icon" /></a><a class="studio-text-link" href="/work">See what I'm building <Icon name="arrow-right" class="icon" /></a></div>
       <nav class="about-explore" aria-label="More about Jody">
         <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
       </nav>
@@ -31,7 +31,7 @@ const career = [
     <aside class="career-panel" aria-labelledby="career-title">
       <h2 class="studio-eyebrow" id="career-title">Career highlights</h2>
       <ol class="enter-list" style="--enter-delay: 380ms">{career.map((job,i) => <li style={`--i: ${i}`}><span class={`career-node ${i===0?'current':''}`} aria-hidden="true"></span><h3>{job.company}</h3><p>{job.role}</p><span class="career-dates">{job.dates}</span></li>)}</ol>
-      <a href="/jodybrewster_resume_2026.docx" download class="studio-text-link">Full experience <Icon name="arrow-right" class="icon" /></a>
+      <a href="/jodybrewster_resume_2026.pdf" download class="studio-text-link">Full experience <Icon name="arrow-right" class="icon" /></a>
     </aside>
     <section class="about-perspective" aria-labelledby="perspective-title">
       <div><p class="studio-eyebrow">How I work</p><h2 id="perspective-title">Start with the experience.<br />Build the system to support it.</h2></div>

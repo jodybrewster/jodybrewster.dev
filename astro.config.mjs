@@ -28,8 +28,12 @@ export default defineConfig({
   // root, so the root sends you there; the Vercel adapter turns this into a
   // real redirect at the edge, and it still resolves under `astro dev`.
   // Verso lives in the popup on every page; its old standalone pages send
-  // links and indexed URLs home, where the popup is.
-  redirects: { '/': '/home', '/chat': '/home', '/ask': '/home' },
+  // links and indexed URLs home, where the popup is. /resume is the short link
+  // to hand out; a 302 so swapping the file never leaves an old one cached.
+  redirects: {
+    '/': '/home', '/chat': '/home', '/ask': '/home',
+    '/resume': { status: 302, destination: '/jodybrewster_resume_2026.pdf' },
+  },
   // The shelf is a heavy route. Warming it on hover means the fold has
   // something to land on instead of a blank frame.
   prefetch: { prefetchAll: false, defaultStrategy: 'hover' },

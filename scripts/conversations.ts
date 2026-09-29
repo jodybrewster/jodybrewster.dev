@@ -9,7 +9,8 @@
  *   --out <path> write to this file instead
  *
  * Reads the transcript log (src/lib/transcripts.ts) from the production Redis,
- * so .env needs the production UPSTASH_REDIS_REST_URL and _TOKEN. Output goes
+ * so .env needs PROD_UPSTASH_REDIS_REST_URL and _TOKEN. They carry a PROD_
+ * prefix so `npm run dev` never picks them up and writes into production. Output goes
  * to .conversations/, which is gitignored: these are visitors' words and they
  * do not belong in the repo.
  */
@@ -36,10 +37,10 @@ const days = Number(flag('--days') ?? 7);
 if (!Number.isFinite(days) || days <= 0) { console.error('--days must be a positive number.'); process.exit(1); }
 if (days > TRANSCRIPT_TTL_S / 86400) console.warn(`The log keeps ${TRANSCRIPT_TTL_S / 86400} days; older conversations are gone.`);
 
-const url = process.env.UPSTASH_REDIS_REST_URL;
-const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+const url = process.env.PROD_UPSTASH_REDIS_REST_URL;
+const token = process.env.PROD_UPSTASH_REDIS_REST_TOKEN;
 if (!url || !token) {
-  console.error('Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in .env to the production database (Upstash console, REST API).');
+  console.error('Set PROD_UPSTASH_REDIS_REST_URL and PROD_UPSTASH_REDIS_REST_TOKEN in .env to the production database (Upstash console, REST API).');
   process.exit(1);
 }
 

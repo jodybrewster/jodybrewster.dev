@@ -135,7 +135,8 @@ npm run conversations -- --vault        # write into the Obsidian vault instead
 npm run conversations -- --out file.md  # write to a specific file
 ```
 
-It reads the production database, so `.env` needs the production `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` from the Upstash console.
+It reads the production database, so `.env` needs `PROD_UPSTASH_REDIS_REST_URL` and `PROD_UPSTASH_REDIS_REST_TOKEN`, copied from the REST API section of the database at console.upstash.com.
+The `PROD_` prefix keeps them away from `npm run dev`, which only reads the unprefixed `UPSTASH_REDIS_*` and so never writes local test chats into production.
 `--digest` also needs `GEMINI_API_KEY`.
 
 ## Environment variables
@@ -147,7 +148,8 @@ GEMINI_API_KEY=        # Gemini API - Verso, the chat
 ANTHROPIC_API_KEY=     # Claude API - the MCP server's ask tool
 VOYAGE_API_KEY=        # Embeddings for RAG
 UPSTASH_VECTOR_*=      # Vector store
-UPSTASH_REDIS_*=       # Rate limiting, conversations, transcripts
+UPSTASH_REDIS_*=       # Rate limiting, conversations, transcripts (leave unset locally, or point at a dev database)
+PROD_UPSTASH_REDIS_*=  # Production Redis, read only by npm run conversations
 TELEGRAM_BOT_TOKEN=    # Verso notices to Jody's phone (from @BotFather)
 TELEGRAM_OWNER_ID=     # Jody's numeric Telegram user id
 TELEGRAM_WEBHOOK_SECRET= # Any long random string, checked on every webhook call

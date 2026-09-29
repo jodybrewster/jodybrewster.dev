@@ -168,7 +168,7 @@ A question's topic comes from a small Gemini call beside retrieval (`src/lib/top
 Each custom parameter must be registered as a custom dimension in GA4 before it appears in reports.
 
 Verso's words go to the transcript log instead (`src/lib/transcripts.ts`): `chat:log:<cid>` lists plus a `chat:log:index` sorted set, kept 30 days, with emails and phone numbers redacted on write.
-The dock discloses the 30 days. `npm run conversations` reads it and needs the production `UPSTASH_REDIS_*` in `.env`; its output goes to the gitignored `.conversations/` because it holds visitors' words.
+The dock discloses the 30 days. `npm run conversations` reads it and needs `PROD_UPSTASH_REDIS_REST_URL` and `_TOKEN` in `.env`, prefixed so the dev server never connects to production; its output goes to the gitignored `.conversations/` because it holds visitors' words.
 
 ## Common Pitfalls
 

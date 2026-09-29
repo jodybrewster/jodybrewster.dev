@@ -82,8 +82,9 @@ export function formatTurnMessage(opts: {
   question: string;
   answer?: string;
   failed?: boolean;
+  topic?: string;
 }): string {
-  const tag = `Verso · ${String(opts.cid).slice(0, 4)} · q${opts.index}`;
+  const tag = [`Verso · ${String(opts.cid).slice(0, 4)} · q${opts.index}`, opts.topic].filter(Boolean).join(' · ');
   const header = opts.failed ? `${tag} · no answer` : tag;
   const question = sanitizeForTelegram(opts.question);
   const answer = sanitizeForTelegram(opts.answer, ANSWER_MAX);

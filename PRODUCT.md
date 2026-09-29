@@ -48,7 +48,7 @@ One line breaks the third-person rule knowingly: the ask-bar placeholder reads "
 
 The site collects two things. Verso's questions and answers go to Jody's phone, which the dock discloses. Google Analytics 4 runs on every page in production builds, sending page views by hand because the router makes every navigation after the first a soft one.
 
-Analytics on a site whose argument is restraint deserves a stated position rather than a default. The one worth holding: measure whether the writing reaches people, not who they are. That means page views and referrers are in scope and behavioural profiling is not.
+Analytics on a site whose argument is restraint deserves a stated position rather than a default. The one worth holding: measure whether the writing reaches people, not who they are. That means page views and referrers are in scope and behavioural profiling is not. Events follow the same line: they count what people do with the site (open the chat, follow a card, reach for the contact links) and carry values the site chooses, never what a visitor typed. What people ask Verso is read in the transcripts, which are kept 30 days, redacted of contact details and disclosed in the dock.
 
 There is no privacy policy. With Verso transcripts and GA4 both live, that gap is now the site's most visible unfinished edge, and it should close before the site carries real traffic.
 

@@ -4,9 +4,10 @@ const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
   getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
-  generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(),
+  generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
 }));
 vi.mock('../operator', () => ({ notifyTurn: dependencies.notifyTurn }));
+vi.mock('../transcripts', () => ({ logEntries: dependencies.logEntries }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
@@ -24,7 +25,7 @@ const { ApiError } = vi.hoisted(() => ({
   ApiError: class extends Error { constructor(public status: number) { super(`status ${status}`); } },
 }));
 vi.mock('@google/genai', () => ({
-  GoogleGenAI: class { models = { generateContentStream: dependencies.generateContentStream }; },
+  GoogleGenAI: class { models = { generateContentStream: dependencies.generateContentStream, generateContent: dependencies.generateContent }; },
   ThinkingLevel: { LOW: 'LOW' },
   FunctionCallingConfigMode: { AUTO: 'AUTO', NONE: 'NONE' },
   ApiError,
@@ -86,6 +87,8 @@ beforeEach(() => {
   dependencies.generateContentStream.mockImplementation(model());
   dependencies.buildCardIndex.mockResolvedValue(CARD_INDEX);
   dependencies.notifyTurn.mockResolvedValue(undefined);
+  dependencies.logEntries.mockResolvedValue(undefined);
+  dependencies.generateContent.mockResolvedValue({ text: 'hiring' });
 });
 afterEach(() => {
   vi.clearAllTimers();
@@ -169,7 +172,43 @@ describe('POST /api/chat reliability', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(state.text).toContain('"done":true');
     expect(dependencies.notifyTurn).toHaveBeenCalledWith(
-      { cid, index: 2, question: 'PRIVATE QUESTION', answer: 'An answer.' }, expect.any(AbortSignal));
+      { cid, index: 2, question: 'PRIVATE QUESTION', answer: 'An answer.', topic: 'hiring' }, expect.any(AbortSignal));
+  });
+
+  it('tags the topic, sends it before done and logs the turn with its page', async () => {
+    const state = consume(await post({ query: 'PRIVATE QUESTION', page: '/work/tracker' }));
+    await vi.advanceTimersByTimeAsync(0);
+    const events = frames(state.text);
+    expect(events.findIndex(e => e.topic === 'hiring')).toBeLessThan(events.findIndex(e => e.done));
+    expect(dependencies.logEntries.mock.calls[0][1]).toEqual([
+      { r: 'u', t: 'PRIVATE QUESTION', ts: expect.any(Number), topic: 'hiring', page: '/work/tracker' },
+      { r: 'a', t: 'An answer.', ts: expect.any(Number) },
+    ]);
+    expect(dependencies.notifyTurn.mock.calls[0][0].topic).toBe('hiring');
+  });
+
+  it('keeps anything but a site path out of the transcript', async () => {
+    const state = consume(await post({ query: 'Q', page: 'https://evil.example/' }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.text).toContain('"done":true');
+    expect(dependencies.logEntries.mock.calls[0][1][0].page).toBeUndefined();
+  });
+
+  it('answers without a topic when tagging fails or hangs', async () => {
+    dependencies.generateContent.mockImplementation(never);
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(7_000);
+    expect(state.text).toContain('"done":true');
+    expect(state.text).not.toContain('"topic"');
+    expect(dependencies.logEntries.mock.calls[0][1][0].topic).toBeUndefined();
+  });
+
+  it('logs a question Verso could not answer', async () => {
+    dependencies.generateContentStream.mockRejectedValue(new Error('boom'));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(state.settled).toBe(true);
+    expect(dependencies.logEntries.mock.calls[0][1][0]).toMatchObject({ r: 'u', t: 'PRIVATE QUESTION', failed: true, topic: 'hiring' });
   });
 
   it('still finishes the answer when Telegram hangs', async () => {

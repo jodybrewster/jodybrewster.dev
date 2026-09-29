@@ -15,6 +15,7 @@ import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
 import { appendReply } from '../../lib/conversation';
 import { resolveTelegramMessage } from '../../lib/operator';
+import { logEntries } from '../../lib/transcripts';
 import {
   isOwnerUpdate, parseCommand, sanitizeForTelegram, sendNotice, type TelegramMessage,
 } from '../../lib/telegram';
@@ -53,6 +54,7 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
     await sendNotice('Your reply could not be saved. Nothing sent. Try again.');
     return;
   }
+  await logEntries(target.cid, [{ r: 'j', t: reply, ts: Date.now() }]);
   await sendNotice('Sent. It shows in their chat if the page is still open.');
 }
 

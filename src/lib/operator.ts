@@ -21,6 +21,7 @@ export interface TurnNotice {
   question: string;
   answer?: string;
   failed?: boolean;
+  topic?: string;
 }
 
 /** The slice of the Redis client this module uses. */

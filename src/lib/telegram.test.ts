@@ -51,3 +51,10 @@ describe('isOwnerUpdate', () => {
   it('refuses anyone else', () => expect(isOwnerUpdate({ ...owner, from: { id: 7 } }, '42')).toBe(false));
   it('refuses everything when no owner is configured', () => expect(isOwnerUpdate(owner, undefined)).toBe(false));
 });
+
+describe('formatTurnMessage topic', () => {
+  it('adds the topic to the first line', () => {
+    const text = formatTurnMessage({ cid: 'a3f1c2d4-0000-4000-8000-000000000000', index: 1, question: 'Q', answer: 'A', topic: 'hiring' });
+    expect(text.split('\n')[0]).toBe('Verso · a3f1 · q1 · hiring');
+  });
+});

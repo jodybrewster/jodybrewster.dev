@@ -1,6 +1,7 @@
 import { requestChat, type ChatSource } from './chat-stream';
 import { navigate } from 'astro:transitions/client';
 import { renderCard } from './card-render';
+import { track } from './track';
 
 type VoiceModule = typeof import('./live/voice') & typeof import('./live/voice-dock');
 let voiceModule: Promise<VoiceModule> | null = null;
@@ -51,7 +52,11 @@ export function initChatDock(): void {
     input.setAttribute('aria-expanded', String(open));
     document.querySelectorAll('[data-verso-open]').forEach(el => el.setAttribute('aria-expanded', String(open)));
   }
-  function open(): void { dock!.classList.add('open'); sync(); }
+  /** `trigger` says what opened it, for analytics: the bar, a prompt button, or a reply arriving. */
+  function open(trigger = 'bar'): void {
+    if (!dock!.classList.contains('open')) track('chat_open', { trigger });
+    dock!.classList.add('open'); sync();
+  }
   function close(restoreFocus = false): void {
     dock!.classList.remove('open');
     input.blur();
@@ -143,7 +148,8 @@ export function initChatDock(): void {
     const seen = readNumber(REPLY_SEEN_KEY);
     const fresh = (replies as Reply[]).filter(reply => typeof reply?.t === 'string' && typeof reply.ts === 'number' && reply.ts > seen);
     if (!fresh.length) return;
-    open(); empty.hidden = true;
+    open('reply'); empty.hidden = true;
+    track('chat_reply_seen', { count: fresh.length });
     for (const reply of fresh) {
       const turn = appendTemplate('#tpl-jody');
       const replyTo = turn.querySelector<HTMLElement>('.reply-to')!;
@@ -165,9 +171,15 @@ export function initChatDock(): void {
   void checkReplies();
   pollReplies();
 
+  /** The prompt a suggestion button put in the field, so a question sent unedited counts as that suggestion. */
+  let suggested: string | null = null;
   async function ask(query: string, retryTurn?: HTMLElement): Promise<void> {
     query = query.trim();
     if (!query || request) return;
+    const source = retryTurn ? 'retry' : query === suggested ? 'suggestion' : 'typed';
+    suggested = null;
+    let topic: string | undefined;
+    let outcome = 'done';
     request = new AbortController();
     busy(true); open(); empty.hidden = true;
     if (!retryTurn) appendTemplate('#tpl-you').querySelector<HTMLElement>('.said')!.textContent = query;
@@ -185,7 +197,7 @@ export function initChatDock(): void {
     let destination: string | null = null;
     const timer = setTimeout(() => { if (waited) waited.hidden = false; }, 12_000);
     try {
-      await requestChat({ query, cid: readCid() }, {
+      await requestChat({ query, cid: readCid(), page: location.pathname }, {
         signal: request.signal,
         onEvent(event) {
           if (typeof event.cid === 'string') { try { sessionStorage.setItem('verso:cid', event.cid); } catch { /* Optional. */ } }
@@ -200,6 +212,7 @@ export function initChatDock(): void {
             if (card) { if (text) said.append(card); else answer.before(card); scrollToAnswer(); }
           }
           if (Array.isArray(event.sources)) sources = event.sources;
+          if (typeof event.topic === 'string') topic = event.topic;
         },
       });
       if (!text.trim()) throw new Error('Nothing came back. Please try again.');
@@ -208,12 +221,15 @@ export function initChatDock(): void {
       // Leave only once the answer has landed, so it is there to come back to.
       if (destination) void navigate(destination);
     } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      outcome = request?.signal.aborted ? 'stopped' : message.startsWith('That took too long') ? 'timeout' : 'error';
       if (!text) answer.replaceChildren();
       const recovery = appendTemplate('#tpl-retry', said);
       recovery.querySelector<HTMLElement>('.dock-error')!.textContent = error instanceof Error ? error.message : 'Connection lost. Please try again.';
       recovery.querySelector('button')!.addEventListener('click', () => { void ask(query, turn); }, eventOptions);
     } finally {
       clearTimeout(timer); request = null; busy(false); scrollToAnswer();
+      track('chat_question', { source, outcome, topic, turn: conversation.querySelectorAll('.turn.you').length });
     }
   }
 
@@ -222,7 +238,7 @@ export function initChatDock(): void {
     if (request) { request.abort(); return; }
     void ask(input.value);
   }, eventOptions);
-  input.addEventListener('focus', open, eventOptions);
+  input.addEventListener('focus', () => open(), eventOptions);
   dock.querySelector('#dock-close')!.addEventListener('click', closeFromButton, eventOptions);
   newChat.addEventListener('click', () => {
     if (request) return;
@@ -230,6 +246,7 @@ export function initChatDock(): void {
     clearTimeout(pollTimer);
     if (voice) { voice.stopVoice(); renderer?.reset(voice.voiceSession().getSnapshot().messages); status(null); }
     conversation.replaceChildren(); empty.hidden = false; input.value = ''; input.focus({ preventScroll: true });
+    track('chat_new');
   }, eventOptions);
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeFromButton(); }, eventOptions);
   document.addEventListener('click', event => {
@@ -238,10 +255,18 @@ export function initChatDock(): void {
     if (opener) {
       trigger = opener;
       const prompt = opener.dataset.versoPrompt;
-      open();
-      if (!request && prompt) input.value = prompt;
+      open(prompt ? 'suggestion' : 'button');
+      if (!request && prompt) { input.value = prompt; suggested = prompt; }
       input.focus({ preventScroll: true });
     } else if (target && !dock!.contains(target)) close();
+  }, eventOptions);
+
+  // Which of what Verso put on screen people follow: cards, case study parts, sources.
+  conversation.addEventListener('click', event => {
+    const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
+    if (!link || link.origin !== location.origin) return;
+    const kind = link.className.match(/\bvcard-(\w+)/)?.[1] ?? (link.classList.contains('source-item') ? 'source' : 'link');
+    track('card_click', { kind, path: link.pathname });
   }, eventOptions);
 
   const voiceButton = dock.querySelector<HTMLButtonElement>('#dock-voice')!;
@@ -251,6 +276,7 @@ export function initChatDock(): void {
   let unsubscribe = () => {};
   let countdown = 0;
   let renderer: ReturnType<VoiceModule['createVoiceRenderer']> | null = null;
+  let voiceStarted = 0;
   function status(text: string | null, tone: 'live' | 'note' = 'note'): void {
     voiceStatus.hidden = !text; voiceStatus.textContent = text ?? ''; voiceStatus.dataset.tone = tone;
   }
@@ -259,6 +285,11 @@ export function initChatDock(): void {
     const snapshot = voice.voiceSession().getSnapshot();
     const connecting = snapshot.connectionStatus === 'connecting';
     const live = snapshot.isConnected;
+    if (live && !voiceStarted) { voiceStarted = Date.now(); track('voice_start'); }
+    if (!live && !connecting && voiceStarted) {
+      track('voice_end', { seconds: Math.round((Date.now() - voiceStarted) / 1000), reason: snapshot.endReason ?? 'user' });
+      voiceStarted = 0;
+    }
     voiceButton.dataset.state = connecting ? 'connecting' : live ? 'live' : 'idle';
     voiceButton.setAttribute('aria-pressed', String(live || connecting));
     voiceButton.setAttribute('aria-label', live || connecting ? 'End voice conversation' : 'Talk to Verso');

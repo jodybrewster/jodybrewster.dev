@@ -41,6 +41,7 @@ npm run sync       # sync content from Obsidian vault → content/
 npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
 npm run games      # cache box art named in content/games.json → public/media/games/
+npm run conversations  # download the last 7 days of Verso transcripts → .conversations/ (--days, --digest, --vault)
 npm test           # vitest run
 ```
 
@@ -159,6 +160,15 @@ Page views are sent by hand. `Base.astro` uses `<ClientRouter />`, so every navi
 Two settings outside this repo can break the count, both in the GA4 data stream.
 **"Page changes based on browser history events"** must stay off under Enhanced measurement: the site navigates with `pushState`, so leaving it on double-counts every navigation.
 Enhanced measurement's other toggles are harmless.
+
+Custom events all go through `track()` in `src/lib/track.ts`, which no-ops without gtag, so callers never check the environment.
+They are `contact_click`, `chat_open`, `chat_question` (source, outcome, topic, turn), `chat_new`, `chat_reply_seen`, `card_click`, `voice_start`, `voice_end`, `lightbox_open` and `shelf_open`.
+Parameters are values the site chooses, never visitor text; GA4 forbids PII and a chat box is where people type theirs.
+A question's topic comes from a small Gemini call beside retrieval (`src/lib/topics.ts`), constrained to a fixed list so free text cannot leak into GA4.
+Each custom parameter must be registered as a custom dimension in GA4 before it appears in reports.
+
+Verso's words go to the transcript log instead (`src/lib/transcripts.ts`): `chat:log:<cid>` lists plus a `chat:log:index` sorted set, kept 30 days, with emails and phone numbers redacted on write.
+The dock discloses the 30 days. `npm run conversations` reads it and needs the production `UPSTASH_REDIS_*` in `.env`; its output goes to the gitignored `.conversations/` because it holds visitors' words.
 
 ## Common Pitfalls
 

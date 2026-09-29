@@ -8,6 +8,7 @@
 </dialog>
 
 <script>
+  import { track } from '../../lib/track';
   // Delegated once at the document so it keeps working across soft navigations;
   // the dialog itself is looked up per click because each page swap replaces it.
   // Capture phase, so this runs before the ClientRouter treats the hero as a link.
@@ -28,6 +29,7 @@
     dialog.classList.toggle('is-tall', img.naturalHeight > img.naturalWidth * 1.5);
     dialog.scrollTop = 0;
     dialog.showModal();
+    track('lightbox_open', { page: location.pathname });
   }, { capture: true });
 
   // A click on the backdrop lands on the dialog element itself.

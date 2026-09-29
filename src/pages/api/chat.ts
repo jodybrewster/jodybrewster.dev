@@ -13,6 +13,7 @@ import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
+import { linkedPaths, sitePaths } from '../../lib/verso-links';
 import { holdQuestion, liveUntil, notifyTurn, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import { TOPIC_PROMPT, parseTopic, type Topic } from '../../lib/topics';
@@ -239,6 +240,10 @@ export const POST: APIRoute = async ({ request }) => {
         if (!answerText.trim()) throw new Error('Nothing came back. Try again.');
         const topic = await topicTag ?? undefined;
         if (topic) send({ topic });
+        // Which of the answer's links point at real pages. The dock draws only those.
+        const links = await withDeadline(async () => linkedPaths(answerText, sitePaths((await buildCardIndex()).pages)),
+          2000, lifetime.signal).catch(() => [] as string[]);
+        if (links.length) send({ links });
         const ts = Date.now();
         // All before the done frame: once the response closes the function
         // can be frozen, and anything sent after it would be lost.

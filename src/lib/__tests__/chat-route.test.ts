@@ -270,6 +270,16 @@ describe('POST /api/chat reliability', () => {
     expect(state.text).toContain('An answer.');
   });
 
+  it('confirms which links in the answer are real pages before done', async () => {
+    dependencies.buildCardIndex.mockResolvedValue({ ...CARD_INDEX, pages: { '/work/agentic-analytics-platform': { title: 'x', text: '' } } });
+    dependencies.generateContentStream.mockImplementation(model(['See [the tracker](/work/agentic-analytics-platform) and [this](/work/invented).']));
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    const events = frames(state.text);
+    expect(events).toContainEqual({ links: ['/work/agentic-analytics-platform'] });
+    expect(events.findIndex(e => e.links)).toBeLessThan(events.findIndex(e => e.done));
+  });
+
   it('still finishes the answer when Telegram hangs', async () => {
     dependencies.notifyTurn.mockImplementation(never);
     const state = consume(await post());

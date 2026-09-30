@@ -15,23 +15,24 @@ const { slug, presentation, transitionName, variant = 'page' } = Astro.props;
 const chat = variant === 'chat';
 const isLennar = slug === 'lennar-interactive-maps';
 const href = isLennar ? '/portfolio/lennar-interactive-maps' : presentation?.image;
-const label = isLennar ? 'View the Lennar product screenshots' : 'View the full-size Brand Impact Tracker interface';
+const label = isLennar ? 'View the Lennar product screenshots' : `View the full-size ${presentation?.title} interface`;
 const cta = isLennar ? 'Explore product screens' : 'View full interface';
 // On the work page the image opens in ImageLightbox; in the chat it stays a plain link.
 const lightbox = !chat && !isLennar ? { 'data-lightbox': '' } : {};
 const icon = isLennar || chat ? 'external' : 'eye';
+const crop = presentation?.imageAspect ? { style: `aspect-ratio: ${presentation.imageAspect}; object-fit: cover; object-position: top` } : {};
 const loading = chat ? { loading: 'lazy' as const, decoding: 'async' as const } : { fetchpriority: 'high' as const };
 ---
 {hasCaseVisual(slug, presentation) && (presentation?.image ? (
   <figure class:list={['case-figure', { 'is-chat': chat }]}>
     {transitionName ? (
       <a class="case-image-link" transition:name={transitionName} href={href} aria-label={label} {...lightbox}>
-        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} />
+        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} {...crop} />
         <span class="case-preview-link"><Icon name={icon} class="icon" />{cta}</span>
       </a>
     ) : (
       <a class="case-image-link" href={href} aria-label={label} {...lightbox}>
-        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} />
+        <img src={presentation.image} alt={presentation.alt} width="1280" height="960" {...loading} {...crop} />
         <span class="case-preview-link"><Icon name={icon} class="icon" />{cta}</span>
       </a>
     )}

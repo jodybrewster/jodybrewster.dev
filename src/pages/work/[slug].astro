@@ -90,6 +90,18 @@ const jsonLd = {
   .case-prose :global(.metric .c) { font: 400 12px/1.6 var(--sans); color: var(--studio-muted); }
   .case-prose :global(.metric .l) { line-height: 1.6; color: var(--studio-muted); }
   .case-prose :global(img) { max-width: 100%; height: auto; }
+  /* Inline screenshots float small beside the text and open full size in the
+     lightbox. Paragraphs stop at 75ch, so a right float is pulled in by the
+     space left of that line or it would sit in the empty gutter unwrapped;
+     the figure shares the paragraph font so its ch is the paragraph's ch. */
+  .case-prose :global(> h2) { clear: both; }
+  .case-prose :global(> ul), .case-prose :global(> ol) { overflow: hidden; }
+  .case-prose :global(.case-shot) { clear: both; width: min(280px, 40%); margin: 8px 0 18px; font: 400 15px/1.85 var(--sans); }
+  .case-prose :global(.case-shot-left) { float: left; margin-right: 28px; }
+  .case-prose :global(.case-shot-right) { float: right; margin-left: 28px; margin-right: max(0px, calc(100% - 75ch)); }
+  .case-prose :global(.case-shot img) { display: block; width: 100%; border: 1px solid var(--studio-rule); border-radius: 8px; transition: border-color 150ms; }
+  .case-prose :global(.case-shot img:hover) { border-color: var(--studio-cyan); }
+  .case-prose :global(.case-shot figcaption) { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--studio-muted); }
   .case-prose :global(hr) { border-color: var(--studio-rule); }
   .case-footer { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; border-top: 1px solid var(--studio-rule); margin-top: 48px; padding-top: 25px; }
   @media (max-width: 900px) and (min-width: 721px) {
@@ -104,6 +116,7 @@ const jsonLd = {
     .case-overview { grid-template-columns: 1fr; gap: 24px; }
     .case-story { padding-top: 30px; }
     .case-prose :global(> p) { font-size: 14px; }
+    .case-prose :global(.case-shot-left), .case-prose :global(.case-shot-right) { float: none; width: 100%; margin: 20px 0; }
     .case-prose :global(.diagram) { padding: 16px 10px; }
     .case-prose :global(.diagram .caption) { font-size: 10px; line-height: 1.6; align-items: flex-start; }
   }

@@ -10,7 +10,7 @@ const [briefs, portfolio] = await Promise.all([
   getCollection('work', b => !b.data.draft),
   getCollection('portfolio'),
 ]);
-const order = ['agentic-analytics-platform', 'lennar-interactive-maps', 'pharmacy-agent-eval'];
+const order = ['jobbyjob', 'agentic-analytics-platform', 'lennar-interactive-maps', 'pharmacy-agent-eval'];
 const selectedPortfolio: Record<string, { description: string; tags: string[]; categories: string[] }> = {
   'react-native-reporting-portal': { description: 'A single mobile home for Lennar’s internal business dashboards, with search, favorites, and report details.', tags: ['React Native', 'Enterprise', 'Reporting'], categories: ['enterprise', 'data'] },
   'react-okta-sso-portal': { description: 'An agent-facing portal with branded sign-in, self-service registration, and an authenticated dashboard.', tags: ['React', 'Okta', 'Identity', 'Insurance'], categories: ['enterprise', 'web'] },

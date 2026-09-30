@@ -1,5 +1,6 @@
 ---
 import Icon from '../Icon.astro';
+import JobbyJobArchitecture from './JobbyJobArchitecture.astro';
 import type { WorkPresentation } from '../../lib/work-presentation';
 
 interface Props {
@@ -11,12 +12,14 @@ const { slug, presentation, variant = 'page' } = Astro.props;
 const chat = variant === 'chat';
 const heading = slug === 'pharmacy-agent-eval' ? 'Evaluation approach' : 'Architecture';
 const steps = presentation.architecture;
+// JobbyJob's page shows the full system diagram in place of the four-card flow.
+const diagram = !chat && slug === 'jobbyjob';
 ---
 <section class:list={['case-architecture', { 'is-chat': chat }]} aria-labelledby={chat ? undefined : 'architecture-title'} aria-label={chat ? heading : undefined}>
   <div class="case-section-heading"><h2 id={chat ? undefined : 'architecture-title'}>{heading}</h2><span>A system, end to end</span></div>
-  <ol class="architecture-flow">
+  {diagram ? <JobbyJobArchitecture /> : <ol class="architecture-flow">
     {steps.map((step, index) => <li class={`architecture-step architecture-step-${index + 1}`}><span class="architecture-icon"><Icon name={step.icon} class="icon" /></span><h3>{step.title}</h3><ul>{step.items.map(item => <li>{item}</li>)}</ul>{index < steps.length - 1 && <span class="architecture-connector" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span>}</li>)}
-  </ol>
+  </ol>}
 </section>
 
 <style>

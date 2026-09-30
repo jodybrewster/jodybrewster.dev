@@ -5,6 +5,8 @@ export interface WorkPresentation {
   image?: string;
   alt?: string;
   imageNote?: string;
+  /** Crops a tall hero to this aspect ratio from the top; the lightbox still opens the whole image. */
+  imageAspect?: string;
   tags: string[];
   categories: string[];
   challenge: string;
@@ -15,6 +17,26 @@ export interface WorkPresentation {
 }
 
 export const workPresentation: Record<string, WorkPresentation> = {
+  'jobbyjob': {
+    title: 'JobbyJob',
+    description: 'A contacts spreadsheet that grew into a job search system, with an apply queue and a live voice interview coach.',
+    image: '/images/work/jobbyjob/01-dashboard.png',
+    alt: 'The JobbyJob dashboard: the review queue, the apply queue, brand scores for each lane resume and ten days of activity.',
+    imageNote: 'Dashboard · Names replaced with placeholders',
+    imageAspect: '4 / 3',
+    tags: ['Claude Code', 'AI Agents', 'Astro + React', 'Voice AI'],
+    categories: ['ai', 'web', 'data'],
+    challenge: 'A senior job search in 2026 is a volume problem that looks like a quality problem. Postings go stale in days, boards misreport remote status and posted dates, and every application wants its own resume, letter and salary answer.',
+    solution: 'A self-hosted Teable database, extended with Claude Code, grew into a system that pulls postings overnight, scores them against my profile, tailors materials, fills forms for my review and coaches me for interviews. A model never writes a fact: code copies facts from the posting and every judgment quotes its evidence.',
+    outcome: '216 applications, each reviewed before it went out, peaking at 18 in a single day.',
+    scale: '1,547 postings tracked from 7 sources; 14 slash commands, 3 skills, 94 scripts, 3 apps.',
+    architecture: [
+      { title: 'Foundation', icon: 'layers', items: ['Teable on Postgres + Redis', 'Docker, nightly backups', 'API-only access'] },
+      { title: 'Intake', icon: 'clock', items: ['1 AM launchd pipeline', '7 posting sources', 'Every field read back'] },
+      { title: 'Judgment', icon: 'shield', items: ['Written scoring rubric', 'Red-team objections', 'Calibrated match score'] },
+      { title: 'Action', icon: 'code', items: ['Triage app', 'Apply queue + autofill', 'Voice interview coach'] },
+    ],
+  },
   'agentic-analytics-platform': {
     title: 'Brand Impact Tracker',
     description: 'AI-powered analytics with Snowflake, generative UI, and enterprise integration.',

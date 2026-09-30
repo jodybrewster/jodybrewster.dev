@@ -130,15 +130,6 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .project-description p { color: var(--home-muted); font-size: 12px; line-height: 1.55; margin: 0; min-height: 38px; flex: 1; text-wrap: pretty; }
 .project-tags { display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 10px 0 0; list-style: none; }
 .project-tags li { padding: 5px 9px; background: var(--home-raised); color: var(--home-muted); border-radius: 7px; font-size: 10px; line-height: 1.5; }
-.evaluation-preview { color: #d2e2ee; width: 90%; height: 156px; margin: 10px auto 0; border: 1px solid #324b68; border-radius: 7px 7px 0 0; background: #0f1e30; padding: 9px 12px; transform: perspective(600px) rotateX(7deg); }
-.eval-heading { display: flex; align-items: center; gap: 6px; font-size: 8px; font-weight: 600; padding-bottom: 8px; }
-.eval-heading .icon { color: #a89eff; width: 12px; height: 12px; }
-.eval-label { margin-left: auto; font-size: 5px; color: #98b2cc; letter-spacing: .1em; }
-.eval-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
-.eval-conversations, .eval-rubric { display: flex; flex-direction: column; gap: 9px; border: 1px solid #263f5b; background: #15273c; padding: 9px; border-radius: 5px; }
-.eval-columns span { display: flex; align-items: center; gap: 7px; font-size: 7px; }
-.eval-columns i { width: 9px; height: 9px; border: 2px solid #6c91dc; border-radius: 50%; background: #25447d; }
-.eval-rubric b { color: #a89eff; margin-left: auto; font-size: 6px; font-weight: 500; }
 .capabilities-section { padding: 0 0 22px; }
 .capabilities-section .home-container { padding-bottom: 22px; border-bottom: 1px solid var(--home-rule); }
 .capability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -239,12 +230,6 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .project-description .circle-arrow { display: inline-flex; }
   .project-tags { gap: 7px; margin-top: 12px; }
   .project-tags li { font-size: 10px; padding: 6px 9px; }
-  .evaluation-preview { height: 200px; padding: 13px; }
-  .eval-heading { font-size: 10px; }
-  .eval-label { font-size: 6px; }
-  .eval-columns { gap: 12px; }
-  .eval-conversations, .eval-rubric { padding: 12px; gap: 13px; }
-  .eval-columns span { font-size: 9px; }
   .featured-work { padding-bottom: 30px; }
   .capabilities-section { padding-block: 20px 25px; }
   .capability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }

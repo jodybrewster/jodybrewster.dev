@@ -26,6 +26,22 @@ const jsonLd = {
 <Base title="Jody Brewster · AI Engineering & Product Development" description="I build and ship AI-powered products: intelligent chat experiences, agents, and web and mobile applications that people use." bodyClass="home-page" home jsonLd={jsonLd}>
   <div class="home-backdrop" aria-hidden="true">
     <img src="/images/home/jody-office.webp" srcset="/images/home/jody-office-1080.webp 1080w, /images/home/jody-office.webp 2160w" sizes="100vw" width="2160" height="720" alt="" fetchpriority="high" />
+    <div class="face-gag" hidden>
+      <div class="face-gag-sign">
+        <div class="face-gag-float">
+          <svg class="face-gag-arrow" viewBox="0 0 96 64" width="96" height="64"><path d="M92 60C70 58 38 46 8 8" /><path d="M6 23L8 8l14 6" /></svg>
+          <p class="face-gag-card">My son said the AI looks better! lol</p>
+        </div>
+      </div>
+    </div>
+    <script is:inline data-astro-rerun>
+      try {
+        if (!sessionStorage.getItem('home:face-gag') && Math.random() < 0.2) {
+          sessionStorage.setItem('home:face-gag', '1');
+          document.querySelector('.face-gag').hidden = false;
+        }
+      } catch {}
+    </script>
   </div>
   <main id="main-content" class="home-main">
     <section class="home-hero home-container" aria-labelledby="home-title">

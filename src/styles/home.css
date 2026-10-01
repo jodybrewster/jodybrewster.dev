@@ -51,6 +51,26 @@
 .home-backdrop { position: absolute; top: 0; left: 0; width: 100%; height: 530px; z-index: -1; background: #050f16; }
 .home-backdrop img { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .home-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, #050f16 0%, transparent 23%), linear-gradient(90deg, rgb(5 15 22 / .4), transparent 60%); }
+/* The sign beside the face. The frame repeats the photo's object-fit: cover crop (3:1, centred, top-anchored), so a
+   point given as a share of the frame stays on the same spot in the photo at every width. The sign sits to the lower
+   right of the face where the crop leaves room for it and to the left where it does not. It turns up now and then:
+   the markup ships hidden, an inline script reveals it on one arrival in five, at most once per visit, and it fades out
+   after 20 seconds. */
+.home-backdrop { container-type: size; }
+.face-gag { --frame-w: max(100cqw, 300cqh); --crop-x: .5; position: absolute; z-index: 1; top: 0; left: calc((100cqw - var(--frame-w)) * var(--crop-x)); width: var(--frame-w); aspect-ratio: 3; pointer-events: none; }
+.face-gag-sign { position: absolute; left: 68.5%; top: 41%; }
+.face-gag-float { animation: face-gag-float 3.6s ease-in-out infinite; }
+.face-gag-arrow { position: absolute; left: 4px; top: 2px; overflow: visible; fill: none; stroke: #f657ac; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.face-gag-card { position: absolute; left: 86px; top: 50px; width: max-content; max-width: 15ch; margin: 0; padding: 9px 13px 10px; border: 2px solid #09151e; border-radius: 4px; background: #f4f7fb; box-shadow: 4px 4px 0 #f657ac; color: #09151e; font-family: var(--headline); font-size: 19px; font-weight: 500; line-height: 1.05; text-transform: uppercase; text-wrap: balance; transform: rotate(-4deg); }
+.home-page .face-gag { animation: face-gag-life 21.2s 1.5s linear both; }
+html[data-soft-nav] .face-gag { animation-delay: .4s; }
+@keyframes face-gag-life { 0% { opacity: 0; } 2.8%, 97.2% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes face-gag-float { 50% { transform: translate(3px, -7px) rotate(1.5deg); } }
+@container (max-width: 1280px) {
+  .face-gag-sign { left: 61%; top: 36%; }
+  .face-gag-arrow { left: auto; right: 4px; transform: scaleX(-1); }
+  .face-gag-card { left: auto; right: 86px; transform: rotate(4deg); }
+}
 .home-hero { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 433px; padding-top: 10px; padding-bottom: 35px; color: #f4f7fb; }
 .hero-copy { max-width: 640px; }
 /* The home intro is the site's one staged entrance. The photo pulls into focus while the headline rises word by
@@ -201,6 +221,9 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
      copy starts below it where the photo fades into the page. */
   .home-backdrop { height: 440px; }
   .home-backdrop img { object-position: 65% top; }
+  .face-gag { --crop-x: .65; }
+  .face-gag-sign { top: 30%; }
+  .face-gag-card { top: 26px; right: 66px; font-size: 15px; padding: 7px 10px 8px; }
   .home-backdrop::after { background: linear-gradient(0deg, #050f16 4%, rgb(5 15 22 / .55) 34%, transparent 62%), linear-gradient(90deg, rgb(5 15 22 / .45), transparent 55%); }
   .home-hero { min-height: 0; padding-top: 220px; padding-bottom: 28px; }
   .hero-copy { max-width: 540px; }
@@ -259,5 +282,6 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   html:has(.home-page) { scroll-behavior: auto; }
   .home-page *, .home-page *::before, .home-page *::after { transition: none !important; animation: none !important; }
   html:not([data-soft-nav]) :is(.home-backdrop img, .hero-copy, .experience-strip) { animation: home-fade 150ms ease both !important; }
+  .home-page .face-gag { animation: face-gag-life 21.2s 1.5s linear both !important; }
   @keyframes home-fade { from { opacity: 0; } }
 }

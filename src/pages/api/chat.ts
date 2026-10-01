@@ -14,7 +14,7 @@ import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
 import { linkedPaths, sitePaths } from '../../lib/verso-links';
-import { holdQuestion, liveUntil, notifyTurn, takeHeld } from '../../lib/operator';
+import { alertModelFailure, describeModelFailure, holdQuestion, liveUntil, notifyTurn, takeHeld, type ModelFailure } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import { TOPIC_PROMPT, parseTopic, type Topic } from '../../lib/topics';
 
@@ -130,6 +130,8 @@ export const POST: APIRoute = async ({ request }) => {
         try { controller.enqueue(encoder.encode(': ping\n\n')); } catch { disconnect(); }
       }, 10_000);
       let answerText = '';
+      /** The last model error, reported to Jody if the turn fails. */
+      let modelFailure: ModelFailure | null = null;
       let sources: CitedSource[] = [];
       let topicTag: Promise<Topic | null> = Promise.resolve(null);
       try {
@@ -225,6 +227,7 @@ export const POST: APIRoute = async ({ request }) => {
                 // Status only: an SDK message can quote the prompt back.
                 const status = error instanceof ApiError ? error.status : error instanceof Error ? error.name : 'unknown';
                 log('model', `failed:${model}:${status}`);
+                modelFailure = describeModelFailure(model, String(status), error instanceof Error ? error.message : '');
                 // Once text or a card has gone out, switching models would
                 // splice two answers together. Only a clean failure moves on.
                 if (committed || answerText || shown.size || !isRetryable(error) || attempt === models.length - 1) throw error;
@@ -268,9 +271,11 @@ export const POST: APIRoute = async ({ request }) => {
         // bound to the lifetime, which a timeout has already aborted.
         if (!disconnected) {
           const topic = await Promise.race([topicTag, new Promise<null>(resolve => setTimeout(resolve, 1000, null))]) ?? undefined;
+          const failure = modelFailure;
           await Promise.all([
             withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true, topic }, signal),
               NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed')),
+            failure ? withDeadline(signal => alertModelFailure(failure, signal), NOTIFY_DEADLINE_MS).catch(() => log('alert', 'failed')) : Promise.resolve(),
             fallback ? Promise.resolve() : withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), topic, page, failed: true }]),
               NOTIFY_DEADLINE_MS).catch(() => log('transcript', 'failed')),
           ]);

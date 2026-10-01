@@ -1,20 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const telegram = vi.hoisted(() => ({ configured: true, sendTurn: vi.fn() }));
+const telegram = vi.hoisted(() => ({ configured: true, sendTurn: vi.fn(), sendNotice: vi.fn() }));
 vi.mock('./telegram', async importOriginal => ({
   ...await importOriginal<typeof import('./telegram')>(),
   telegramConfigured: () => telegram.configured,
   sendTurn: telegram.sendTurn,
+  sendNotice: telegram.sendNotice,
 }));
 vi.mock('./redis', () => ({ getRedis: () => null }));
 
-import { LIVE_WINDOW_MS, goLive, holdQuestion, liveUntil, notifyTurn, resolveTelegramMessage, takeHeld, type OperatorRedis } from './operator';
+import { ALERT_QUIET_S, LIVE_WINDOW_MS, alertModelFailure, describeModelFailure, formatModelAlert, goLive, holdQuestion, liveUntil, notifyTurn, resolveTelegramMessage, takeHeld, type OperatorRedis } from './operator';
 import { CONV_TTL_S } from './conversation';
 
 class FakeRedis implements OperatorRedis {
   readonly store = new Map<string, unknown>();
   readonly ttls = new Map<string, number>();
-  async set(key: string, value: unknown, opts: { ex: number }) { this.store.set(key, value); this.ttls.set(key, opts.ex); return 'OK'; }
+  async set(key: string, value: unknown, opts: { ex: number } | { ex: number; nx: true }) {
+    if ('nx' in opts && this.store.has(key)) return null;
+    this.store.set(key, value); this.ttls.set(key, opts.ex); return 'OK';
+  }
   async get<T>(key: string) { return (this.store.get(key) ?? null) as T | null; }
   async del(...keys: string[]) { let n = 0; for (const key of keys) if (this.store.delete(key)) n++; return n; }
 }
@@ -25,6 +29,7 @@ const turn = { cid, index: 1, question: 'What did he build?', answer: 'A tracker
 beforeEach(() => {
   telegram.configured = true;
   telegram.sendTurn.mockReset().mockResolvedValue(501);
+  telegram.sendNotice.mockReset().mockResolvedValue(undefined);
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -97,5 +102,41 @@ describe('Jody live in a conversation', () => {
     await holdQuestion(cid, 'Second', redis);
     expect(await takeHeld(cid, redis)).toEqual({ q: 'Second', ts: expect.any(Number) });
     expect(await takeHeld(cid, redis)).toBeNull();
+  });
+});
+
+describe('model failure alerts', () => {
+  const capMessage = '{"error":{"code":429,"message":"Your project has exceeded its monthly spending cap."}}';
+
+  it('recognizes the spending cap from the 429 message, and nothing else as one', () => {
+    expect(describeModelFailure('gemini-3.8-flash', '429', capMessage).spendCap).toBe(true);
+    expect(describeModelFailure('gemini-3.8-flash', '429', 'Resource exhausted').spendCap).toBe(false);
+    expect(describeModelFailure('gemini-3.8-flash', '500', 'spending cap').spendCap).toBe(false);
+  });
+
+  it('says what to do about each cause', () => {
+    expect(formatModelAlert(describeModelFailure('gemini-3.8-flash', '429', capMessage))).toContain('https://ai.studio/spend');
+    expect(formatModelAlert(describeModelFailure('gemini-3.8-flash', '403', ''))).toContain('GEMINI_API_KEY');
+    expect(formatModelAlert(describeModelFailure('gemini-3.8-flash', '503', ''))).toContain('503 on gemini-3.8-flash');
+  });
+
+  it('sends one alert per cause however many turns fail, then goes quiet for the window', async () => {
+    const redis = new FakeRedis();
+    const cap = describeModelFailure('gemini-3.8-flash', '429', capMessage);
+    await alertModelFailure(cap, undefined, redis);
+    await alertModelFailure(cap, undefined, redis);
+    await alertModelFailure(describeModelFailure('gemini-3.6-flash', '429', capMessage), undefined, redis);
+    expect(telegram.sendNotice).toHaveBeenCalledTimes(1);
+    expect(redis.ttls.get('alert:model:spend-cap')).toBe(ALERT_QUIET_S);
+    await alertModelFailure(describeModelFailure('gemini-3.8-flash', '503', ''), undefined, redis);
+    expect(telegram.sendNotice).toHaveBeenCalledTimes(2);
+  });
+
+  it('still alerts when Redis is unavailable, and not at all without a bot', async () => {
+    await alertModelFailure(describeModelFailure('gemini-3.8-flash', '500', ''), undefined, null);
+    expect(telegram.sendNotice).toHaveBeenCalledTimes(1);
+    telegram.configured = false;
+    await alertModelFailure(describeModelFailure('gemini-3.8-flash', '500', ''), undefined, null);
+    expect(telegram.sendNotice).toHaveBeenCalledTimes(1);
   });
 });

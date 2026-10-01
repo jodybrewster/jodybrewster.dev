@@ -5,11 +5,13 @@ const dependencies = vi.hoisted(() => ({
   getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
-  liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(),
+  liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(), alertModelFailure: vi.fn(),
 }));
-vi.mock('../operator', () => ({
+vi.mock('../operator', async importOriginal => ({
+  describeModelFailure: (await importOriginal<typeof import('../operator')>()).describeModelFailure,
   notifyTurn: dependencies.notifyTurn, liveUntil: dependencies.liveUntil,
   holdQuestion: dependencies.holdQuestion, takeHeld: dependencies.takeHeld,
+  alertModelFailure: dependencies.alertModelFailure,
 }));
 vi.mock('../transcripts', () => ({ logEntries: dependencies.logEntries }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
@@ -370,6 +372,8 @@ describe('POST /api/chat reliability', () => {
     expect(state.text).toContain('"done":true');
     const models = dependencies.generateContentStream.mock.calls.map(([request]) => request.model);
     expect(new Set(models).size).toBe(3);
+    // A turn another model rescued is not an outage.
+    expect(dependencies.alertModelFailure).not.toHaveBeenCalled();
   });
 
   it('reports failure when every model is over capacity', async () => {
@@ -378,6 +382,8 @@ describe('POST /api/chat reliability', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(state.text).toMatch(/"error":.*[Tt]ry again/);
     expect(dependencies.generateContentStream).toHaveBeenCalledTimes(3);
+    expect(dependencies.alertModelFailure).toHaveBeenCalledTimes(1);
+    expect(dependencies.alertModelFailure.mock.calls[0][0]).toEqual({ model: 'gemini-3.5-flash-lite', status: '503', spendCap: false });
   });
 
   it('does not fall back on an error that is not about capacity', async () => {

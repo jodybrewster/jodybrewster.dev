@@ -13,6 +13,10 @@
  * question). Each reply restarts the window. When it runs out, the dock asks
  * again with `fallback` and Verso answers as usual.
  *
+ * When the model itself fails, Jody also gets an alert naming the cause, so an
+ * outage (a spent quota, a refused key) reaches his phone rather than only the
+ * logs. One alert per cause per ALERT_QUIET_S, however many visitors hit it.
+ *
  * Nothing here throws: a missing bot or a Redis blip costs Jody a notification,
  * never the visitor their answer. A failed read of the live window reads as
  * "not live", so Verso answers rather than leaving someone waiting.
@@ -20,7 +24,7 @@
 
 import { getRedis } from './redis';
 import { CONV_TTL_S } from './conversation';
-import { formatTurnMessage, sendTurn, telegramConfigured } from './telegram';
+import { formatTurnMessage, sendNotice, sendTurn, telegramConfigured } from './telegram';
 
 export interface TurnNotice {
   cid: string;
@@ -35,7 +39,7 @@ export interface TurnNotice {
 
 /** The slice of the Redis client this module uses. */
 export interface OperatorRedis {
-  set(key: string, value: unknown, opts: { ex: number }): Promise<unknown>;
+  set(key: string, value: unknown, opts: { ex: number } | { ex: number; nx: true }): Promise<unknown>;
   get<T = unknown>(key: string): Promise<T | null>;
   del(...keys: string[]): Promise<number>;
 }
@@ -128,4 +132,52 @@ export async function takeHeld(cid: string, redis: OperatorRedis | null = getRed
     console.error('[operator] hold read failed', err instanceof Error ? err.name : 'Error');
     return null;
   }
+}
+
+/** What went wrong with a model call, kept to what is safe to send: an SDK message can quote the prompt back. */
+export interface ModelFailure {
+  model: string;
+  /** The HTTP status, or the error's name when there is none. */
+  status: string;
+  /** Google's 429 for a project over its monthly spending cap, which nothing but a raised cap fixes. */
+  spendCap: boolean;
+}
+
+/** How long one cause stays quiet after it has been reported. */
+export const ALERT_QUIET_S = 30 * 60;
+
+export function describeModelFailure(model: string, status: string, message: string): ModelFailure {
+  return { model, status, spendCap: status === '429' && /spending cap/i.test(message) };
+}
+
+export function formatModelAlert(failure: ModelFailure): string {
+  const { model, status } = failure;
+  const cause = failure.spendCap
+    ? `Gemini refused ${model} because the project is over its monthly spending cap. Every question fails until the cap is raised at https://ai.studio/spend`
+    : status === '429'
+      ? `Gemini is rate limiting ${model} (429). Questions fail until the quota frees up.`
+      : status === '401' || status === '403'
+        ? `Gemini refused the API key (${status} on ${model}). Check GEMINI_API_KEY in Vercel.`
+        : /^5\d\d$/.test(status)
+          ? `Gemini is failing on its side (${status} on ${model}).`
+          : `Verso could not get an answer from Gemini (${status} on ${model}).`;
+  return `Verso is failing. ${cause}\n\nThe next alert for this waits ${ALERT_QUIET_S / 60} minutes.`;
+}
+
+/** Sends the alert unless the same cause was reported within ALERT_QUIET_S. Without Redis it cannot tell, so it sends. */
+export async function alertModelFailure(
+  failure: ModelFailure,
+  signal?: AbortSignal,
+  redis: OperatorRedis | null = getRedis(),
+): Promise<void> {
+  if (!telegramConfigured()) return;
+  if (redis) {
+    const cause = failure.spendCap ? 'spend-cap' : failure.status;
+    try {
+      if (await redis.set(`alert:model:${cause}`, Date.now(), { ex: ALERT_QUIET_S, nx: true }) === null) return;
+    } catch (err) {
+      console.error('[operator] alert lock failed', err instanceof Error ? err.name : 'Error');
+    }
+  }
+  await sendNotice(formatModelAlert(failure), signal);
 }

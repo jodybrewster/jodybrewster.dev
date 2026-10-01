@@ -163,10 +163,10 @@ export async function sendTurn(text: string, signal?: AbortSignal): Promise<numb
 }
 
 /** Confirmations. No force_reply, since there is nothing to answer. */
-export async function sendNotice(text: string): Promise<void> {
+export async function sendNotice(text: string, signal?: AbortSignal): Promise<void> {
   await tgCall('sendMessage', {
     chat_id: env('TELEGRAM_OWNER_ID'),
     text,
     disable_web_page_preview: true,
-  });
+  }, signal);
 }

@@ -323,7 +323,7 @@ The six-panel reference supplied by the user is the current direction for Work, 
 - About is a simple header link. The Library entry belongs **under the résumé / contact actions on About**, with the label “Explore my library.” Do not add an About header dropdown.
 - Library remains the existing interactive Three.js shelf, including its physical birch-and-plaster room, keyboard selection, phone panning, and semantic fallback. Library links use a full document navigation because the scene owns its document.
 - Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
-- Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Generated landscape imagery illustrates ideas rather than pretending to be project screenshots.
+- Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Each piece has a generated ink illustration of a literal subject from its argument, off-white etched line on one of four mid-tone blue grounds with a single cyan element, rather than a project screenshot or an AI metaphor.
 - Verso uses the existing persisted ChatDock embedded in a two-column page. Prompt buttons only prefill the composer. Existing name entry, streaming, conversation state, and handoff behavior remain intact. Do not display a microphone unless voice actually exists.
 
 ## 11. Mobile Verso refinement (September 27, 2026)

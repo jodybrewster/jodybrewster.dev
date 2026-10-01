@@ -3,8 +3,8 @@ import { articleImage, fallbackImages } from './article-images';
 
 describe('articleImage', () => {
   it('returns the dedicated image for a mapped article', () => {
-    expect(articleImage('research', 'vercel-eve-agent-framework')).toBe('/images/research/vercel-eve-agent-framework.webp');
-    expect(articleImage('writing', 'the-model-that-wont-talk-a-teardown-of-jev')).toBe('/images/research/jev-structured-model.webp');
+    expect(articleImage('research', 'vercel-eve-agent-framework')).toBe('/images/articles/vercel-eve-agent-framework.webp');
+    expect(articleImage('writing', 'the-model-that-wont-talk-a-teardown-of-jev')).toBe('/images/articles/the-model-that-wont-talk-a-teardown-of-jev.webp');
   });
 
   it('does not look up a slug in the other collection', () => {

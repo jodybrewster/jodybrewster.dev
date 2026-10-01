@@ -1,0 +1,90 @@
+{
+  "writing": {
+    "the-model-that-wont-talk-a-teardown-of-jev": {
+      "subject": "a homemade sponge cake that has visibly collapsed, its middle sunk into a deep crater, on a plain plate, with a small paper sorting tag tied to it by string. The tag is the accent element and reads \"TECHNICAL ISSUE 0.94\", the only text in the image",
+      "ground": "slate",
+      "side": "right"
+    }
+  },
+  "research": {
+    "ai-design-skills-comparison": {
+      "subject": "a small bonsai tree that is already beautifully shaped, with a pair of pruning shears resting beside its pot and only three or four clipped leaves on the table. The shears are the accent element",
+      "ground": "cornflower",
+      "side": "left"
+    },
+    "diverge-converge-workflows": {
+      "subject": "a large hourglass lying on its side on a desk, one bulb stuffed with hundreds of loose crumpled paper sketches, the narrow neck letting a single flat sheet through into the other bulb. The single sheet is the accent element",
+      "ground": "steel",
+      "side": "right"
+    },
+    "snowflake-cortex-learning-customization-charts": {
+      "subject": "a cutaway of a small building: a tidy furnished ground floor with a sofa and a lamp, and below it a much larger basement full of pipes, valves and machinery, with a toolbox open on the basement floor. The toolbox is the accent element",
+      "ground": "denim",
+      "side": "left"
+    },
+    "claude-md-design-md-patterns-ai-agents": {
+      "subject": "a small suitcase packed far too full of handwritten paper notes, its lid unable to close, sheets poking out of every side. One small luggage tag on the handle is the accent element",
+      "ground": "denim",
+      "side": "left"
+    },
+    "pro-claude-code-agentic-stack": {
+      "subject": "a single upright old tree trunk, cut off above and below the frame's middle band, that has grown around an iron garden railing: the bark has swallowed the middle of the railing so only its two ends stick out on either side. A folded paper instruction sheet pinned to the bark is the accent element",
+      "ground": "slate",
+      "side": "right"
+    },
+    "vercel-eve-agent-framework": {
+      "subject": "an open manila file folder with index tabs lying flat on a desk, beside a small striped toll-gate barrier that stands raised and unused. The folder's tabs are the accent element",
+      "ground": "steel",
+      "side": "right"
+    },
+    "technical-writing-doc-skills-claude-codex": {
+      "subject": "a long conveyor belt carrying a steady stream of stacked documents straight past an empty inspection booth, its stool vacant and a rubber stamp left unused on the counter. The rubber stamp is the accent element",
+      "ground": "cornflower",
+      "side": "left"
+    },
+    "claude-code-codebase-audit-commands": {
+      "subject": "a large architectural floor plan unrolled across a table, with a dozen small magnifying glasses set down in different rooms at once. One of the magnifying glasses is the accent element",
+      "ground": "slate",
+      "side": "right"
+    },
+    "design-engineer-portfolios-field-guide": {
+      "subject": "a small, sturdy hand-made wooden chair seen from the side, drawn small in the centre of the frame with plenty of space above it, with a folded paper brochure about the chair lying ignored on the floor next to it. The brochure is plain printed paper, not a device. A woodworking hand plane on the floor is the accent element",
+      "ground": "steel",
+      "side": "right"
+    },
+    "evaluating-conversational-ai-quality": {
+      "subject": "a long low stack of printed conversation transcripts on a desk, a handful pulled out and fanned beside it, one page with a few pencil tally marks in the margin, and a pencil lying across it. The pencil is the accent element. No legible text",
+      "ground": "cornflower",
+      "side": "left"
+    },
+    "pkm-alternatives-obsidian-mcp": {
+      "subject": "a plain wooden index-card box, lid open, full of cards, sitting next to a large, ornate, locked steel safe with an elaborate dial. One index card standing up out of the box is the accent element",
+      "ground": "denim",
+      "side": "left"
+    }
+  },
+  "fallback": {
+    "fallback-notebook": {
+      "subject": "an open notebook with a fountain pen lying across it and a cup of coffee beside it. The pen is the accent element. No legible text",
+      "ground": "denim",
+      "side": "left"
+    },
+    "fallback-sketchbook": {
+      "subject": "a spiral sketchbook open to a page of loose pencil sketches, with a pencil and an eraser beside it. The eraser is the accent element. No legible text",
+      "ground": "steel",
+      "side": "right"
+    },
+    "fallback-books": {
+      "subject": "a short stack of three books lying on their sides with one paper bookmark sticking out of the top book. The bookmark is the accent element",
+      "ground": "cornflower",
+      "side": "left"
+    }
+  },
+  "header": {
+    "writing-header": {
+      "subject": "a writer's desk seen from the side at night, kept low: a short desk lamp, a typewriter, a few stacked books, loose pages and a mug, all sitting in the lower half of the frame with nothing in the upper half but open ground. The pool of lamplight on the desk is the accent element",
+      "ground": "slate",
+      "side": "right"
+    }
+  }
+}

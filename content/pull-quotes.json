@@ -1,0 +1,74 @@
+{
+  "the-model-that-wont-talk-a-teardown-of-jev": [
+    "The interesting part isn't the speed. It's the argument.",
+    "It feels less like a cheaper chatbot and more like a fast decision layer that can act before the conversation moves on.",
+    "Chat models are trained on what human raters prefer, and raters prefer confidence, so their probabilities mean little.",
+    "It means Jev can't return an answer outside the schema you gave it. It can still return a wrong answer with high confidence."
+  ],
+  "ai-design-skills-comparison": [
+    "For a plainspoken writer's notebook, you mostly need to restrain the model, not push it harder.",
+    "You need to specify an alternative direction, not negate the default.",
+    "If you are still writing more CSS than prose after three weeks, you have outgrown \"AI does design.\"",
+    "That taste lives in code on people's personal sites, not in installable skills."
+  ],
+  "diverge-converge-workflows": [
+    "The Double Diamond hasn't been replaced; it's been compressed.",
+    "Don't ask the builder to grade its own work.",
+    "Correct, and it generalizes: for anything with dynamic behavior or real content, code is the design surface.",
+    "With all this leverage available, fit is the only remaining problem worth working on."
+  ],
+  "snowflake-cortex-learning-customization-charts": [
+    "Snowflake Intelligence's customization ceiling is lower than most people realize when they first see the demo.",
+    "Snowflake Intelligence is the floor, not the ceiling.",
+    "Any pre-2025 Cortex content is effectively obsolete on the agent layer.",
+    "Vega-Lite is a protocol between the agent and your UI, not just a charting preference."
+  ],
+  "claude-md-design-md-patterns-ai-agents": [
+    "The most counterintuitive thing about writing a CLAUDE.md is that adding a correct rule can make the file worse.",
+    "A CLAUDE.md is not documentation. It is an allocation.",
+    "Prose cannot stop an agent inventing component props.",
+    "Auto-memory makes this sharper still - anything the agent has already learned about your project on its own is something you are now paying for twice."
+  ],
+  "pro-claude-code-agentic-stack": [
+    "That is a maintainer deleting his differentiation on purpose, and it is a more honest signal about this whole category than any star count.",
+    "Almost nobody writes gates, and gates are the part an agent can actually self-evaluate against.",
+    "A reviewer who knows the work has already passed review is a different and worse reviewer.",
+    "A framework that is mostly capability gets eaten. A framework that is mostly taste survives as a reference even after its code is deleted."
+  ],
+  "vercel-eve-agent-framework": [
+    "You read an agent by reading its folder, and you review a change to an agent as a Git diff.",
+    "Those are different measurements, deployments versus commits, and the gap between them is a reminder to check which number you are being sold.",
+    "Eve's edge is packaging, not any single novel primitive: the filesystem-as-agent convention, the bundled production infrastructure, and Vercel's distribution.",
+    "An agent you can diff is an agent a team can actually own, and that is a design decision worth more than any of the vendor's resolution percentages."
+  ],
+  "technical-writing-doc-skills-claude-codex": [
+    "The ecosystem has thoroughly solved the part that is easy to package - a prompt that describes good writing - and barely touched the part that actually changes outcomes.",
+    "The pre-commit gate is the durable one, because it makes the standard identical no matter which agent produced the file.",
+    "When an ecosystem has produced fifty ways to make a model generate something and almost no way to check what it generated, the checking is where the leverage is.",
+    "The best single signal I found is a skill arguing against its own framework."
+  ],
+  "claude-code-codebase-audit-commands": [
+    "The absence is more interesting than a missing feature would be.",
+    "That is a workflow, and it does not compress into a verb.",
+    "Divergence got cheap. Judgement did not.",
+    "The work is already there. It just does not have a verb."
+  ],
+  "design-engineer-portfolios-field-guide": [
+    "The site is the evidence, not the brochure.",
+    "When you can ship the thing, shipping it is a stronger claim than describing it.",
+    "A design engineer's site with janky animation, layout shift or poor performance refutes its own claim, in the medium the claim is about.",
+    "The differentiator against a very good twenty-five-year-old design engineer is not craft."
+  ],
+  "evaluating-conversational-ai-quality": [
+    "Both are the same answer wearing different clothes.",
+    "You cannot fully specify what good looks like before you have seen a few hundred examples of bad.",
+    "When a vendor voluntarily stops billing for the easy metric, that tells you which metric was load-bearing.",
+    "The number is the beginning of the argument, not the end of it."
+  ],
+  "pkm-alternatives-obsidian-mcp": [
+    "The tools racing to build an integration layer are the ones whose data model put a wall between the content and the agent in the first place.",
+    "Obsidian and an agent are complementary rather than competing: edit in one, query and write from the other, on the same files.",
+    "The most useful distinction in this whole landscape is not official versus community. It is whether the server can run unattended.",
+    "Three parts, each replaceable without touching the other two, and nothing in the middle that can abandon you."
+  ]
+}

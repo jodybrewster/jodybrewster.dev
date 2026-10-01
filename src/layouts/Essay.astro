@@ -14,6 +14,8 @@ interface Props {
   sectionHref?: string;
   sectionLabel?: string;
   heroImage?: string;
+  /** Lines from the article, already checked against its text, set in the right margin beside the body. */
+  pullQuotes?: string[];
 }
 
 const {
@@ -28,6 +30,7 @@ const {
   sectionHref = '/writing',
   sectionLabel = 'writing',
   heroImage,
+  pullQuotes = [],
 } = Astro.props;
 const tagList = Array.isArray(tags) ? tags : [tags];
 const primaryTag = tagList[0] ?? '';
@@ -67,13 +70,23 @@ const jsonLd: Record<string, unknown> = {
         )}
       </div>
 
-      <h1 class="enter-title" set:html={title} />
+      <header class:list={['essay-head', { 'has-hero': heroImage }]}>
+        <div class="essay-head-text">
+          <h1 class="enter-title" set:html={title} />
+          {description && <p class="dek enter-fade" style="--enter-delay: 160ms">{description}</p>}
+        </div>
+        {heroImage && <figure class="essay-hero" transition:name={mediaTransitionName(Astro.url.pathname)}><img src={heroImage} alt="" width="960" height="640" loading="eager" decoding="async" /></figure>}
+      </header>
 
-      {description && <p class="dek enter-fade" style="--enter-delay: 160ms">{description}</p>}
-      {heroImage && <figure class="essay-hero" transition:name={mediaTransitionName(Astro.url.pathname)}><img src={heroImage} alt="" width="960" height="640" loading="eager" decoding="async" /></figure>}
-
-      <div class="essay-body enter-fade" style="--enter-delay: 260ms">
-        <slot />
+      <div class:list={['essay-main', { 'has-quotes': pullQuotes.length }]}>
+        <div class="essay-body enter-fade" style="--enter-delay: 260ms">
+          <slot />
+        </div>
+        {pullQuotes.length > 0 && (
+          <aside class="essay-quotes" aria-hidden="true">
+            {pullQuotes.map(quote => <div class="pull-quote-slot"><blockquote class="pull-quote"><p>{quote}</p></blockquote></div>)}
+          </aside>
+        )}
       </div>
 
       <div class="essay-footer">

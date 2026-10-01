@@ -41,6 +41,7 @@ npm run sync       # sync content from Obsidian vault → content/
 npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
 npm run games      # cache box art named in content/games.json → public/media/games/
+npm run article-images  # generate the ink illustrations named in content/article-images.json → public/images/articles/ (OpenAI gpt-image-2, needs OPENAI_API_KEY)
 npm run conversations  # download the last 7 days of Verso transcripts → .conversations/ (--days, --digest, --vault)
 npm test           # vitest run
 ```
@@ -74,7 +75,7 @@ Content lives in two places:
 
 Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/now`. Verso, the chat, is a popup on every page (not a route; `/chat` and `/ask` redirect home). It calls `src/pages/api/chat.ts`, which uses Gemini + Upstash Vector for RAG over the site's own content.
 
-The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. A new piece without a dedicated image gets a studio illustration picked from its slug.
+The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. The images are ink illustrations generated from the subjects, grounds and framing in `content/article-images.json` by `scripts/article-images.ts`, which holds the fixed house style; the `article-image` skill walks through making one for a new piece. A piece missing from the manifest gets one of the fallback illustrations, picked from its slug. Beside the body, wide screens show three or four pull quotes per piece from `content/pull-quotes.json`, kept by hand because synced frontmatter would be overwritten; `src/lib/pull-quotes.ts` drops any quote that no longer appears verbatim in the article, using the same check as Verso's `open_page`.
 
 `/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
 
@@ -141,6 +142,7 @@ Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via 
 The chat page and search features use:
 - `GEMINI_API_KEY` - Gemini API for Verso, the chat (text answers and voice tokens)
 - `ANTHROPIC_API_KEY` - Claude API for the MCP server's ask tool (`src/pages/api/mcp.ts`)
+- `OPENAI_API_KEY` - local only, for `npm run article-images`; never needed by the build or in Vercel
 - `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
 - `UPSTASH_VECTOR_*` — vector store for semantic search over content
 - `UPSTASH_REDIS_*` — caching/rate limiting

@@ -14,3 +14,6 @@ node_modules/
 
 # Downloaded Verso transcripts (npm run conversations). Visitor words, never committed.
 .conversations/
+
+# Originals from npm run article-images
+.cache/

@@ -69,16 +69,30 @@
 .studio-page .foot { max-width: var(--site-width); width: calc(100% - 2 * var(--site-gutter)); margin: 0 auto; padding: 26px 0 34px; gap: 20px; color: var(--studio-muted); }
 .studio-page .chat-dock input { min-width: 0; font-size: 14px; }
 .studio-page .chat-dock .dock-close { width: 36px; height: 36px; }
-/* Articles share the page edges: the header and lead image span the full width, the body keeps a readable measure. */
+/* Articles share the page edges. The lead image sits beside the title rather than between it and the text, so the body
+   starts straight after the header; it is cropped 2:1 like its /writing card, which it grows out of on navigation. */
 .studio-page .essay-shell { max-width: none; }
 .studio-page .essay-shell h1 { font-family: var(--headline); font-weight: 300; line-height: 1.13; font-size: clamp(36px,4.2vw,58px); letter-spacing: -.01em; max-width: 1080px; text-wrap: balance; }
 .studio-page .essay-shell .dek { max-width: var(--measure); font-family: var(--sans); font-size: 18px; font-style: normal; line-height: 1.65; color: var(--studio-muted); }
-.studio-page .essay-hero { margin: 34px 0 42px; border: 1px solid var(--studio-rule); border-radius: 12px; overflow: hidden; background: var(--studio-surface); }
-.studio-page .essay-hero img { display: block; width: 100%; height: auto; aspect-ratio: 21 / 9; object-fit: cover; }
+.studio-page .essay-head.has-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); gap: 56px; align-items: center; margin-bottom: 48px; }
+.studio-page .essay-head.has-hero .dek { margin-bottom: 0; }
+.studio-page .essay-hero { margin: 0; border: 1px solid var(--studio-rule); border-radius: 12px; overflow: hidden; background: var(--studio-surface); }
+.studio-page .essay-hero img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; object-fit: cover; }
 /* Opened from a card, the lead image travels in from it. Loaded directly, it is uncovered top to bottom instead. */
 html:not([data-soft-nav]) .studio-page .essay-hero { animation: essay-hero-in 900ms 180ms var(--ease-out) both; }
 @keyframes essay-hero-in { from { clip-path: inset(0 0 100% 0 round 12px); } to { clip-path: inset(0 round 12px); } }
 @media (prefers-reduced-motion: reduce) { html:not([data-soft-nav]) .studio-page .essay-hero { animation: reduced-fade 150ms ease both !important; } }
+/* Pull quotes fill the right margin beside the body, in the same column as the lead image above them. The margin is cut
+   into one slot per quote and each quote sticks inside its own slot, so one is always beside the reader and each
+   travels with its part of the article. They repeat lines already on the page, so they are hidden from assistive
+   tech and dropped when the margin is too narrow to hold them. */
+.studio-page .essay-main.has-quotes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); gap: 56px; }
+.studio-page .essay-quotes { display: flex; flex-direction: column; }
+.studio-page .pull-quote-slot { flex: 1; padding-block: 8px 96px; }
+.studio-page .pull-quote { position: sticky; top: 140px; margin: 0; max-width: 420px; }
+.studio-page .pull-quote::before { content: ""; display: block; width: 32px; height: 2px; margin-bottom: 18px; background: var(--studio-cyan); }
+.studio-page .pull-quote p { margin: 0; font-family: var(--headline); font-weight: 300; font-size: 28px; line-height: 1.22; letter-spacing: -.005em; color: var(--studio-ink); text-wrap: balance; }
+@media(max-width:1100px) { .studio-page .essay-main.has-quotes { display: block; } .studio-page .essay-quotes { display: none; } }
 .studio-page .essay-body { font-family: var(--sans); font-size: 16px; line-height: 1.85; }
 .studio-page .essay-body h2 { font-family: var(--sans); font-weight: 650; font-size: 26px; margin-top: 42px; }
 .studio-page .essay-body h3 { font-family: var(--sans); font-weight: 650; font-size: 20px; }
@@ -86,9 +100,9 @@ html:not([data-soft-nav]) .studio-page .essay-hero { animation: essay-hero-in 90
 .studio-page .essay-body table { display: block; overflow-x: auto; font-size: 13px; }
 .studio-page .essay-body pre { overflow-x: auto; }
 @media(max-width:1100px) { .studio-page .home-nav { gap: 24px; } .studio-page .home-links { gap: 20px; } }
+@media(max-width:960px) { .studio-page .essay-head.has-hero { grid-template-columns: 1fr; gap: 32px; } }
 @media(max-width:720px) {
   .studio-page .essay-shell h1 { font-size: 33px; }
-  .studio-page .essay-hero img { aspect-ratio: 3 / 2; }
   .studio-page .essay-body { font-size: 15px; }
   .studio-page .foot { font-size: 10px; }
 }

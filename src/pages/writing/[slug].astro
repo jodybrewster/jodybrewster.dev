@@ -2,6 +2,7 @@
 import { getCollection, getEntry, render } from 'astro:content';
 import Essay from '../../layouts/Essay.astro';
 import { articleImage } from '../../lib/article-images';
+import { pullQuotes } from '../../lib/pull-quotes';
 
 export async function getStaticPaths() {
   const published = await getCollection('writing', e => e.data.status === 'published');
@@ -35,6 +36,7 @@ const isoDate = entry.data.date.toISOString();
   pillar={entry.data.pillar}
   number={number}
   heroImage={articleImage('writing', entry.id)}
+  pullQuotes={pullQuotes(entry.id, entry.body ?? '')}
 >
   <Content />
 </Essay>

@@ -41,7 +41,7 @@ describe('createCardIndex', () => {
     expect(index.work['plain-case']).toMatchObject({ title: 'Plain case', summary: 'The first real paragraph of the brief explains what the work was for.' });
     expect(index.articles['writing:essay']).toMatchObject({ collection: 'writing', date: '2026-09-27', description: 'An essay.' });
     expect(index.articles['research:vercel-eve-agent-framework']).toMatchObject({
-      url: '/research/vercel-eve-agent-framework', image: '/images/research/vercel-eve-agent-framework.webp',
+      url: '/research/vercel-eve-agent-framework', image: '/images/articles/vercel-eve-agent-framework.webp',
     });
     expect(index.articles).not.toHaveProperty('writing:draft');
     expect(index.notes).toEqual({ note: { kind: 'note', slug: 'note', title: 'Note', url: '/notes/note', status: 'budding', date: '2026-05-23' } });

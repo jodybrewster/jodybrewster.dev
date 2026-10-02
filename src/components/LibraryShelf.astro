@@ -100,7 +100,7 @@ function credit(item: ShelfItem): string {
   <span id="library-end" tabindex="-1"></span>
 </div>
 
-<script type="application/json" data-library-payload set:html={JSON.stringify(payload)} />
+<script is:inline type="application/json" data-library-payload set:html={JSON.stringify(payload)} />
 
 <script>
   import { LibraryScene } from '../lib/shelf/scene';

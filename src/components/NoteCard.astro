@@ -10,8 +10,6 @@ interface Props {
 
 const { title, date, status, slug, tags, body } = Astro.props;
 const tagList = tags ? (Array.isArray(tags) ? tags : [tags]) : [];
-
-const statusIcon = status === 'evergreen' ? 'sparkle' : status === 'budding' ? 'dot' : 'note';
 ---
 <a href={`/notes/${slug}`} class="note" style="text-decoration:none;border:none;display:block;">
   <div class="tended">

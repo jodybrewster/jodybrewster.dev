@@ -11,7 +11,7 @@ interface Props {
   basePath?: string;
 }
 
-const { title, date, description, tags, slug, pillar, index, readTime, basePath = '/writing' } = Astro.props;
+const { title, date, description, tags, slug, index, readTime, basePath = '/writing' } = Astro.props;
 const tagList = Array.isArray(tags) ? tags : [tags];
 const primaryTag = tagList[0] ?? '';
 ---

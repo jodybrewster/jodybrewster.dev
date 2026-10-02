@@ -43,7 +43,7 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false } = As
   )}
 
   {jsonLd && (
-    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
   )}
 
   <Analytics />

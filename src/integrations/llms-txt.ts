@@ -196,7 +196,6 @@ export function llmsTxt(options: { site: string }): AstroIntegration {
     hooks: {
       // Dev: serve dynamically via Vite middleware so /llms.txt works in `astro dev`.
       'astro:server:setup': ({ server }) => {
-        const serve = async (path: string, body: string) => body;
         server.middlewares.use(async (req, res, next) => {
           if (!req.url) return next();
           const url = req.url.split('?')[0];

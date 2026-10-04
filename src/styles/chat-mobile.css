@@ -27,10 +27,10 @@
 #chat-dock .answer a:hover, #chat-dock .answer a:focus-visible { border-bottom-color: var(--accent); }
 #chat-dock .input-row { min-width: 0; }
 #chat-dock .input-row input { min-width: 0; }
-/* The composer shows focus on its whole row, so the text field itself carries no ring of its own; page-level focus
-   outlines would otherwise draw a second and third box around it. The optional name field shows focus on its border. */
+/* The composer shows focus on its whole row and the field itself gets a visible ring too, so keyboard focus is
+   never carried by a border colour alone. */
 #chat-dock .input-row:focus-within { border-color: var(--accent); }
-#chat-dock .input-row input:focus-visible { outline: none; box-shadow: none; }
+#chat-dock .input-row input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: none; }
 
 /* Verso floats at the bottom of every page except /chat: a gradient-edged pill that expands upward into the
    conversation. On desktop it is centered at a readable width; on phones it spans the screen above the safe area. */
@@ -61,10 +61,11 @@ body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row input:focus { bor
 body[data-chat-enabled]:not(.verso-page) #chat-dock .input-icon { display: none; }
 body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button { width: 48px; height: 48px; min-width: 48px; margin: 0; padding: 0; justify-content: center; border: 1px solid var(--rule); border-radius: 50%; background: color-mix(in srgb, var(--paper) 70%, #000); color: var(--ink-soft); transition: border-color 180ms var(--ease-out), color 180ms var(--ease-out), transform 120ms var(--ease-out); }
 body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:hover, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row:focus-within button { border-color: color-mix(in srgb, var(--accent) 70%, var(--rule)); color: var(--accent); background: color-mix(in srgb, var(--paper) 70%, #000); }
-body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled, body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:disabled:hover { background: color-mix(in srgb, var(--paper) 70%, #000); }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:is(:disabled, [aria-disabled="true"]), body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:is(:disabled, [aria-disabled="true"]):hover { background: color-mix(in srgb, var(--paper) 70%, #000); }
 body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button:active { transform: scale(.94); }
-body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button .submit-label { display: none; }
-body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button.is-busy .submit-label { display: inline; font-size: 10px; }
+/* Visually hidden, not display:none, so the button is still named "Ask" for a screen reader. */
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button .submit-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+body[data-chat-enabled]:not(.verso-page) #chat-dock .input-row button.is-busy .submit-label { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; font-size: 10px; }
 body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel { max-height: 0; }
 body[data-chat-enabled]:not(.verso-page) #chat-dock.open .dock-panel { max-height: min(78dvh, calc(var(--chat-visible-height, 100dvh) - 110px)); }
 body[data-chat-enabled]:not(.verso-page) #chat-dock .dock-panel-head { padding: 8px 14px 0; }

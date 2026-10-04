@@ -17,3 +17,7 @@ node_modules/
 
 # Originals from npm run article-images
 .cache/
+
+# Playwright output
+test-results/
+playwright-report/

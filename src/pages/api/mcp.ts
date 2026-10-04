@@ -24,6 +24,7 @@ import { MAX_QUERY_LEN } from '../../lib/verso';
 import { isForeignOrigin } from '../../lib/origin';
 import { ASK_MAX_OUTPUT_TOKENS, askLimiter, check, mcpLimiter, visitor } from '../../lib/limits';
 import { createTokenBudget, estimateTokens, type Allowed } from '@jodybrewster/gemini-live/server/limits';
+import { audit, auditRefusal } from '../../lib/audit';
 
 export const prerender = false;
 
@@ -196,7 +197,9 @@ async function callTool(name: string, args: Record<string, unknown>, ask?: Allow
         system: ASK_JODY_SYSTEM,
         messages: [{ role: 'user', content }],
       });
-      await budget.settle((resp.usage?.input_tokens ?? 0) + (resp.usage?.output_tokens ?? 0));
+      const used = (resp.usage?.input_tokens ?? 0) + (resp.usage?.output_tokens ?? 0);
+      await budget.settle(used);
+      await audit({ action: 'mcp.ask_jody', outcome: 'allow', details: { tokens: used } });
       const text = resp.content.filter(b => b.type === 'text').map(b => (b as { text: string }).text).join('');
       const citations = hits.map((h, i) => `[${i + 1}] ${h.metadata.title} — https://jodybrewster.dev${h.metadata.url}`).join('\n');
       return textContent(`${text}\n\nSources:\n${citations}`);
@@ -229,7 +232,10 @@ function invalidArgs(name: string, args: Record<string, unknown>): string | null
  */
 async function admit(name: string, request: Request): Promise<{ refused: { status: number; message: string } } | { ask?: Allowed<'ip' | 'calls' | 'tokens'> }> {
   const who = visitor(request);
-  const refuse = (code: string) => ({ refused: code === 'unavailable' ? { status: 503, message: UNAVAILABLE } : { status: 429, message: BUSY } });
+  const refuse = async (code: string) => {
+    await auditRefusal(name === 'ask_jody' ? 'mcp.ask_jody' : 'mcp', code);
+    return { refused: code === 'unavailable' ? { status: 503, message: UNAVAILABLE } : { status: 429, message: BUSY } };
+  };
   const tool = await check(mcpLimiter, who);
   if (!tool.ok) return refuse(tool.code);
   if (name !== 'ask_jody') return {};

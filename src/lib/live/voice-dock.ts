@@ -29,6 +29,8 @@ export function voiceErrorMessage(error: unknown): string {
   if (name === 'NotAllowedError' || name === 'SecurityError') return 'The microphone is blocked. Allow it for this site to talk, or keep typing.';
   if (name === 'NotFoundError') return 'No microphone found. You can keep typing.';
   if (/\b429\b/.test(message)) return 'That is all the voice time for today. You can keep typing.';
+  // Switched off (SWITCH_VOICE) or briefly unavailable: the token route answers 503 for both.
+  if (/\b503\b/.test(message)) return 'Voice is paused right now. You can keep typing.';
   return 'Voice could not start. You can keep typing.';
 }
 

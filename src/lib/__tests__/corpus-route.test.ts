@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(), check: vi.fn(),
-  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, chat: true,
+  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, chat: true, searchOn: true,
 }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
-vi.mock('../origin', () => ({ isOriginAllowed: dependencies.isOriginAllowed }));
+vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: dependencies.isOriginAllowed }));
+vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.searchOn }));
 vi.mock('../limits', () => ({ check: dependencies.check, corpusLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../flags', () => ({ flags: { get chat() { return dependencies.chat; } } }));
 vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? dependencies.environment : undefined }));
@@ -31,6 +32,7 @@ beforeEach(() => {
   vi.spyOn(console, 'info').mockImplementation(() => {});
   dependencies.environment = 'production';
   dependencies.chat = true;
+  dependencies.searchOn = true;
   dependencies.getRedis.mockReturnValue({});
   dependencies.check.mockResolvedValue(({ ok: true, spend: vi.fn().mockResolvedValue(null), refund: vi.fn(), charge: vi.fn(), release: vi.fn() }));
   dependencies.isOriginAllowed.mockReturnValue(true);
@@ -89,6 +91,14 @@ describe('POST /api/corpus', () => {
     expect((await post()).status).toBe(503);
     dependencies.environment = undefined;
     expect((await post()).status).toBe(200);
+  });
+
+  it('answers with the paused copy when voice search is switched off', async () => {
+    dependencies.searchOn = false;
+    const response = await post();
+    expect(response.status).toBe(503);
+    expect(await response.text()).toMatch(/paused/);
+    expect(dependencies.searchVectors).not.toHaveBeenCalled();
   });
 
   it('rate limits per IP', async () => {

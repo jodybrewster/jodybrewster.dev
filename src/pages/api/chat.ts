@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { ApiError, FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type Content, type Part } from '@google/genai';
 import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag';
-import { isOriginAllowed } from '../../lib/origin';
+import { isCanonicalHost, isOriginAllowed, otherHost } from '../../lib/origin';
 import { chatLimiter, check, visitor } from '../../lib/limits';
 import { audit, auditRefusal, auditSwitchChanges, ref } from '../../lib/audit';
+import { CHAT_OFF, isOn } from '../../lib/switches';
 import type { Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { getRedis } from '../../lib/redis';
 import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
@@ -52,7 +53,10 @@ interface CitedSource {
 
 export const POST: APIRoute = async ({ request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
+  if (!isCanonicalHost(request)) return otherHost();
   await auditSwitchChanges();
+  // Switched off (SWITCH_CHAT): friendly copy the dock shows as is.
+  if (!(await isOn('chat'))) return new Response(CHAT_OFF, { status: 503, headers: { 'X-Switched-Off': 'chat', 'Cache-Control': 'no-store' } });
   const started = Date.now();
   let body: unknown;
   try { body = await withDeadline(() => request.json(), 4000, request.signal); }

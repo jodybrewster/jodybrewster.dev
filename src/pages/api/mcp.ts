@@ -21,10 +21,11 @@ import { listCollection, readDoc, readNowFile } from '../../lib/corpus';
 import { searchVectors, getChunkText } from '../../lib/rag';
 import { env } from '../../lib/env';
 import { MAX_QUERY_LEN } from '../../lib/verso';
-import { isForeignOrigin } from '../../lib/origin';
+import { isCanonicalHost, isForeignOrigin, otherHost } from '../../lib/origin';
 import { ASK_MAX_OUTPUT_TOKENS, askLimiter, check, mcpLimiter, visitor } from '../../lib/limits';
 import { createTokenBudget, estimateTokens, type Allowed } from '@jodybrewster/gemini-live/server/limits';
-import { audit, auditRefusal } from '../../lib/audit';
+import { audit, auditRefusal, auditSwitchChanges } from '../../lib/audit';
+import { ASK_OFF, isOn } from '../../lib/switches';
 
 export const prerender = false;
 
@@ -271,6 +272,7 @@ async function handle(req: JsonRpcRequest, request: Request): Promise<JsonRpcRes
         const params = req.params as { name?: string; arguments?: Record<string, unknown> } | undefined;
         const name = params?.name;
         if (!name) return err(req.id, -32602, 'tools/call: name required');
+        if (name === 'ask_jody' && !(await isOn('tool:ask_jody'))) return ok(req.id, { ...textContent(ASK_OFF), isError: true });
         const invalid = invalidArgs(name, params?.arguments ?? {});
         if (invalid) return ok(req.id, { ...textContent(invalid), isError: true });
         const admitted = await admit(name, request);
@@ -296,6 +298,8 @@ const reply = (body: JsonRpcResponse, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!isCanonicalHost(request)) return otherHost();
+  await auditSwitchChanges();
   // Other sites' pages could otherwise spend through their visitors' browsers.
   if (isForeignOrigin(request)) return reply(err(null, -32003, 'Forbidden'), 403);
   // JSON only: a text/plain POST needs no CORS preflight.

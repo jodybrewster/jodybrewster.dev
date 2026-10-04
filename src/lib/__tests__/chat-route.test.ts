@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
-  check: vi.fn(), spend: vi.fn(),
+  check: vi.fn(), spend: vi.fn(), chatOn: true,
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
   liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(), alertModelFailure: vi.fn(),
@@ -17,7 +17,8 @@ vi.mock('../transcripts', () => ({ logEntries: dependencies.logEntries }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
-vi.mock('../origin', () => ({ isOriginAllowed: () => true }));
+vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: () => true }));
+vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.chatOn }));
 vi.mock('../limits', () => ({ check: dependencies.check, chatLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../conversation', () => ({
   readHistory: dependencies.readHistory, conversationLength: dependencies.conversationLength,
@@ -82,6 +83,7 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
   dependencies.getRedis.mockReturnValue({});
+  dependencies.chatOn = true;
   dependencies.spend.mockResolvedValue(null);
   dependencies.check.mockResolvedValue({ ok: true, spend: dependencies.spend, refund: vi.fn(), charge: vi.fn(), release: vi.fn() });
   dependencies.searchVectors.mockResolvedValue([]);
@@ -306,6 +308,24 @@ describe('POST /api/chat reliability', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
     expect(dependencies.notifyTurn).not.toHaveBeenCalled();
+  });
+
+  it("is dead on an old deployment's URL in production, which would ignore a switch set since", async () => {
+    const request = new Request('https://jodybrewster-abc123-jody.vercel.app/api/chat', {
+      method: 'POST', body: JSON.stringify({ query: 'hi' }), headers: { 'Content-Type': 'application/json' },
+    });
+    expect(((await POST({ request } as Parameters<typeof POST>[0])) as Response).status).toBe(404);
+    expect(dependencies.check).not.toHaveBeenCalled();
+  });
+
+  it('answers with the paused copy when chat is switched off, before any work', async () => {
+    dependencies.chatOn = false;
+    const response = await post();
+    expect(response.status).toBe(503);
+    expect(response.headers.get('x-switched-off')).toBe('chat');
+    expect(await response.text()).toMatch(/paused/);
+    expect(dependencies.check).not.toHaveBeenCalled();
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
   });
 
   it('refuses past the per-IP rate and once the daily quota is gone, before any model call', async () => {

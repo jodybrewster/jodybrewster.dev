@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isForeignOrigin, isOriginAllowed } from './origin';
+import { isCanonicalHost, isForeignOrigin, isOriginAllowed } from './origin';
 
 function request(origin?: string, referer?: string): Request {
   const headers = new Headers();
@@ -80,6 +80,22 @@ describe('isForeignOrigin', () => {
   it('does not lock out previews and local dev', () => {
     vi.stubEnv('VERCEL_ENV', 'preview');
     expect(isForeignOrigin(request('https://evil.example'))).toBe(false);
+  });
+});
+
+describe('isCanonicalHost', () => {
+  const at = (host: string) => new Request(`https://${host}/api/chat`, { headers: { host } });
+
+  it("accepts only the site's own domains in production", () => {
+    expect(isCanonicalHost(at('jodybrewster.dev'))).toBe(true);
+    expect(isCanonicalHost(at('www.jodybrewster.dev'))).toBe(true);
+    expect(isCanonicalHost(at('jodybrewster-abc123-jody.vercel.app'))).toBe(false);
+    expect(isCanonicalHost(at('evil.example'))).toBe(false);
+  });
+
+  it('does not lock out previews and local dev', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    expect(isCanonicalHost(at('jodybrewster-abc123-jody.vercel.app'))).toBe(true);
   });
 });
 

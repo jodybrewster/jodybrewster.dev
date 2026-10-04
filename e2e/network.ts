@@ -40,7 +40,13 @@ export const ANSWER_FRAMES = [
 ];
 export const ANSWER_SENTENCES = ['Jody builds products end to end.', 'He started with the problem, then shipped it.', 'Ask about a case study.'];
 
-export async function mockNetwork(page: Page, chat: () => ChatMock = () => ({ kind: 'answer', frames: ANSWER_FRAMES })): Promise<Network> {
+export async function mockNetwork(
+  page: Page,
+  chat: () => ChatMock = () => ({ kind: 'answer', frames: ANSWER_FRAMES }),
+  host = DEV_HOST,
+  /** Hosts whose requests are aborted without counting as stray (analytics in a production build). */
+  ignore: ReadonlySet<string> = new Set(),
+): Promise<Network> {
   const net: Network = { stray: [], chatRequests: [], liveSent: [] };
 
   // Registered first, so it is consulted last: whatever no later route claims.
@@ -50,7 +56,8 @@ export async function mockNetwork(page: Page, chat: () => ChatMock = () => ({ ki
     if (FONT_HOSTS.has(url.hostname)) {
       return route.fulfill({ status: 200, contentType: url.hostname === 'fonts.googleapis.com' ? 'text/css' : 'font/woff2', body: '' });
     }
-    if (url.host !== DEV_HOST) {
+    if (ignore.has(url.hostname)) return route.abort();
+    if (url.host !== host) {
       net.stray.push(`${route.request().method()} ${route.request().url()}`);
       return route.abort();
     }
@@ -77,7 +84,7 @@ export async function mockNetwork(page: Page, chat: () => ChatMock = () => ({ ki
   await page.route('**/api/live-token', route => route.fulfill({ json: { token: 'e2e-token', expiresAt: new Date(Date.now() + 600_000).toISOString() } }));
 
   // Sockets to anywhere but the dev server (its HMR socket) and the mocked Gemini one are closed and recorded.
-  await page.routeWebSocket(url => url.host !== DEV_HOST, ws => {
+  await page.routeWebSocket(url => url.host !== host && !/generativelanguage\.googleapis\.com/.test(url.host), ws => {
     net.stray.push(`WebSocket ${ws.url()}`);
     void ws.close();
   });

@@ -86,7 +86,14 @@ const browserDeps: VoiceToolDeps = {
 
 let session: GeminiLiveSession | null = null;
 export function voiceSession(): GeminiLiveSession {
-  session ??= new GeminiLiveSession({ tokenEndpoint: '/api/live-token', maxSessionMs: VOICE_SESSION_MS, systemMessages: false });
+  // The audio worklets load from this origin (src/pages/worklets/): the
+  // security policy allows scripts by hash or from the site, not blob: URLs.
+  session ??= new GeminiLiveSession({
+    tokenEndpoint: '/api/live-token',
+    maxSessionMs: VOICE_SESSION_MS,
+    systemMessages: false,
+    audioWorklets: { playback: '/worklets/playback.js', capture: '/worklets/capture.js' },
+  });
   return session;
 }
 

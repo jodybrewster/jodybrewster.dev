@@ -14,6 +14,7 @@ import type { APIRoute } from 'astro';
 import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
 import { appendReply, appendTurn } from '../../lib/conversation';
+import { audit, ref } from '../../lib/audit';
 import { LIVE_WINDOW_MS, goLive, resolveTelegramMessage, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import {
@@ -60,6 +61,8 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
   }
   await logEntries(target.cid, [{ r: 'j', t: reply, ts: Date.now() }]);
   const live = await goLive(target.cid);
+  // Jody speaking as himself in a visitor's chat: anchored on Telegram at once.
+  await audit({ action: 'operator.reply', outcome: 'allow', actor: { userId: 'jody' }, target: { kind: 'conversation', id: ref(target.cid) } }, { anchor: true });
   await sendNotice(live
     ? `Sent. It shows in their chat if the page is still open. Verso waits ${LIVE_WINDOW_MS / 60_000} min for anything else before it answers again.`
     : 'Sent. It shows in their chat if the page is still open.');

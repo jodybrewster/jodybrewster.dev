@@ -3,6 +3,7 @@ import { ApiError, FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type C
 import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag';
 import { isOriginAllowed } from '../../lib/origin';
 import { chatLimiter, check, visitor } from '../../lib/limits';
+import { audit, auditRefusal, auditSwitchChanges, ref } from '../../lib/audit';
 import type { Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { getRedis } from '../../lib/redis';
 import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
@@ -51,6 +52,7 @@ interface CitedSource {
 
 export const POST: APIRoute = async ({ request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
+  await auditSwitchChanges();
   const started = Date.now();
   let body: unknown;
   try { body = await withDeadline(() => request.json(), 4000, request.signal); }
@@ -82,6 +84,7 @@ export const POST: APIRoute = async ({ request }) => {
       const decision = await check(chatLimiter, visitor(request));
       signal.throwIfAborted();
       if (!decision.ok) {
+        await auditRefusal('chat', decision.code);
         if (decision.code === 'unavailable') return new Response(UNAVAILABLE, { status: 503 });
         if (decision.rule === 'global') return new Response(DAILY_CAP_MESSAGE, { status: 429 });
         return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
@@ -90,6 +93,7 @@ export const POST: APIRoute = async ({ request }) => {
       history = posted ? await readHistory(cid) : [];
       signal.throwIfAborted();
       if (posted && await conversationLength(cid) >= MAX_TURNS_PER_CONV * 2) {
+        await auditRefusal('chat', 'conversation_long');
         return new Response('This conversation has run long. Start a new chat to continue.', { status: 429 });
       }
       return null;
@@ -105,6 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
   const holdUntil = posted && !fallback ? await withDeadline(() => liveUntil(cid), 2000, request.signal).catch(() => null) : null;
   if (holdUntil) {
     log('hold', 'jody');
+    await audit({ action: 'chat.held', outcome: 'allow', target: { kind: 'conversation', id: ref(cid) } });
     return holdForJody({ cid, mid, query, page, index: turnIndex, until: holdUntil });
   }
   // The visitor stopped waiting for Jody. Clear the held question now, before
@@ -256,6 +261,7 @@ export const POST: APIRoute = async ({ request }) => {
           // A held question was logged when it was held; only the answer is new.
           withDeadline(() => logEntries(cid, fallback ? [{ r: 'a', t: answerText, ts }] : [{ r: 'u', t: query, ts, topic, page }, { r: 'a', t: answerText, ts }]),
             4000, lifetime.signal).catch(() => log('transcript', 'failed')),
+          audit({ action: 'chat.answer', outcome: 'allow', target: { kind: 'conversation', id: ref(cid) } }),
         ]);
         lifetime.signal.throwIfAborted();
         completed = true;
@@ -267,13 +273,17 @@ export const POST: APIRoute = async ({ request }) => {
         // bound to the lifetime, which a timeout has already aborted.
         if (!disconnected) {
           const topic = await Promise.race([topicTag, new Promise<null>(resolve => setTimeout(resolve, 1000, null))]) ?? undefined;
-          const failure = modelFailure;
+          // Assigned inside the model callback, which TypeScript cannot see.
+          const failure = modelFailure as ModelFailure | null;
           await Promise.all([
             withDeadline(signal => notifyTurn({ cid, index: turnIndex, question: query, failed: true, topic }, signal),
               NOTIFY_DEADLINE_MS).catch(() => log('notify', 'failed')),
             failure ? withDeadline(signal => alertModelFailure(failure, signal), NOTIFY_DEADLINE_MS).catch(() => log('alert', 'failed')) : Promise.resolve(),
             fallback ? Promise.resolve() : withDeadline(() => logEntries(cid, [{ r: 'u', t: query, ts: Date.now(), topic, page, failed: true }]),
               NOTIFY_DEADLINE_MS).catch(() => log('transcript', 'failed')),
+            // The model and status only: an error message can carry request details.
+            audit({ action: 'chat.failed', outcome: 'error', target: { kind: 'conversation', id: ref(cid) },
+              details: failure ? { model: failure.model, status: failure.status } : null }),
           ]);
         }
         if (!disconnected) send({ error: error instanceof Error && error.message === DAILY_CAP_MESSAGE

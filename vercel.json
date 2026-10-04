@@ -6,18 +6,42 @@
   "rewrites": [
     {
       "source": "/writing/:slug",
-      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
       "destination": "/writing/:slug.md"
     },
     {
       "source": "/notes/:slug",
-      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
       "destination": "/notes/:slug.md"
     },
     {
       "source": "/work/:slug",
-      "has": [{ "type": "header", "key": "accept", "value": ".*text/markdown.*" }],
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
       "destination": "/work/:slug.md"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/audit-anchor",
+      "schedule": "0 8 * * *"
     }
   ]
 }

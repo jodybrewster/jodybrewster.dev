@@ -128,6 +128,8 @@ const PLACEHOLDER: Record<FindingType, string> = {
 /** Characters of one string that are matched; the rest is dropped with a marker. */
 export const MAX_CHARS = 100_000;
 
+const INVISIBLE = /(?![\t\n\r])[\p{Cc}\p{Cf}]/gu;
+
 function applyRule(rule: Rule, text: string, count: (type: FindingType) => void): string {
   return text.replace(rule.pattern, (match: string, ...rest: unknown[]) => {
     const groups = rest.slice(0, -2).map((g) => (typeof g === "string" ? g : ""));
@@ -146,6 +148,10 @@ export function createDefaultRedactor({ defaultCountry = "US" }: DefaultRedactor
       // Longer strings are cut after the limit, so every rule's cost stays
       // bounded; the cut happens before matching, so nothing past it is kept.
       let text = input.length > MAX_CHARS ? `${input.slice(0, MAX_CHARS)}[truncated ${input.length - MAX_CHARS} characters]` : input;
+      // Control and invisible format characters (zero-width spaces and
+      // joiners, soft hyphens, BOMs) can split an address past every rule
+      // while it still looks whole; they go first. Tab and newlines stay.
+      text = text.replace(INVISIBLE, "");
       for (const rule of SECRET_RULES) text = applyRule(rule, text, count);
       text = redactEmails(text, () => count("email"));
       for (const rule of STRUCTURED_RULES) {
@@ -186,7 +192,10 @@ export function redactDeep<T>(value: T, redactor: Redactor = defaultRedactor): {
       for (const [k, n] of Object.entries(r.findings)) findings[k as FindingType] = (findings[k as FindingType] ?? 0) + (n ?? 0);
       return r.text;
     }
-    if (depth > 40 || v === null || typeof v !== "object") return v;
+    if (v === null || typeof v !== "object") return v;
+    // Past the depth limit the subtree is flattened to text and redacted,
+    // never stored as it came.
+    if (depth > 40) return walk(JSON.stringify(v), depth);
     if (Array.isArray(v)) return v.map((x) => walk(x, depth + 1));
     // Keys too: a tool result can be keyed by an address or a number.
     const out: Record<string, unknown> = {};

@@ -78,7 +78,9 @@ export async function logEntries(
       .rpush(key, ...entries.map(entry => JSON.stringify({ ...entry, t: redactText(entry.t) })))
       .expire(key, TRANSCRIPT_TTL_S, 'NX')
       .zadd(INDEX, { nx: true }, { score: now, member: cid })
-      .zremrangebyscore(INDEX, 0, now - TRANSCRIPT_TTL_S * 1000)
+      // Only entries two windows old: by then every list's own TTL has
+      // removed it, so the index never forgets a log the read path must delete.
+      .zremrangebyscore(INDEX, 0, now - 2 * TRANSCRIPT_TTL_S * 1000)
       .exec();
   } catch (err) {
     console.error('[transcripts] write failed', err instanceof Error ? err.name : 'Error');
@@ -104,7 +106,13 @@ function parseEntry(row: unknown): TranscriptEntry | null {
 export async function readTranscripts(since: number, redis: TranscriptRedis): Promise<Transcript[]> {
   const now = Date.now();
   const cutoff = now - TRANSCRIPT_TTL_S * 1000;
-  await redis.zremrangebyscore(INDEX, 0, cutoff);
+  // Expired conversations: delete each log before forgetting it in the index,
+  // so one whose TTL never landed is still removed.
+  const expired = await redis.zrange<string[]>(INDEX, 0, cutoff, { byScore: true });
+  for (const cid of expired) {
+    await redis.del(logKey(cid));
+    await redis.zrem(INDEX, cid);
+  }
   const cids = await redis.zrange<string[]>(INDEX, Math.max(0, since - TRANSCRIPT_TTL_S * 1000), now, { byScore: true });
   const transcripts: Transcript[] = [];
   for (const cid of cids) {

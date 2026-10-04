@@ -61,11 +61,22 @@ describe('logEntries and readTranscripts', () => {
     expect(transcript.entries[0]).toMatchObject({ topic: 'hiring', page: '/about' });
   });
 
-  it('drops conversations older than the window from the index', async () => {
+  it('writes trim only index entries two windows old, so the read path can still delete an expired log', async () => {
     const redis = new FakeRedis();
-    redis.zset.set('old', Date.now() - (TRANSCRIPT_TTL_S + 60) * 1000);
+    redis.zset.set('expired', Date.now() - (TRANSCRIPT_TTL_S + 60) * 1000);
+    redis.zset.set('ancient', Date.now() - (2 * TRANSCRIPT_TTL_S + 60) * 1000);
     await logEntries(cid, [{ r: 'u', t: 'Hi', ts: 1 }], redis);
-    expect([...redis.zset.keys()]).toEqual([cid]);
+    expect([...redis.zset.keys()].sort()).toEqual([cid, 'expired'].sort());
+  });
+
+  it('reading deletes an expired log before forgetting it, even one whose TTL never landed', async () => {
+    const redis = new FakeRedis();
+    const old = Date.now() - (TRANSCRIPT_TTL_S + 60) * 1000;
+    redis.zset.set('orphan', old);
+    redis.lists.set('chat:log:orphan', [JSON.stringify({ r: 'u', t: 'old question', ts: old })]);
+    await readTranscripts(0, redis);
+    expect(redis.lists.has('chat:log:orphan')).toBe(false);
+    expect(redis.zset.has('orphan')).toBe(false);
   });
 
   it('skips unreadable rows', async () => {

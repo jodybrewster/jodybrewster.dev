@@ -23,6 +23,11 @@ describe("defaultRedactor", () => {
     expect(r(input).text).toBe(expected);
   });
 
+  it("sees through invisible characters that split an address", () => {
+    expect(r("jane\u200b@exa\u00admple.com and +1\u2060 415 555 0132").text).toBe("[email] and [phone]");
+    expect(r("line one\n\tline two").text).toBe("line one\n\tline two");
+  });
+
   it("removes a PEM private key block whole", () => {
     expect(r("-----BEGIN RSA PRIVATE KEY-----\nMIIEow\nabc\n-----END RSA PRIVATE KEY----- done").text).toBe("[secret] done");
   });

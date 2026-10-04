@@ -27,7 +27,6 @@ Use these after changing the corpus or prompt. Verify that the answer is support
 | What products has Jody built end to end? | Published work/portfolio; no invented metrics |
 | How did the Lennar maps replace the old process? | `/work/lennar-interactive-maps` |
 | What does the Brand Impact Tracker do? | `/work/agentic-analytics-platform` |
-| How does Jody evaluate a multi-turn AI assistant? | `/work/pharmacy-agent-eval`, relevant evaluation research |
 | What did he learn from the Jev teardown? | Canonical Jev writing URL, not the source filename |
 | Has Jody built anything using React and Okta? | `/portfolio/react-okta-sso-portal` |
 | What does he think about keeping AI agent instructions maintainable? | `/research/claude-md-design-md-patterns-ai-agents` |

@@ -22,12 +22,9 @@ export interface PartIndexEntry {
   parts: string[];
 }
 
-// The evaluation work has no screenshot; its hero is a drawn diagram instead.
-const DRAWN_VISUALS = new Set(['pharmacy-agent-eval']);
-
-/** Whether the case study has a hero figure to show: a screenshot, or a drawn stand-in. */
-export function hasCaseVisual(slug: string, presentation?: Pick<WorkPresentation, 'image'>): boolean {
-  return Boolean(presentation?.image) || DRAWN_VISUALS.has(slug);
+/** Whether the case study has a hero screenshot to show. */
+export function hasCaseVisual(presentation?: Pick<WorkPresentation, 'image'>): boolean {
+  return Boolean(presentation?.image);
 }
 
 /**

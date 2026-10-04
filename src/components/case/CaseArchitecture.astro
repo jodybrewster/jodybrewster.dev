@@ -10,7 +10,7 @@ interface Props {
 }
 const { slug, presentation, variant = 'page' } = Astro.props;
 const chat = variant === 'chat';
-const heading = slug === 'pharmacy-agent-eval' ? 'Evaluation approach' : 'Architecture';
+const heading = 'Architecture';
 const steps = presentation.architecture;
 // JobbyJob's page shows the full system diagram in place of the four-card flow.
 const diagram = !chat && slug === 'jobbyjob';

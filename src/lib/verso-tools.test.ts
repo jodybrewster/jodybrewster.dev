@@ -21,7 +21,7 @@ const index: CardIndex = {
   },
   parts: {
     'work:lennar-interactive-maps': { title: 'Lennar Interactive Mapping Platform', url: '/work/lennar-interactive-maps', parts: ['visual', 'facts', 'summary', 'architecture'] },
-    'work:pharmacy-agent-eval': { title: 'Conversational AI Evaluation', url: '/work/pharmacy-agent-eval', parts: ['facts'] },
+    'work:facts-only-case': { title: 'Facts-only case', url: '/work/facts-only-case', parts: ['facts'] },
     'screens:lennar-interactive-maps': { title: 'Lennar Interactive Maps', url: '/portfolio/lennar-interactive-maps', parts: [] },
   },
 };
@@ -122,7 +122,7 @@ describe('case study parts', () => {
   it('refuses unknown slugs, unknown parts and parts a case study does not have', () => {
     expect(resolveCard(index, 'show_case_study', { slug: 'made-up', part: 'facts' })).toBeNull();
     expect(resolveCard(index, 'show_case_study', { slug: 'lennar-interactive-maps', part: 'budget' })).toBeNull();
-    expect(resolveCard(index, 'show_case_study', { slug: 'pharmacy-agent-eval', part: 'visual' })).toBeNull();
+    expect(resolveCard(index, 'show_case_study', { slug: 'facts-only-case', part: 'visual' })).toBeNull();
     expect(resolveCard(index, 'show_case_study', { slug: 'constructor', part: 'facts' })).toBeNull();
   });
 
@@ -130,7 +130,7 @@ describe('case study parts', () => {
     expect(resolveCard(index, 'show_screens', { slug: 'lennar-interactive-maps' })).toEqual({
       kind: 'screens', slug: 'lennar-interactive-maps', title: 'Lennar Interactive Maps', url: '/portfolio/lennar-interactive-maps',
     });
-    expect(resolveCard(index, 'show_screens', { slug: 'pharmacy-agent-eval' })).toBeNull();
+    expect(resolveCard(index, 'show_screens', { slug: 'facts-only-case' })).toBeNull();
   });
 
   it('navigates only to published pages on this site', () => {

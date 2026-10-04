@@ -68,7 +68,7 @@ export async function createCardIndex(root?: string): Promise<CardIndex> {
         type: doc.type, slug: doc.slug, url: doc.url,
         title: presentation?.title ?? title,
         hasPresentation: Boolean(presentation),
-        hasVisual: hasCaseVisual(doc.slug, presentation),
+        hasVisual: hasCaseVisual(presentation),
         imageCount: Array.isArray(doc.fm.images) ? doc.fm.images.length : 0,
       })) index.parts[entry.key] = { title: entry.title, url: entry.url, parts: entry.parts };
     }

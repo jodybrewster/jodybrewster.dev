@@ -30,8 +30,8 @@ export interface RedisLike {
 }
 
 /*
- * Key names. The `rl:chat:*` prefix belongs to @upstash/ratelimit
- * (lib/rate-limit.ts) - nothing here may read or write it.
+ * Key names. The `rl:*` prefixes belong to the rate limiter
+ * (lib/limits.ts) - nothing here may read or write them.
  */
 const convKey = (cid: string) => `chat:conv:${cid}`;
 

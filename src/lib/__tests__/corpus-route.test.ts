@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
-  searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(), getIpLimiter: vi.fn(),
+  searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(), check: vi.fn(),
   isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, chat: true,
 }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
-vi.mock('../rate-limit', () => ({
-  getIpLimiter: dependencies.getIpLimiter, clientIp: () => 'test-ip', isOriginAllowed: dependencies.isOriginAllowed,
-}));
+vi.mock('../origin', () => ({ isOriginAllowed: dependencies.isOriginAllowed }));
+vi.mock('../limits', () => ({ check: dependencies.check, corpusLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../flags', () => ({ flags: { get chat() { return dependencies.chat; } } }));
 vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? dependencies.environment : undefined }));
 
@@ -33,7 +32,7 @@ beforeEach(() => {
   dependencies.environment = 'production';
   dependencies.chat = true;
   dependencies.getRedis.mockReturnValue({});
-  dependencies.getIpLimiter.mockReturnValue(null);
+  dependencies.check.mockResolvedValue(({ ok: true, spend: vi.fn().mockResolvedValue(null), refund: vi.fn(), charge: vi.fn(), release: vi.fn() }));
   dependencies.isOriginAllowed.mockReturnValue(true);
   dependencies.searchVectors.mockResolvedValue([]);
   dependencies.getChunkText.mockResolvedValue('chunk text');
@@ -93,21 +92,21 @@ describe('POST /api/corpus', () => {
   });
 
   it('rate limits per IP', async () => {
-    dependencies.getIpLimiter.mockReturnValue({ limit: vi.fn().mockResolvedValue({ success: false }) });
+    dependencies.check.mockResolvedValue({ ok: false, code: 'rate_limited', rule: 'ip', retryAfterSeconds: 60 });
     expect((await post()).status).toBe(429);
-    dependencies.getIpLimiter.mockReturnValue({ limit: vi.fn().mockResolvedValue({ success: false, reason: 'timeout' }) });
+    dependencies.check.mockResolvedValue({ ok: false, code: 'unavailable', rule: 'store', retryAfterSeconds: 30 });
     expect((await post()).status).toBe(503);
     expect(dependencies.searchVectors).not.toHaveBeenCalled();
   });
 
   it('bounds a hanging limiter and a hanging search with 503s', async () => {
     vi.useFakeTimers();
-    dependencies.getIpLimiter.mockReturnValue({ limit: never });
+    dependencies.check.mockImplementation(never);
     const limited: { response?: Response } = {};
     void post().then(value => { limited.response = value; });
     await vi.advanceTimersByTimeAsync(5_000);
     expect(limited.response?.status).toBe(503);
-    dependencies.getIpLimiter.mockReturnValue(null);
+    dependencies.check.mockResolvedValue(({ ok: true, spend: vi.fn().mockResolvedValue(null), refund: vi.fn(), charge: vi.fn(), release: vi.fn() }));
     dependencies.searchVectors.mockImplementation(never);
     const searched: { response?: Response } = {};
     void post().then(value => { searched.response = value; });

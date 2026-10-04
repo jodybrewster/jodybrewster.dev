@@ -11,13 +11,23 @@ import { flags } from '../../lib/flags';
 import { isValidConversationId } from '../../lib/verso';
 import { readReplies } from '../../lib/conversation';
 import { liveUntil } from '../../lib/operator';
+import { check, repliesLimiter, visitor } from '../../lib/limits';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
   const cid = url.searchParams.get('cid');
   if (!isValidConversationId(cid)) return new Response('cid required', { status: 400 });
+  // Polling is cheap but not free (two Redis reads): 60 a minute per IP
+  // covers a few tabs polling every 3 s while Jody is live.
+  const decision = await check(repliesLimiter, visitor(request));
+  if (!decision.ok) {
+    const status = decision.code === 'unavailable' ? 503 : 429;
+    return new Response(status === 503 ? 'Temporarily unavailable.' : 'Too many requests.', {
+      status, headers: { 'Retry-After': String(decision.retryAfterSeconds), 'Cache-Control': 'no-store' },
+    });
+  }
   const [replies, live] = await Promise.all([readReplies(cid), liveUntil(cid)]);
   // `liveUntil` tells the dock Jody is in the conversation, and until when.
   return new Response(JSON.stringify({ replies, liveUntil: live }), {

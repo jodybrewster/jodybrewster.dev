@@ -12,17 +12,18 @@
  * (batching was dropped in 2025-06-18, and it turned one request into many
  * model calls), JSON only, no other site's pages (a present, foreign Origin
  * is refused), bounded bodies and queries, and every tool call limited per
- * IP, with ask_jody capped per IP and site-wide (lib/rate-limit.ts).
+ * IP, with ask_jody capped per IP, in calls a day and in tokens a day
+ * (lib/limits.ts).
  */
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { listCollection, readDoc, readNowFile } from '../../lib/corpus';
 import { searchVectors, getChunkText } from '../../lib/rag';
 import { env } from '../../lib/env';
-import { getRedis } from '../../lib/redis';
 import { MAX_QUERY_LEN } from '../../lib/verso';
-import { withDeadline } from '../../lib/deadline';
-import { clientIp, getAskGlobalLimiter, getAskIpLimiter, getMcpIpLimiter, isForeignOrigin } from '../../lib/rate-limit';
+import { isForeignOrigin } from '../../lib/origin';
+import { ASK_MAX_OUTPUT_TOKENS, askLimiter, check, mcpLimiter, visitor } from '../../lib/limits';
+import { createTokenBudget, estimateTokens, type Allowed } from '@jodybrewster/gemini-live/server/limits';
 
 export const prerender = false;
 
@@ -118,7 +119,7 @@ function textContent(text: string) {
   return { content: [{ type: 'text', text }] };
 }
 
-async function callTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+async function callTool(name: string, args: Record<string, unknown>, ask?: Allowed<'ip' | 'calls' | 'tokens'>): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
   switch (name) {
     case 'search_writing': {
       const query = String(args.query ?? '').trim();
@@ -175,13 +176,27 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
         const text = await getChunkText(h.metadata);
         return `[Source ${i + 1}] (${h.metadata.type}) "${h.metadata.title}"\n${text}`;
       }));
+      const content = `Question: ${question}\n\nExcerpts:\n\n${context.join('\n\n---\n\n')}`;
+      // Spend one of the day's calls and reserve the worst case from the
+      // token budget before calling Anthropic; settle from the usage after.
+      if (!ask) throw new Error('ask_jody needs its limit decision');
+      const noCall = await ask.spend('calls');
+      if (noCall) return { ...textContent(noCall.code === 'unavailable' ? UNAVAILABLE : BUSY), isError: true };
+      const budget = createTokenBudget(ask, ['tokens']);
+      const noTokens = await budget.reserve(estimateTokens(ASK_JODY_SYSTEM + content) + ASK_MAX_OUTPUT_TOKENS);
+      if (noTokens) {
+        await ask.refund('calls');
+        return { ...textContent(noTokens.code === 'unavailable' ? UNAVAILABLE : BUSY), isError: true };
+      }
       const anthropic = new Anthropic({ apiKey: env('ANTHROPIC_API_KEY') });
+      // A failed call keeps its reservation: Anthropic may already have billed it.
       const resp = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: ASK_MAX_OUTPUT_TOKENS,
         system: ASK_JODY_SYSTEM,
-        messages: [{ role: 'user', content: `Question: ${question}\n\nExcerpts:\n\n${context.join('\n\n---\n\n')}` }],
+        messages: [{ role: 'user', content }],
       });
+      await budget.settle((resp.usage?.input_tokens ?? 0) + (resp.usage?.output_tokens ?? 0));
       const text = resp.content.filter(b => b.type === 'text').map(b => (b as { text: string }).text).join('');
       const citations = hits.map((h, i) => `[${i + 1}] ${h.metadata.title} — https://jodybrewster.dev${h.metadata.url}`).join('\n');
       return textContent(`${text}\n\nSources:\n${citations}`);
@@ -206,29 +221,21 @@ function invalidArgs(name: string, args: Record<string, unknown>): string | null
 }
 
 /**
- * Spends this tool call against its limits. Null means go ahead; otherwise
- * the reason to refuse. Fails closed: no Redis on any deployment (production
- * or preview, which can hold the same keys), a timeout or an error refuses.
- * Only local dev runs without Redis.
+ * Spends this tool call against its limits: every tool counts per IP, and
+ * ask_jody also against its own per-IP rate (its daily calls and tokens are
+ * spent just before the model call). Fails closed: a store that cannot be
+ * built (no Redis on a deployment), a store error or a missed deadline
+ * refuses. Local dev counts in memory.
  */
-async function admit(name: string, ip: string, signal: AbortSignal): Promise<{ status: number; message: string } | null> {
-  if (!getRedis()) return env('VERCEL_ENV') ? { status: 503, message: UNAVAILABLE } : null;
-  try {
-    return await withDeadline(async inner => {
-      const checks = [{ limiter: getMcpIpLimiter(), key: ip }];
-      if (name === 'ask_jody') checks.push({ limiter: getAskIpLimiter(), key: ip }, { limiter: getAskGlobalLimiter(), key: 'global' });
-      for (const { limiter, key } of checks) {
-        if (!limiter) continue;
-        const result = await limiter.limit(key);
-        inner.throwIfAborted();
-        if (result.reason === 'timeout') return { status: 503, message: UNAVAILABLE };
-        if (!result.success) return { status: 429, message: BUSY };
-      }
-      return null;
-    }, 4000, signal);
-  } catch {
-    return { status: 503, message: UNAVAILABLE };
-  }
+async function admit(name: string, request: Request): Promise<{ refused: { status: number; message: string } } | { ask?: Allowed<'ip' | 'calls' | 'tokens'> }> {
+  const who = visitor(request);
+  const refuse = (code: string) => ({ refused: code === 'unavailable' ? { status: 503, message: UNAVAILABLE } : { status: 429, message: BUSY } });
+  const tool = await check(mcpLimiter, who);
+  if (!tool.ok) return refuse(tool.code);
+  if (name !== 'ask_jody') return {};
+  const ask = await check(askLimiter, who);
+  if (!ask.ok) return refuse(ask.code);
+  return { ask };
 }
 
 async function handle(req: JsonRpcRequest, request: Request): Promise<JsonRpcResponse | null> {
@@ -260,9 +267,12 @@ async function handle(req: JsonRpcRequest, request: Request): Promise<JsonRpcRes
         if (!name) return err(req.id, -32602, 'tools/call: name required');
         const invalid = invalidArgs(name, params?.arguments ?? {});
         if (invalid) return ok(req.id, { ...textContent(invalid), isError: true });
-        const refused = await admit(name, clientIp(request), request.signal);
-        if (refused) return { ...err(req.id, refused.status === 429 ? -32029 : -32003, refused.message), status: refused.status } as JsonRpcResponse;
-        const result = await callTool(name, params?.arguments ?? {});
+        const admitted = await admit(name, request);
+        if ('refused' in admitted) {
+          const { status, message } = admitted.refused;
+          return { ...err(req.id, status === 429 ? -32029 : -32003, message), status } as JsonRpcResponse;
+        }
+        const result = await callTool(name, params?.arguments ?? {}, admitted.ask);
         return ok(req.id, result);
       }
 

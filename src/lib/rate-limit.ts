@@ -12,11 +12,8 @@ let _ipLimiter: Ratelimit | null = null;
 // limit, try tomorrow") instead of an opaque upstream failure.
 let _globalLimiter: Ratelimit | null = null;
 
-// Voice is billed per minute of audio, so it is metered per session rather
-// than per message: a few sessions a day per visitor, and a site-wide ceiling
-// that a scripted token farm hits long before the bill does.
-let _voiceIpLimiter: Ratelimit | null = null;
-let _voiceGlobalLimiter: Ratelimit | null = null;
+// Voice sessions are capped by the framework's token handler
+// (src/pages/api/live-token.ts), not here.
 
 // MCP (/api/mcp) is public and unauthenticated, so its limits are its only
 // protection. Every tool call counts against the per-IP limit; ask_jody,
@@ -64,32 +61,6 @@ export function getGlobalLimiter(): Ratelimit | null {
     prefix: 'rl:chat:global',
   });
   return _globalLimiter;
-}
-
-export function getVoiceIpLimiter(): Ratelimit | null {
-  if (_voiceIpLimiter) return _voiceIpLimiter;
-  const redis = getRedis();
-  if (!redis) return null;
-  _voiceIpLimiter = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(3, '24 h'),
-    analytics: false,
-    prefix: 'rl:voice:ip',
-  });
-  return _voiceIpLimiter;
-}
-
-export function getVoiceGlobalLimiter(): Ratelimit | null {
-  if (_voiceGlobalLimiter) return _voiceGlobalLimiter;
-  const redis = getRedis();
-  if (!redis) return null;
-  _voiceGlobalLimiter = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(40, '24 h'),
-    analytics: false,
-    prefix: 'rl:voice:global',
-  });
-  return _voiceGlobalLimiter;
 }
 
 export function clientIp(request: Request): string {

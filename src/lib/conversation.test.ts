@@ -141,3 +141,30 @@ describe('Jody replies', () => {
     expect(await readReplies(cid, null)).toEqual([]);
   });
 });
+
+describe('privacy', () => {
+  it('redacts visitor and Verso turns before they reach chat:conv', async () => {
+    const redis = new FakeRedis();
+    await appendTurn('c1', { r: 'u', t: 'I am jane.doe@example.com, +1 415 555 0132', ts: 1 }, redis);
+    await appendTurn('c1', { r: 'a', t: 'Noted, jane.doe@example.com.', ts: 2 }, redis);
+    const stored = JSON.stringify(redis.store.get('chat:conv:c1'));
+    expect(stored).not.toContain('jane.doe');
+    expect(stored).not.toContain('555 0132');
+    expect(stored).toContain('[email]');
+    expect(stored).toContain('[phone]');
+  });
+
+  it('keeps Jody\'s own reply exactly as he wrote it', async () => {
+    const redis = new FakeRedis();
+    await appendReply('c1', 'Call me on +1 415 555 0132 or jody@example.com', 'q', redis);
+    expect((await readReplies('c1', redis))[0].t).toBe('Call me on +1 415 555 0132 or jody@example.com');
+  });
+
+  it('logs only the error name when Redis fails', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const redis = new BrokenRedis();
+    await appendTurn('c1', { r: 'u', t: 'secret words', ts: 1 }, redis);
+    expect(spy.mock.calls.flat().every(arg => typeof arg === 'string')).toBe(true);
+    expect(JSON.stringify(spy.mock.calls)).not.toContain('upstash unreachable');
+  });
+});

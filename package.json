@@ -22,7 +22,8 @@
     "test:watch": "vitest",
     "typecheck": "astro check --minimumFailingSeverity hint",
     "test:a11y": "playwright test",
-    "article-images": "tsx scripts/article-images.ts"
+    "article-images": "tsx scripts/article-images.ts",
+    "transcripts:sweep": "tsx scripts/sweep-transcripts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
@@ -39,6 +40,7 @@
     "astro": "^5.0.0",
     "dotenv": "^17.4.2",
     "github-slugger": "^2.0.0",
+    "libphonenumber-js": "^1.13.14",
     "remark-wiki-link": "^2.0.0",
     "three": "^0.185.1",
     "yaml": "^2.9.1"

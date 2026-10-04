@@ -38,6 +38,13 @@ const ANSWER_MAX = 1200;
 /** C0 and C1 control characters, minus tab and newline. */
 const CONTROL_CHARS = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g;
 
+/** Removes control characters. Redaction runs on text with these already gone, or a
+ *  character hidden inside an address would split it past every rule and
+ *  sanitizeForTelegram would then rejoin it. */
+export function stripControlChars(text: string): string {
+  return text.replace(CONTROL_CHARS, '');
+}
+
 /** All three vars or nothing: a half-configured bot reads as unconfigured. */
 export function telegramConfigured(): boolean {
   return Boolean(env('TELEGRAM_BOT_TOKEN') && env('TELEGRAM_OWNER_ID'));
@@ -64,7 +71,7 @@ export function parseCommand(text: unknown): Command | null {
  */
 export function sanitizeForTelegram(text: unknown, max = QUESTION_MAX): string {
   if (typeof text !== 'string') return '';
-  let out = text.replace(CONTROL_CHARS, '').replace(/\n{3,}/g, '\n\n').trim();
+  let out = stripControlChars(text).replace(/\n{3,}/g, '\n\n').trim();
   if (out.startsWith('/')) out = ` ${out}`;
   if (out.length > max) out = `${out.slice(0, max - 1)}…`;
   return out;

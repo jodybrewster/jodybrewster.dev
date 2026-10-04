@@ -42,6 +42,39 @@ describe('notifyTurn', () => {
     expect(redis.ttls.get('chat:tg:501')).toBe(CONV_TTL_S);
   });
 
+  const PII = 'Mail jane.doe@example.com, call +1 415 555 0132, card 4111 1111 1111 1111, key sk-proj-abcdefghijklmnopqrstuvwx123';
+  const LEAKS = ['jane.doe', 'example.com', '555 0132', '4111', 'sk-proj'];
+
+  it('sends neither the question nor the answer to Telegram with personal details in them', async () => {
+    await notifyTurn({ ...turn, question: PII, answer: `You said: ${PII}` }, undefined, new FakeRedis());
+    const sent = telegram.sendTurn.mock.calls[0][0] as string;
+    for (const leak of LEAKS) expect(sent).not.toContain(leak);
+    expect(sent).toContain('[email]');
+    expect(sent).toContain('[phone]');
+    expect(sent).toContain('[card]');
+    expect(sent).toContain('[secret]');
+  });
+
+  it('redacts before truncating, so a cut through an address leaves nothing', async () => {
+    const question = `${'x '.repeat(745)}jane.doe@example.com tail`;
+    await notifyTurn({ ...turn, question }, undefined, new FakeRedis());
+    const sent = telegram.sendTurn.mock.calls[0][0] as string;
+    expect(sent).not.toMatch(/jane|@exam/);
+  });
+
+  it('does not let a control character hide an address from the redactor', async () => {
+    await notifyTurn({ ...turn, question: 'jane.doe\u0000@example.com' }, undefined, new FakeRedis());
+    expect(telegram.sendTurn.mock.calls[0][0]).not.toContain('example.com');
+  });
+
+  it('stores the redacted question in the chat:tg mapping', async () => {
+    const redis = new FakeRedis();
+    await notifyTurn({ ...turn, question: PII }, undefined, redis);
+    const stored = JSON.stringify(redis.store.get('chat:tg:501'));
+    for (const leak of LEAKS) expect(stored).not.toContain(leak);
+    expect(stored).toContain('[email]');
+  });
+
   it('sends nothing when the bot is not configured', async () => {
     telegram.configured = false;
     await notifyTurn(turn, undefined, new FakeRedis());
@@ -138,5 +171,17 @@ describe('model failure alerts', () => {
     telegram.configured = false;
     await alertModelFailure(describeModelFailure('gemini-3.8-flash', '500', ''), undefined, null);
     expect(telegram.sendNotice).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('holdQuestion privacy', () => {
+  it('stores the held question redacted under chat:held:<cid>', async () => {
+    const redis = new FakeRedis();
+    await holdQuestion(cid, 'Reach me at jane.doe@example.com or +1 415 555 0132', redis);
+    const stored = JSON.stringify(redis.store.get(`chat:held:${cid}`));
+    expect(stored).not.toContain('jane.doe');
+    expect(stored).not.toContain('555 0132');
+    expect(stored).toContain('[email]');
+    expect(stored).toContain('[phone]');
   });
 });

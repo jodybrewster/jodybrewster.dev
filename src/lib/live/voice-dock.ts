@@ -8,7 +8,7 @@
  * never sent to the server; the text chat cannot see them (see CLAUDE.md).
  */
 
-import type { ChatMessage, SessionSnapshot } from '@jodybrewster/gemini-live';
+import type { ChatMessage, SessionSnapshot } from '@jodybrewster/gemini-live/voice';
 import type { Card } from '../verso-tools';
 import { renderCard } from '../card-render';
 

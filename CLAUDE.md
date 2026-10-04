@@ -141,7 +141,7 @@ Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via 
 
 The chat page and search features use:
 - `GEMINI_API_KEY` - Gemini API for Verso, the chat (text answers and voice tokens)
-- `ANTHROPIC_API_KEY` - Claude API for the MCP server's ask tool (`src/pages/api/mcp.ts`)
+- `ANTHROPIC_API_KEY` - Claude API for the MCP server's ask tool (`src/pages/api/mcp.ts`). The MCP route is public, so its limits are its protection: one JSON-RPC message per request (no batches), JSON only, a foreign `Origin` refused, 600-character queries, every tool call limited per IP, and `ask_jody` capped at 5 per IP per hour and 50 a day site-wide (`src/lib/rate-limit.ts`)
 - `OPENAI_API_KEY` - local only, for `npm run article-images`; never needed by the build or in Vercel
 - `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
 - `UPSTASH_VECTOR_*` — vector store for semantic search over content

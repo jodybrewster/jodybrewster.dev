@@ -7,16 +7,29 @@
  * return synchronously and no server-initiated messages are emitted.
  *
  * Spec ref: https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http
+ *
+ * Public, so limits are its protection: one JSON-RPC message per request
+ * (batching was dropped in 2025-06-18, and it turned one request into many
+ * model calls), JSON only, no other site's pages (a present, foreign Origin
+ * is refused), bounded bodies and queries, and every tool call limited per
+ * IP, with ask_jody capped per IP and site-wide (lib/rate-limit.ts).
  */
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { listCollection, readDoc, readNowFile } from '../../lib/corpus';
 import { searchVectors, getChunkText } from '../../lib/rag';
 import { env } from '../../lib/env';
+import { getRedis } from '../../lib/redis';
+import { MAX_QUERY_LEN } from '../../lib/verso';
+import { withDeadline } from '../../lib/deadline';
+import { clientIp, getAskGlobalLimiter, getAskIpLimiter, getMcpIpLimiter, isForeignOrigin } from '../../lib/rate-limit';
 
 export const prerender = false;
 
 const PROTOCOL_VERSION = '2025-06-18';
+const MAX_BODY = 16_384;
+const BUSY = 'Rate limit exceeded. Try again later.';
+const UNAVAILABLE = 'Temporarily unavailable. Try again shortly.';
 const SERVER_INFO = { name: 'jodybrewster-dev', version: '0.1.0' };
 
 const ASK_JODY_SYSTEM = `You are a research assistant for Jody Brewster's published writing. Always refer to Jody in the third person using he/him pronouns. Only synthesize from the provided excerpts; refuse questions outside the corpus. Cite essays/notes/briefs by title. 2–4 short paragraphs.`;
@@ -108,9 +121,10 @@ function textContent(text: string) {
 async function callTool(name: string, args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
   switch (name) {
     case 'search_writing': {
-      const query = String(args.query ?? '');
+      const query = String(args.query ?? '').trim();
       const limit = Math.min(10, Math.max(1, Number(args.limit ?? 5)));
       if (!query) return { ...textContent('query is required'), isError: true };
+      if (query.length > MAX_QUERY_LEN) return { ...textContent(`query too long (max ${MAX_QUERY_LEN} characters)`), isError: true };
       const hits = await searchVectors(query, limit);
       if (hits.length === 0) return textContent('No matches.');
       const lines = await Promise.all(hits.map(async (h, i) => {
@@ -153,8 +167,9 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
     }
 
     case 'ask_jody': {
-      const question = String(args.question ?? '');
+      const question = String(args.question ?? '').trim();
       if (!question) return { ...textContent('question is required'), isError: true };
+      if (question.length > MAX_QUERY_LEN) return { ...textContent(`question too long (max ${MAX_QUERY_LEN} characters)`), isError: true };
       const hits = await searchVectors(question, 5);
       const context = await Promise.all(hits.map(async (h, i) => {
         const text = await getChunkText(h.metadata);
@@ -177,7 +192,46 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
   }
 }
 
-async function handle(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
+/**
+ * The free checks, before anything is spent: a missing or overlong query
+ * must not use up a limit, or junk could drain the daily cap.
+ */
+function invalidArgs(name: string, args: Record<string, unknown>): string | null {
+  const field = name === 'ask_jody' ? 'question' : name === 'search_writing' ? 'query' : null;
+  if (!field) return null;
+  const value = String(args[field] ?? '').trim();
+  if (!value) return `${field} is required`;
+  if (value.length > MAX_QUERY_LEN) return `${field} too long (max ${MAX_QUERY_LEN} characters)`;
+  return null;
+}
+
+/**
+ * Spends this tool call against its limits. Null means go ahead; otherwise
+ * the reason to refuse. Fails closed: no Redis on any deployment (production
+ * or preview, which can hold the same keys), a timeout or an error refuses.
+ * Only local dev runs without Redis.
+ */
+async function admit(name: string, ip: string, signal: AbortSignal): Promise<{ status: number; message: string } | null> {
+  if (!getRedis()) return env('VERCEL_ENV') ? { status: 503, message: UNAVAILABLE } : null;
+  try {
+    return await withDeadline(async inner => {
+      const checks = [{ limiter: getMcpIpLimiter(), key: ip }];
+      if (name === 'ask_jody') checks.push({ limiter: getAskIpLimiter(), key: ip }, { limiter: getAskGlobalLimiter(), key: 'global' });
+      for (const { limiter, key } of checks) {
+        if (!limiter) continue;
+        const result = await limiter.limit(key);
+        inner.throwIfAborted();
+        if (result.reason === 'timeout') return { status: 503, message: UNAVAILABLE };
+        if (!result.success) return { status: 429, message: BUSY };
+      }
+      return null;
+    }, 4000, signal);
+  } catch {
+    return { status: 503, message: UNAVAILABLE };
+  }
+}
+
+async function handle(req: JsonRpcRequest, request: Request): Promise<JsonRpcResponse | null> {
   // Notifications (no id) get no response.
   if (req.id === undefined || req.id === null) {
     // notifications/initialized, notifications/cancelled, etc — ignore.
@@ -204,6 +258,10 @@ async function handle(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
         const params = req.params as { name?: string; arguments?: Record<string, unknown> } | undefined;
         const name = params?.name;
         if (!name) return err(req.id, -32602, 'tools/call: name required');
+        const invalid = invalidArgs(name, params?.arguments ?? {});
+        if (invalid) return ok(req.id, { ...textContent(invalid), isError: true });
+        const refused = await admit(name, clientIp(request), request.signal);
+        if (refused) return { ...err(req.id, refused.status === 429 ? -32029 : -32003, refused.message), status: refused.status } as JsonRpcResponse;
         const result = await callTool(name, params?.arguments ?? {});
         return ok(req.id, result);
       }
@@ -212,35 +270,43 @@ async function handle(req: JsonRpcRequest): Promise<JsonRpcResponse | null> {
         return err(req.id, -32601, `Method not found: ${req.method}`);
     }
   } catch (e) {
-    console.error('[mcp] error in', req.method, e);
-    return err(req.id, -32603, e instanceof Error ? e.message : 'Internal error');
+    // The name only: an SDK error can carry request details.
+    console.error('[mcp] error in', req.method, e instanceof Error ? e.name : 'unknown');
+    return err(req.id, -32603, 'Internal error');
   }
 }
 
+const reply = (body: JsonRpcResponse, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+
 export const POST: APIRoute = async ({ request }) => {
-  let payload: JsonRpcRequest | JsonRpcRequest[];
+  // Other sites' pages could otherwise spend through their visitors' browsers.
+  if (isForeignOrigin(request)) return reply(err(null, -32003, 'Forbidden'), 403);
+  // JSON only: a text/plain POST needs no CORS preflight.
+  if (!/^application\/json\b/i.test(request.headers.get('content-type') ?? '')) {
+    return reply(err(null, -32700, 'Content-Type must be application/json'), 415);
+  }
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY) return reply(err(null, -32600, 'Request too large'), 413);
+
+  let payload: unknown;
   try {
-    payload = await request.json();
+    const text = await request.text();
+    if (text.length > MAX_BODY) return reply(err(null, -32600, 'Request too large'), 413);
+    payload = JSON.parse(text);
   } catch {
-    return new Response(JSON.stringify(err(null, -32700, 'Parse error')), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return reply(err(null, -32700, 'Parse error'), 400);
   }
 
-  if (Array.isArray(payload)) {
-    const responses = (await Promise.all(payload.map(handle))).filter((r): r is JsonRpcResponse => r !== null);
-    return new Response(JSON.stringify(responses), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+  // One message per request: batching turned one request into many model calls.
+  if (Array.isArray(payload)) return reply(err(null, -32600, 'Batching is not supported'), 400);
+  if (!payload || typeof payload !== 'object' || typeof (payload as JsonRpcRequest).method !== 'string') {
+    return reply(err(null, -32600, 'Invalid Request'), 400);
   }
 
-  const response = await handle(payload);
+  const response = await handle(payload as JsonRpcRequest, request);
   if (!response) return new Response(null, { status: 202 });
-
-  return new Response(JSON.stringify(response), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const { status = 200, ...body } = response as JsonRpcResponse & { status?: number };
+  return reply(body, status);
 };
 
 export const GET: APIRoute = () =>

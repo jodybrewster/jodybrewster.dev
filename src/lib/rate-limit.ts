@@ -18,6 +18,28 @@ let _globalLimiter: Ratelimit | null = null;
 let _voiceIpLimiter: Ratelimit | null = null;
 let _voiceGlobalLimiter: Ratelimit | null = null;
 
+// MCP (/api/mcp) is public and unauthenticated, so its limits are its only
+// protection. Every tool call counts against the per-IP limit; ask_jody,
+// which calls Anthropic, also has its own per-IP and site-wide caps. At 50
+// a day the worst case is about $1.40 of Sonnet (roughly 4k tokens in and
+// 1,024 out per call), double that across a midnight window.
+let _mcpIpLimiter: Ratelimit | null = null;
+let _askIpLimiter: Ratelimit | null = null;
+let _askGlobalLimiter: Ratelimit | null = null;
+
+function limiter(cached: Ratelimit | null, set: (l: Ratelimit) => void, limit: number, window: `${number} ${'m' | 'h'}`, prefix: string): Ratelimit | null {
+  if (cached) return cached;
+  const redis = getRedis();
+  if (!redis) return null;
+  const created = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(limit, window), analytics: false, prefix });
+  set(created);
+  return created;
+}
+
+export const getMcpIpLimiter = () => limiter(_mcpIpLimiter, l => { _mcpIpLimiter = l; }, 20, '1 m', 'rl:mcp:ip');
+export const getAskIpLimiter = () => limiter(_askIpLimiter, l => { _askIpLimiter = l; }, 5, '1 h', 'rl:mcp:ask:ip');
+export const getAskGlobalLimiter = () => limiter(_askGlobalLimiter, l => { _askGlobalLimiter = l; }, 50, '24 h', 'rl:mcp:ask:global');
+
 export function getIpLimiter(): Ratelimit | null {
   if (_ipLimiter) return _ipLimiter;
   const redis = getRedis();
@@ -76,6 +98,19 @@ export function clientIp(request: Request): string {
     request.headers.get('x-real-ip') ??
     'anonymous'
   );
+}
+
+/**
+ * For routes other sites' pages must not call but server-side clients may
+ * (MCP): true when an Origin header is present and is not this site's, in
+ * production. Server-side clients send no Origin.
+ */
+export function isForeignOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  if (origin === null) return false;
+  const environment = env('VERCEL_ENV');
+  if (environment ? environment !== 'production' : env('NODE_ENV') !== 'production') return false;
+  return !['https://jodybrewster.dev', 'https://www.jodybrewster.dev'].includes(origin);
 }
 
 /**

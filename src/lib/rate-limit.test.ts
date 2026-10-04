@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isOriginAllowed } from './rate-limit';
+import { isForeignOrigin, isOriginAllowed } from './rate-limit';
 
 function request(origin?: string, referer?: string): Request {
   const headers = new Headers();
@@ -63,3 +63,23 @@ describe('isOriginAllowed', () => {
     expect(isOriginAllowed(request('https://elsewhere.invalid'))).toBe(false);
   });
 });
+
+describe('isForeignOrigin', () => {
+  it('lets server-side clients (no Origin) and the site itself through', () => {
+    expect(isForeignOrigin(request())).toBe(false);
+    expect(isForeignOrigin(request('https://jodybrewster.dev'))).toBe(false);
+    expect(isForeignOrigin(request('https://www.jodybrewster.dev'))).toBe(false);
+  });
+
+  it.each(['https://evil.example', 'https://jodybrewster.dev.attacker.invalid', 'null', 'http://jodybrewster.dev'])(
+    'flags another origin %s in production', origin => {
+      expect(isForeignOrigin(request(origin))).toBe(true);
+    },
+  );
+
+  it('does not lock out previews and local dev', () => {
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    expect(isForeignOrigin(request('https://evil.example'))).toBe(false);
+  });
+});
+

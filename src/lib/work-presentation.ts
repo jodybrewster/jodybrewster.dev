@@ -75,20 +75,4 @@ export const workPresentation: Record<string, WorkPresentation> = {
       { title: 'Map experience', icon: 'compass', items: ['Regional search', 'Lot-level availability', 'Community features'] },
     ],
   },
-  'pharmacy-agent-eval': {
-    title: 'Conversational AI Evaluation',
-    description: 'Defining what good looks like for a multi-turn voice and text agent.',
-    tags: ['AI Agents', 'Evaluation', 'Voice & Text', 'Healthcare'],
-    categories: ['ai', 'enterprise'],
-    challenge: 'The agent completed 92% of tasks, yet missed confusion, mispronounced names, and sometimes contradicted clinical advice. Task completion alone could not tell the team whether it was ready to ship.',
-    solution: 'Pharmacists, patient advocates, and a compliance lead defined good behavior in plain English. Labeling real conversations refined that into 22 rules across safety, accuracy, comprehension, and dignity, then a hybrid evaluation harness.',
-    outcome: 'Approximately 40% fewer escalations after dignity rules were deployed; 3× faster regression catches.',
-    scale: 'About 600 conversations reviewed; 48 initial rules refined to 22.',
-    architecture: [
-      { title: 'Human definition', icon: 'user', items: ['Pharmacists + advocates', 'Compliance review', '48 plain-language rules'] },
-      { title: 'Conversation review', icon: 'chat', items: ['~600 conversations', 'Hand-labeled examples', '22 rules · 4 categories'] },
-      { title: 'Evaluation harness', icon: 'shield', items: ['LLM-as-judge', 'Deterministic checks', 'Regression detection'] },
-      { title: 'Ongoing review', icon: 'clock', items: ['Human re-grading', 'Quarterly sampling', 'Model-drift checks'] },
-    ],
-  },
 };

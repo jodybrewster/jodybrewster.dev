@@ -15,7 +15,7 @@ const work = (await getCollection('work', entry => !entry.data.draft)).flatMap(e
   const presentation = workPresentation[entry.id];
   return partsFor({
     type: 'work', slug: entry.id, title: presentation?.title ?? entry.data.title, url: `/work/${entry.id}`,
-    hasPresentation: Boolean(presentation), hasVisual: hasCaseVisual(entry.id, presentation), imageCount: 0,
+    hasPresentation: Boolean(presentation), hasVisual: hasCaseVisual(presentation), imageCount: 0,
   }).map(index => ({ index, entry, presentation: presentation! }));
 });
 const portfolio = (await getCollection('portfolio')).flatMap(entry => partsFor({

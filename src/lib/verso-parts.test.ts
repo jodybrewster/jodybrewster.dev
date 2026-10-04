@@ -14,14 +14,13 @@ describe('WORK_PARTS', () => {
 });
 
 describe('hasCaseVisual', () => {
-  it('is true for a screenshot and for the drawn evaluation diagram', () => {
-    expect(hasCaseVisual('lennar-interactive-maps', workPresentation['lennar-interactive-maps'])).toBe(true);
-    expect(hasCaseVisual('pharmacy-agent-eval', workPresentation['pharmacy-agent-eval'])).toBe(true);
+  it('is true for a case study with a screenshot', () => {
+    expect(hasCaseVisual(workPresentation['lennar-interactive-maps'])).toBe(true);
   });
 
-  it('is false with neither', () => {
-    expect(hasCaseVisual('something-else', { image: undefined })).toBe(false);
-    expect(hasCaseVisual('something-else')).toBe(false);
+  it('is false without one', () => {
+    expect(hasCaseVisual({ image: undefined })).toBe(false);
+    expect(hasCaseVisual()).toBe(false);
   });
 });
 

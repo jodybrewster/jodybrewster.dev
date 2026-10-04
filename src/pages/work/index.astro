@@ -2,7 +2,6 @@
 import { getCollection } from 'astro:content';
 import Studio from '../../layouts/Studio.astro';
 import Icon from '../../components/Icon.astro';
-import WorkEvaluationPreview from '../../components/WorkEvaluationPreview.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
 
@@ -10,7 +9,7 @@ const [briefs, portfolio] = await Promise.all([
   getCollection('work', b => !b.data.draft),
   getCollection('portfolio'),
 ]);
-const order = ['jobbyjob', 'agentic-analytics-platform', 'lennar-interactive-maps', 'pharmacy-agent-eval'];
+const order = ['jobbyjob', 'agentic-analytics-platform', 'lennar-interactive-maps'];
 const selectedPortfolio: Record<string, { description: string; tags: string[]; categories: string[] }> = {
   'react-native-reporting-portal': { description: 'A single mobile home for Lennar’s internal business dashboards, with search, favorites, and report details.', tags: ['React Native', 'Enterprise', 'Reporting'], categories: ['enterprise', 'data'] },
   'react-okta-sso-portal': { description: 'An agent-facing portal with branded sign-in, self-service registration, and an authenticated dashboard.', tags: ['React', 'Okta', 'Identity', 'Insurance'], categories: ['enterprise', 'web'] },
@@ -62,7 +61,7 @@ const filters = [
           <article class="work-card" style={`--i: ${index}`} data-work-card data-categories={project.categories.join(' ')}>
             <a href={project.href} class="work-card-link">
               <div class="work-card-preview" transition:name={mediaTransitionName(project.href)}>
-                {project.image ? <img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="960" height="640" /> : <WorkEvaluationPreview compact />}
+                {project.image && <img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="960" height="640" />}
                 <span class="work-card-kind">{project.type}</span>
               </div>
               <div class="work-card-info">

@@ -75,21 +75,48 @@ describe('POST /api/mcp', () => {
     expect(dependencies.create).not.toHaveBeenCalled();
   });
 
-  it('fails closed: no Redis in production, a limiter timeout or a hanging limiter', async () => {
+  it('fails closed: no Redis on a deployment, a limiter timeout or a limiter error', async () => {
     dependencies.getRedis.mockReturnValue(null);
     expect((await post(ask(1))).status).toBe(503);
+    dependencies.environment = 'preview';
+    expect((await post(ask(2))).status).toBe(503);
+    dependencies.environment = 'production';
     dependencies.getRedis.mockReturnValue({});
     dependencies.mcpIp.mockResolvedValue({ success: true, reason: 'timeout' });
-    expect((await post(ask(2))).status).toBe(503);
-    dependencies.mcpIp.mockImplementation(() => { throw new Error('redis down'); });
     expect((await post(ask(3))).status).toBe(503);
+    dependencies.mcpIp.mockImplementation(() => { throw new Error('redis down'); });
+    expect((await post(ask(4))).status).toBe(503);
     expect(dependencies.create).not.toHaveBeenCalled();
+  });
+
+  it('runs without Redis only in local dev', async () => {
+    dependencies.environment = undefined;
+    dependencies.getRedis.mockReturnValue(null);
+    expect((await post(ask(1))).status).toBe(200);
+  });
+
+  it('refuses after the deadline when a limiter hangs', async () => {
+    vi.useFakeTimers();
+    dependencies.mcpIp.mockReturnValue(new Promise(() => {}));
+    const pending = post(ask(1));
+    await vi.advanceTimersByTimeAsync(4_001);
+    expect((await pending).status).toBe(503);
+    expect(dependencies.create).not.toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('limits cheap tools per IP too, but not with the ask_jody caps', async () => {
     await post({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'whats_top_of_mind', arguments: {} } });
     expect(dependencies.mcpIp).toHaveBeenCalledTimes(1);
     expect(dependencies.askIp).not.toHaveBeenCalled();
+  });
+
+  it('checks the question before spending any limit, so junk cannot drain the cap', async () => {
+    const empty = await (await post(ask(1, '   '))).json();
+    expect(empty.result.isError).toBe(true);
+    await post(ask(2, 'x'.repeat(601)));
+    expect(dependencies.mcpIp).not.toHaveBeenCalled();
+    expect(dependencies.askGlobal).not.toHaveBeenCalled();
   });
 
   it('caps the question and the search query at 600 characters', async () => {

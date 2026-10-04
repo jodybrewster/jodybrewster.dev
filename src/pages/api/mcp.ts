@@ -193,12 +193,26 @@ async function callTool(name: string, args: Record<string, unknown>): Promise<{ 
 }
 
 /**
+ * The free checks, before anything is spent: a missing or overlong query
+ * must not use up a limit, or junk could drain the daily cap.
+ */
+function invalidArgs(name: string, args: Record<string, unknown>): string | null {
+  const field = name === 'ask_jody' ? 'question' : name === 'search_writing' ? 'query' : null;
+  if (!field) return null;
+  const value = String(args[field] ?? '').trim();
+  if (!value) return `${field} is required`;
+  if (value.length > MAX_QUERY_LEN) return `${field} too long (max ${MAX_QUERY_LEN} characters)`;
+  return null;
+}
+
+/**
  * Spends this tool call against its limits. Null means go ahead; otherwise
- * the reason to refuse. Fails closed: no Redis in production, a timeout or
- * an error refuses.
+ * the reason to refuse. Fails closed: no Redis on any deployment (production
+ * or preview, which can hold the same keys), a timeout or an error refuses.
+ * Only local dev runs without Redis.
  */
 async function admit(name: string, ip: string, signal: AbortSignal): Promise<{ status: number; message: string } | null> {
-  if (!getRedis()) return env('VERCEL_ENV') === 'production' ? { status: 503, message: UNAVAILABLE } : null;
+  if (!getRedis()) return env('VERCEL_ENV') ? { status: 503, message: UNAVAILABLE } : null;
   try {
     return await withDeadline(async inner => {
       const checks = [{ limiter: getMcpIpLimiter(), key: ip }];
@@ -244,6 +258,8 @@ async function handle(req: JsonRpcRequest, request: Request): Promise<JsonRpcRes
         const params = req.params as { name?: string; arguments?: Record<string, unknown> } | undefined;
         const name = params?.name;
         if (!name) return err(req.id, -32602, 'tools/call: name required');
+        const invalid = invalidArgs(name, params?.arguments ?? {});
+        if (invalid) return ok(req.id, { ...textContent(invalid), isError: true });
         const refused = await admit(name, clientIp(request), request.signal);
         if (refused) return { ...err(req.id, refused.status === 429 ? -32029 : -32003, refused.message), status: refused.status } as JsonRpcResponse;
         const result = await callTool(name, params?.arguments ?? {});

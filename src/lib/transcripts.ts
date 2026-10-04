@@ -6,15 +6,20 @@
  * feeds the prompt and expires a day after its last message. Different jobs,
  * different lifetimes, and the prompt never reads from here.
  *
- * Emails and phone numbers are redacted on write, so the log never holds the
- * contact details people type into a chat box. The dock discloses the 30 days.
+ * Emails, phone numbers and similar details are redacted on write (see
+ * src/lib/redact.ts), so the log never holds the contact details people type
+ * into a chat box. The dock discloses the 30 days, which run from the first
+ * message: the list gets its TTL once, when it is created, and a read deletes
+ * any log whose first entry is older than that.
  *
  * Keys: `chat:log:<cid>` is a list of entries, and `chat:log:index` is a sorted
- * set of cids scored by their last activity, which is how the downloader finds
- * them without a SCAN. Nothing here throws.
+ * set of cids scored by their first message, which is how the downloader finds
+ * them without a SCAN and how the index is trimmed to match retention.
+ * Writes never throw.
  */
 
 import { getRedis } from './redis';
+import { redactText } from './redact';
 
 export const TRANSCRIPT_TTL_S = 30 * 86400;
 const INDEX = 'chat:log:index';
@@ -39,23 +44,21 @@ export interface Transcript { cid: string; last: number; entries: TranscriptEntr
 
 /** The commands this module issues. The real client satisfies it structurally. */
 export interface TranscriptRedis {
-  rpush(key: string, ...values: unknown[]): Promise<number>;
-  expire(key: string, seconds: number): Promise<number>;
+  /** Writes go through one transaction, so a failure cannot leave a list without its TTL. */
+  multi(): TranscriptTransaction;
   lrange<T = unknown>(key: string, start: number, stop: number): Promise<T[]>;
-  zadd(key: string, member: { score: number; member: string }): Promise<number | null>;
+  del(...keys: string[]): Promise<number>;
+  zrem(key: string, ...members: string[]): Promise<number>;
   zremrangebyscore(key: string, min: number, max: number): Promise<number>;
   zrange<T = unknown[]>(key: string, min: number, max: number, opts: { byScore: true }): Promise<T>;
 }
 
-const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}/gi;
-/** A run of digits and separators. Only runs with nine or more digits are
- *  phone numbers; "2019-2024" and "$120,000" stay as they are. */
-const DIGIT_RUN = /\+?\d[\d\s().-]{6,}\d/g;
-
-export function redact(text: string): string {
-  return text
-    .replace(EMAIL, '[email]')
-    .replace(DIGIT_RUN, run => (run.match(/\d/g)?.length ?? 0) >= 9 ? '[phone]' : run);
+export interface TranscriptTransaction {
+  rpush(key: string, ...values: unknown[]): TranscriptTransaction;
+  expire(key: string, seconds: number, option: 'NX'): TranscriptTransaction;
+  zadd(key: string, opts: { nx: true }, member: { score: number; member: string }): TranscriptTransaction;
+  zremrangebyscore(key: string, min: number, max: number): TranscriptTransaction;
+  exec(): Promise<unknown[]>;
 }
 
 export async function logEntries(
@@ -66,11 +69,17 @@ export async function logEntries(
   if (!redis || !entries.length) return;
   try {
     const now = Date.now();
-    await redis.rpush(logKey(cid), ...entries.map(entry => JSON.stringify({ ...entry, t: redact(entry.t) })));
-    await redis.expire(logKey(cid), TRANSCRIPT_TTL_S);
-    await redis.zadd(INDEX, { score: now, member: cid });
-    // The index has no TTL of its own, so it is trimmed as it grows.
-    await redis.zremrangebyscore(INDEX, 0, now - TRANSCRIPT_TTL_S * 1000);
+    const key = logKey(cid);
+    // One request: the TTL is set only when the list is created (NX), so it
+    // runs from the first message, and it cannot be lost between two requests.
+    // The index is scored by the first write too (NX) and trimmed by that
+    // score, which is what retention measures. It has no TTL of its own.
+    await redis.multi()
+      .rpush(key, ...entries.map(entry => JSON.stringify({ ...entry, t: redactText(entry.t) })))
+      .expire(key, TRANSCRIPT_TTL_S, 'NX')
+      .zadd(INDEX, { nx: true }, { score: now, member: cid })
+      .zremrangebyscore(INDEX, 0, now - TRANSCRIPT_TTL_S * 1000)
+      .exec();
   } catch (err) {
     console.error('[transcripts] write failed', err instanceof Error ? err.name : 'Error');
   }
@@ -86,13 +95,26 @@ function parseEntry(row: unknown): TranscriptEntry | null {
 }
 
 /** Every conversation active since `since`, oldest first. Throws on a Redis
- *  failure: this runs from a script, where a silent empty download would lie. */
+ *  failure: this runs from a script, where a silent empty download would lie.
+ *
+ *  Reading also enforces retention: a log whose first entry is older than the
+ *  window is deleted, and the index is trimmed, so nothing depends on the
+ *  TTL alone. The index is scored by first message, so it is searched from one
+ *  window before `since` and filtered by each conversation's last entry. */
 export async function readTranscripts(since: number, redis: TranscriptRedis): Promise<Transcript[]> {
-  const cids = await redis.zrange<string[]>(INDEX, since, Date.now(), { byScore: true });
+  const now = Date.now();
+  const cutoff = now - TRANSCRIPT_TTL_S * 1000;
+  await redis.zremrangebyscore(INDEX, 0, cutoff);
+  const cids = await redis.zrange<string[]>(INDEX, Math.max(0, since - TRANSCRIPT_TTL_S * 1000), now, { byScore: true });
   const transcripts: Transcript[] = [];
   for (const cid of cids) {
     const entries = (await redis.lrange(logKey(cid), 0, -1)).map(parseEntry).filter((e): e is TranscriptEntry => e !== null);
-    if (entries.length) transcripts.push({ cid, last: entries[entries.length - 1].ts, entries });
+    if (entries.length && entries[0].ts < cutoff) {
+      await redis.del(logKey(cid));
+      await redis.zrem(INDEX, cid);
+      continue;
+    }
+    if (entries.length && entries[entries.length - 1].ts >= since) transcripts.push({ cid, last: entries[entries.length - 1].ts, entries });
   }
   return transcripts;
 }

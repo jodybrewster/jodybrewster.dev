@@ -13,6 +13,7 @@
  */
 
 import { getRedis } from './redis';
+import { redactText } from './redact';
 import type { ConversationTurn } from './verso';
 
 export const CONV_TTL_S = 86400; // 24h
@@ -38,7 +39,8 @@ async function guard<T>(label: string, fallback: T, run: () => Promise<T>): Prom
   try {
     return await run();
   } catch (err) {
-    console.error(`[conversation] ${label}`, err);
+    // Name only: an error object can carry the request, which holds visitor text.
+    console.error(`[conversation] ${label}`, err instanceof Error ? err.name : 'Error');
     return fallback;
   }
 }
@@ -87,7 +89,9 @@ export async function appendTurn(
   if (!redis) return;
   await guard<void>('turn append failed', undefined, async () => {
     const key = convKey(cid);
-    await redis.rpush(key, JSON.stringify(turn));
+    // Redacted here, so the prompt history never holds what the disclosure
+    // says is removed. Jody's replies go through appendReply, as he wrote them.
+    await redis.rpush(key, JSON.stringify({ ...turn, t: redactText(turn.t) }));
     // Refreshed on every append so the window runs from the last message, not
     // the first. A conversation still going at hour 23 must not expire.
     await redis.expire(key, CONV_TTL_S);

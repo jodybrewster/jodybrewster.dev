@@ -24,7 +24,8 @@
 
 import { getRedis } from './redis';
 import { CONV_TTL_S } from './conversation';
-import { formatTurnMessage, sendNotice, sendTurn, telegramConfigured } from './telegram';
+import { redactText } from './redact';
+import { formatTurnMessage, sendNotice, stripControlChars, sendTurn, telegramConfigured } from './telegram';
 
 export interface TurnNotice {
   cid: string;
@@ -57,10 +58,14 @@ export async function notifyTurn(
   redis: OperatorRedis | null = getRedis(),
 ): Promise<void> {
   if (!telegramConfigured()) return;
-  const messageId = await sendTurn(formatTurnMessage(turn), signal);
+  // Redacted before formatTurnMessage truncates, so a cut can never leave half
+  // an address that no rule matches. The same text feeds the mapping below.
+  const question = redactText(stripControlChars(turn.question));
+  const answer = turn.answer === undefined ? undefined : redactText(stripControlChars(turn.answer));
+  const messageId = await sendTurn(formatTurnMessage({ ...turn, question, answer }), signal);
   if (messageId === null || !redis) return;
   try {
-    await redis.set(tgKey(messageId), { cid: turn.cid, q: turn.question }, { ex: CONV_TTL_S });
+    await redis.set(tgKey(messageId), { cid: turn.cid, q: question }, { ex: CONV_TTL_S });
   } catch (err) {
     console.error('[operator] mapping write failed', err instanceof Error ? err.name : 'Error');
   }
@@ -112,7 +117,7 @@ export async function liveUntil(cid: string, redis: OperatorRedis | null = getRe
 export async function holdQuestion(cid: string, q: string, redis: OperatorRedis | null = getRedis()): Promise<void> {
   if (!redis) return;
   try {
-    await redis.set(heldKey(cid), { q, ts: Date.now() }, { ex: Math.ceil(LIVE_WINDOW_MS / 1000) + 300 });
+    await redis.set(heldKey(cid), { q: redactText(q), ts: Date.now() }, { ex: Math.ceil(LIVE_WINDOW_MS / 1000) + 300 });
   } catch (err) {
     console.error('[operator] hold write failed', err instanceof Error ? err.name : 'Error');
   }

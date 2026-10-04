@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { searchVectors, getChunkText } from '../../lib/rag';
-import { getIpLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
+import { isOriginAllowed } from '../../lib/origin';
+import { check, corpusLimiter, visitor } from '../../lib/limits';
 import { getRedis } from '../../lib/redis';
 import { MAX_QUERY_LEN } from '../../lib/verso';
 import { env } from '../../lib/env';
@@ -39,13 +40,11 @@ export const POST: APIRoute = async ({ request }) => {
   const log = (stage: string, status: string) => console.info('[corpus]', { stage, status, elapsedMs: Date.now() - started });
   try {
     const denied = await withDeadline(async signal => {
-      const ipLimiter = getIpLimiter();
-      if (!ipLimiter) return null;
-      const result = await ipLimiter.limit(clientIp(request));
+      const decision = await check(corpusLimiter, visitor(request));
       signal.throwIfAborted();
-      if (result.reason === 'timeout') return new Response(UNAVAILABLE, { status: 503 });
-      if (!result.success) return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
-      return null;
+      if (decision.ok) return null;
+      if (decision.code === 'unavailable') return new Response(UNAVAILABLE, { status: 503 });
+      return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
     }, 4000, request.signal);
     if (denied) return denied;
   } catch {

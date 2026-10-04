@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isForeignOrigin, isOriginAllowed } from './rate-limit';
+import { isForeignOrigin, isOriginAllowed } from './origin';
 
 function request(origin?: string, referer?: string): Request {
   const headers = new Headers();

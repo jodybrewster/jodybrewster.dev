@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
-  getIpLimiter: vi.fn(), getGlobalLimiter: vi.fn(),
+  check: vi.fn(), spend: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
   liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(), alertModelFailure: vi.fn(),
@@ -17,10 +17,8 @@ vi.mock('../transcripts', () => ({ logEntries: dependencies.logEntries }));
 vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
-vi.mock('../rate-limit', () => ({
-  getIpLimiter: dependencies.getIpLimiter, getGlobalLimiter: dependencies.getGlobalLimiter,
-  clientIp: () => 'test-ip', isOriginAllowed: () => true,
-}));
+vi.mock('../origin', () => ({ isOriginAllowed: () => true }));
+vi.mock('../limits', () => ({ check: dependencies.check, chatLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../conversation', () => ({
   readHistory: dependencies.readHistory, conversationLength: dependencies.conversationLength,
   appendTurn: dependencies.appendTurn,
@@ -84,8 +82,8 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
   dependencies.getRedis.mockReturnValue({});
-  dependencies.getIpLimiter.mockReturnValue(null);
-  dependencies.getGlobalLimiter.mockReturnValue(null);
+  dependencies.spend.mockResolvedValue(null);
+  dependencies.check.mockResolvedValue({ ok: true, spend: dependencies.spend, refund: vi.fn(), charge: vi.fn(), release: vi.fn() });
   dependencies.searchVectors.mockResolvedValue([]);
   dependencies.getChunkText.mockResolvedValue('source');
   dependencies.readHistory.mockResolvedValue([]);
@@ -310,11 +308,30 @@ describe('POST /api/chat reliability', () => {
     expect(dependencies.notifyTurn).not.toHaveBeenCalled();
   });
 
+  it('refuses past the per-IP rate and once the daily quota is gone, before any model call', async () => {
+    dependencies.check.mockResolvedValueOnce({ ok: false, code: 'rate_limited', rule: 'ip', retryAfterSeconds: 60 });
+    const rate = await post();
+    expect(rate.status).toBe(429);
+    expect(await rate.text()).toMatch(/Try again in a minute/);
+    dependencies.check.mockResolvedValueOnce({ ok: false, code: 'quota_exhausted', rule: 'global', retryAfterSeconds: 3600 });
+    const daily = await post();
+    expect(daily.status).toBe(429);
+    expect(await daily.text()).not.toMatch(/Try again in a minute/);
+    dependencies.check.mockResolvedValueOnce({ ok: false, code: 'unavailable', rule: 'store', retryAfterSeconds: 30 });
+    expect((await post()).status).toBe(503);
+    expect(dependencies.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it('spends one answer from the daily quota just before the model call', async () => {
+    const state = consume(await post());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.settled).toBe(true);
+    expect(dependencies.spend).toHaveBeenCalledWith('global');
+    expect(dependencies.spend.mock.invocationCallOrder[0]).toBeLessThan(dependencies.generateContentStream.mock.invocationCallOrder[0]);
+  });
+
   it('fails closed before model billing if the daily-budget guard fails', async () => {
-    dependencies.getGlobalLimiter.mockReturnValue({
-      getRemaining: vi.fn().mockResolvedValue({ remaining: 10 }),
-      limit: vi.fn().mockRejectedValue(new Error('redis unavailable')),
-    });
+    dependencies.spend.mockResolvedValue({ ok: false, code: 'unavailable', rule: 'store', retryAfterSeconds: 30 });
     const state = consume(await post());
     await vi.advanceTimersByTimeAsync(0);
     expect(state.settled).toBe(true);
@@ -323,7 +340,7 @@ describe('POST /api/chat reliability', () => {
   });
 
   it('bounds a hanging pre-stream rate limit with a 503 response', async () => {
-    dependencies.getIpLimiter.mockReturnValue({ limit: never });
+    dependencies.check.mockImplementation(never);
     let response: Response | undefined;
     void post().then(value => { response = value; });
     await vi.advanceTimersByTimeAsync(5_000);

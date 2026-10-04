@@ -1,7 +1,9 @@
 import type { APIRoute } from 'astro';
 import { ApiError, FunctionCallingConfigMode, GoogleGenAI, ThinkingLevel, type Content, type Part } from '@google/genai';
 import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag';
-import { getIpLimiter, getGlobalLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
+import { isOriginAllowed } from '../../lib/origin';
+import { chatLimiter, check, visitor } from '../../lib/limits';
+import type { Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { getRedis } from '../../lib/redis';
 import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
 import {
@@ -71,27 +73,24 @@ export const POST: APIRoute = async ({ request }) => {
   const cid = posted ?? crypto.randomUUID();
   const mid = crypto.randomUUID();
   const log = (stage: string, status: string) => console.info('[chat]', { mid, stage, status, elapsedMs: Date.now() - started });
-  const globalLimiter = getGlobalLimiter();
   let history: ConversationTurn[] = [];
+  // Spends the per-IP rate now; the site-wide quota is only checked here
+  // (refused when nothing is left) and spent just before the model call.
+  let allowed: Allowed<'ip' | 'global'> | null = null;
   try {
     const denied = await withDeadline(async signal => {
-      const ipLimiter = getIpLimiter();
-      if (ipLimiter) {
-        const result = await ipLimiter.limit(clientIp(request));
-        signal.throwIfAborted();
-        if (result.reason === 'timeout') return new Response(UNAVAILABLE, { status: 503 });
-        if (!result.success) return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
+      const decision = await check(chatLimiter, visitor(request));
+      signal.throwIfAborted();
+      if (!decision.ok) {
+        if (decision.code === 'unavailable') return new Response(UNAVAILABLE, { status: 503 });
+        if (decision.rule === 'global') return new Response(DAILY_CAP_MESSAGE, { status: 429 });
+        return new Response('Rate limit exceeded. Try again in a minute.', { status: 429 });
       }
+      allowed = decision;
       history = posted ? await readHistory(cid) : [];
       signal.throwIfAborted();
       if (posted && await conversationLength(cid) >= MAX_TURNS_PER_CONV * 2) {
         return new Response('This conversation has run long. Start a new chat to continue.', { status: 429 });
-      }
-      signal.throwIfAborted();
-      if (globalLimiter) {
-        const { remaining } = await globalLimiter.getRemaining('global');
-        signal.throwIfAborted();
-        if (remaining <= 0) return new Response(DAILY_CAP_MESSAGE, { status: 429 });
       }
       return null;
     }, 4000, request.signal);
@@ -161,11 +160,8 @@ export const POST: APIRoute = async ({ request }) => {
           if (seen.has(key)) return []; seen.add(key);
           return [{ type: m.type, slug: m.slug, title: m.title, date: m.date?.slice(0, 10) ?? '', url: m.url, score: Number(hit.score.toFixed(3)) }];
         });
-        if (globalLimiter) {
-          const result = await withDeadline(() => globalLimiter.limit('global'), 3000, lifetime.signal);
-          if (result.reason === 'timeout') throw new Error(UNAVAILABLE);
-          if (!result.success) throw new Error(DAILY_CAP_MESSAGE);
-        }
+        const spent = await withDeadline(() => allowed!.spend('global'), 3000, lifetime.signal);
+        if (spent) throw new Error(spent.code === 'unavailable' ? UNAVAILABLE : DAILY_CAP_MESSAGE);
         lifetime.signal.throwIfAborted();
         log('model', 'start');
         const contents: Content[] = buildMessages(history, query, context);

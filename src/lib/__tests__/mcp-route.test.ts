@@ -5,7 +5,7 @@ const dependencies = vi.hoisted(() => {
   const ASK = () => null;
   return {
     MCP, ASK, create: vi.fn(), searchVectors: vi.fn(), getChunkText: vi.fn(), check: vi.fn(),
-    mcp: null as unknown, ask: null as unknown, environment: 'production' as string | undefined,
+    mcp: null as unknown, ask: null as unknown, environment: 'production' as string | undefined, askOn: true,
   };
 });
 vi.mock('@anthropic-ai/sdk', () => ({
@@ -14,6 +14,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../corpus', () => ({ listCollection: vi.fn(async () => []), readDoc: vi.fn(async () => null), readNowFile: vi.fn(async () => null) }));
 vi.mock('../env', () => ({ env: (key: string) => (key === 'VERCEL_ENV' ? dependencies.environment : undefined) }));
+vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.askOn }));
 vi.mock('../limits', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../limits')>()),
   check: dependencies.check,
@@ -39,6 +40,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   dependencies.environment = 'production';
+  dependencies.askOn = true;
   dependencies.mcp = allowed();
   dependencies.ask = allowed();
   dependencies.check.mockImplementation(async (limiter: unknown) => (limiter === dependencies.MCP ? dependencies.mcp : dependencies.ask));
@@ -95,6 +97,15 @@ describe('POST /api/mcp', () => {
     expect(body.error.message).toBe('Internal error');
     expect((dependencies.ask as Fake).refund).not.toHaveBeenCalled();
     expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain('sk-ant-xyz');
+  });
+
+  it('answers ask_jody with the paused copy when its switch is off, spending nothing', async () => {
+    dependencies.askOn = false;
+    const body = await (await post(ask(1))).json();
+    expect(body.result.isError).toBe(true);
+    expect(body.result.content[0].text).toMatch(/paused/);
+    expect(dependencies.check).not.toHaveBeenCalled();
+    expect(dependencies.create).not.toHaveBeenCalled();
   });
 
   it('fails closed with 503 when the limits are unavailable', async () => {

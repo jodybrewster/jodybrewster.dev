@@ -35,7 +35,7 @@ export async function requestChat(
     });
     if (stopped) { void res.body?.cancel().catch(() => {}); return; }
     if (!res.ok) {
-      if (res.status === 429 || res.status === 403) {
+      if (res.status === 429 || res.status === 403 || res.headers.get('x-switched-off')) {
         throw new Error((await res.text()) || 'Chat is unavailable. Please try again.');
       }
       throw new Error('Chat is temporarily unavailable. Please try again.');

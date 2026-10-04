@@ -5,6 +5,13 @@ const encode = (text: string) => new TextEncoder().encode(text);
 afterEach(() => vi.useRealTimers());
 
 describe('chat response lifecycle', () => {
+  it('shows the server\'s words when chat is switched off', async () => {
+    const response = new Response('Chat is paused right now. Please try again later.', { status: 503, headers: { 'X-Switched-Off': 'chat' } });
+    await expect(requestChat({ query: 'Hello' }, { fetcher: async () => response, onEvent: () => {} })).rejects.toThrow('Chat is paused right now');
+    const unavailable = new Response('internal detail', { status: 503 });
+    await expect(requestChat({ query: 'Hello' }, { fetcher: async () => unavailable, onEvent: () => {} })).rejects.toThrow('temporarily unavailable');
+  });
+
   it('handles split frames and finishes on done even while the connection stays open', async () => {
     const cancel = vi.fn();
     const response = new Response(new ReadableStream({

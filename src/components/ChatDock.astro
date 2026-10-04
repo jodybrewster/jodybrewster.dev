@@ -40,12 +40,12 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
         </div>
       </div>
       <p class="dock-data-note">Verso is an AI. It answers from Jody's writing and work, and can get things wrong. Questions go to Google (Gemini) for answers, to Voyage to find the relevant writing and to Upstash, which keeps conversations for 30 days; the site runs on Vercel. Jody reads along on Telegram, where copies stay until he deletes them, and sometimes replies himself. In voice mode your audio goes to Google.</p>
-      <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="polite" aria-relevant="additions"></div>
+      <div class="conversation" id="conversation" role="log" aria-label="Conversation with Verso" aria-live="off"></div>
     </div>
   </div>
 
   <div class="dock-bar">
-    <p class="dock-voice-status" id="dock-voice-status" role="status" hidden></p>
+    <p class="dock-voice-status" id="dock-voice-status" hidden></p>
     <form class="input-row" id="chat-form">
       <span class="input-icon"><svg class="icon"><use href="#i-bot"/></svg></span>
       <!-- Who you're talking to, on the floating composer at desktop widths. The field's own label carries the name. -->
@@ -54,13 +54,13 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
         <span class="dock-who-name">Verso</span>
         <span class="dock-who-dot"></span>
       </span>
-      <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" maxlength="600" placeholder="Ask Verso about my work…" aria-controls="dock-panel" aria-expanded="false" />
+      <input type="text" id="chat-q" aria-label="Your message to Verso" autocomplete="off" maxlength="600" placeholder="Ask Verso about my work…" />
       <!-- Voice: a live Gemini session, loaded on first tap. aria-pressed carries on/off; data-state adds connecting. -->
       <button type="button" class="dock-voice" id="dock-voice" aria-label="Talk to Verso" aria-pressed="false" data-state="idle">
         <svg class="icon" aria-hidden="true"><use href="#i-mic"/></svg>
       </button>
       <!-- Keep a separate label so a running response can expose Stop. -->
-      <button type="submit" aria-label="Send message"><span class="submit-label">Ask</span> <svg class="icon sm"><use href="#i-send"/></svg></button>
+      <button type="submit"><span class="submit-label">Ask</span> <svg class="icon sm" aria-hidden="true"><use href="#i-send"/></svg></button>
     </form>
   </div>
 
@@ -70,7 +70,7 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
   <VersoPartTemplates />
 
   <template id="tpl-retry">
-    <div class="dock-recovery"><p class="dock-error" role="status"></p><button type="button" class="dock-retry">Try again</button></div>
+    <div class="dock-recovery"><p class="dock-error"></p><button type="button" class="dock-retry">Try again</button></div>
   </template>
   <!-- A reply Jody sent from Telegram. It names the question because after a
        reload the turn it answers is no longer on screen. -->
@@ -85,7 +85,7 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
     <p class="dock-live" role="status"></p>
   </template>
   <template id="tpl-wait">
-    <div class="dock-wait"><p class="dock-wait-text" role="status"></p><button type="button" class="dock-retry">Ask Verso now</button></div>
+    <div class="dock-wait"><p class="dock-wait-text"></p><button type="button" class="dock-retry">Ask Verso now</button></div>
   </template>
   <template id="tpl-you">
     <div class="turn you">
@@ -161,7 +161,7 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
       <span class="who"><svg class="icon sm"><use href="#i-bot"/></svg> Verso</span>
       <div class="said">
         <div class="answer">
-          <span class="thinking" aria-live="polite">
+          <span class="thinking">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
             <span class="waited" hidden>Taking a little longer…</span>
           </span>
@@ -381,12 +381,14 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
   }
 
   /* One turn at a time, so the bar reads as unavailable while it runs. */
-  .input-row input:disabled,
-  .input-row button:disabled {
+  .input-row input[aria-disabled="true"],
+  .input-row button:disabled,
+  .input-row button[aria-disabled="true"] {
     opacity: 0.5;
     cursor: default;
   }
-  .input-row button:disabled:hover { background: var(--accent); }
+  .input-row button:disabled:hover,
+  .input-row button[aria-disabled="true"]:hover { background: var(--accent); }
 
   @media (max-width: 720px) {
     .dock-bar { padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); }

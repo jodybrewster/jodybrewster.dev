@@ -3,6 +3,7 @@ import { navigate } from 'astro:transitions/client';
 import { renderCard } from './card-render';
 import { track } from './track';
 import { renderAnswer } from './verso-links';
+import { canAsk, voiceActive as isVoiceActive, createAnnouncer, createStreamAnnouncer, scheduleTimeWarnings, voiceTimeWarning } from './a11y';
 
 type VoiceModule = typeof import('./live/voice') & typeof import('./live/voice-dock');
 let voiceModule: Promise<VoiceModule> | null = null;
@@ -48,11 +49,16 @@ export function initChatDock(): void {
   const newChat = dock.querySelector<HTMLButtonElement>('#dock-new')!;
   let request: AbortController | null = null;
   let trigger: HTMLElement | null = null;
+  // Visually hidden live regions. The conversation log itself is aria-live="off",
+  // so a growing answer is never re-read; what is spoken comes through these.
+  const polite = createAnnouncer(dock, { politeness: 'polite' });
+  const assertive = createAnnouncer(dock, { politeness: 'assertive' });
+  /** Set while focus is put back by script, so focusing the collapsed composer does not reopen it. */
+  let restoringFocus = false;
 
   function sync(): void {
     const open = dock!.classList.contains('open');
     panel.inert = !open;
-    input.setAttribute('aria-expanded', String(open));
     document.querySelectorAll('[data-verso-open]').forEach(el => el.setAttribute('aria-expanded', String(open)));
   }
   /** `trigger` says what opened it, for analytics: the bar, a prompt button, or a reply arriving. */
@@ -62,13 +68,20 @@ export function initChatDock(): void {
   }
   function close(restoreFocus = false): void {
     dock!.classList.remove('open');
-    input.blur();
     sync();
-    if (restoreFocus) (trigger?.isConnected ? trigger : input).focus({ preventScroll: true });
+    if (!restoreFocus) { input.blur(); return; }
+    // Focus goes back to what opened the dock, or to the composer when nothing did; never to the page body.
+    const target = trigger?.isConnected && !dock!.contains(trigger) ? trigger : input;
+    restoringFocus = true;
+    try { target.focus({ preventScroll: true }); } finally { restoringFocus = false; }
   }
-  // Focusing the collapsed composer opens it, so closing without an external
-  // trigger leaves focus on the close button's owner rather than reopening it.
-  function closeFromButton(): void { close(Boolean(trigger?.isConnected)); }
+  /** The close button and Escape: always hand focus back, so a keyboard user is not dropped on the body. */
+  function closeFromKeyboardOrButton(): void {
+    if (!dock!.classList.contains('open')) return;
+    const active = document.activeElement;
+    // Only take focus back when it was in the dock (or nowhere); Escape pressed elsewhere leaves it alone.
+    close(!active || active === document.body || dock!.contains(active));
+  }
 
   function sizeToKeyboard(): void {
     const viewport = window.visualViewport;
@@ -95,13 +108,22 @@ export function initChatDock(): void {
     return node;
   }
   const scrollToAnswer = () => { scroll.scrollTop = scroll.scrollHeight; };
+  /**
+   * The composer stays focusable while it is unavailable: aria-disabled plus a
+   * blocked submit, never `disabled`, which would drop keyboard focus out of the
+   * dock. read-only keeps typed text from piling up that could not be sent.
+   */
+  function lockInput(locked: boolean): void {
+    input.setAttribute('aria-disabled', String(locked));
+    input.readOnly = locked;
+  }
   function busy(value: boolean): void {
-    input.disabled = value;
+    lockInput(value || voiceActive());
     newChat.disabled = value;
-    // A typed answer and a voice session never run at once.
-    dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = value;
+    // A typed answer and a voice session never run at once: ask() and the mic
+    // click both refuse, and aria-disabled says so.
+    voiceButton.setAttribute('aria-disabled', String(value || waiting !== null));
     submitLabel.textContent = value ? 'Stop' : 'Ask';
-    submit.setAttribute('aria-label', value ? 'Stop response' : 'Send message');
     submit.classList.toggle('is-busy', value);
   }
   function renderText(target: HTMLElement, text: string, links: ReadonlySet<string> | null = null): void {
@@ -150,6 +172,8 @@ export function initChatDock(): void {
       if (reply.q) replyTo.textContent = `Replying to "${reply.q.length > 90 ? `${reply.q.slice(0, 89)}…` : reply.q}"`;
       else replyTo.remove();
       renderText(turn.querySelector<HTMLElement>('.reply-body')!, reply.t);
+      polite.announce('Jody replied.');
+      createStreamAnnouncer(line => polite.announce(line)).end(reply.t);
     }
     writeNumber(REPLY_SEEN_KEY, Math.max(...fresh.map(reply => reply.ts)));
     // The note belongs under his newest reply.
@@ -171,7 +195,8 @@ export function initChatDock(): void {
     if (!note && !replied && !conversation.querySelector('.turn.jody')) return;
     note ??= appendTemplate('#tpl-live');
     const minutes = Math.max(1, Math.round((liveUntil - Date.now()) / 60_000));
-    note.textContent = `Jody is here and may reply. Verso will pick up in ${minutes} min if he doesn't.`;
+    const message = `Jody is here and may reply. Verso will pick up in ${minutes} min if he doesn't.`;
+    if (note.textContent !== message) note.textContent = message;
     liveTimer = window.setTimeout(() => showLive(0, false), liveUntil - Date.now());
     pollReplies();
   }
@@ -197,8 +222,11 @@ export function initChatDock(): void {
     answer.replaceChildren();
     const box = appendTemplate('#tpl-wait', answer);
     const line = box.querySelector<HTMLElement>('.dock-wait-text')!;
-    input.disabled = true; input.placeholder = 'Waiting for Jody…';
-    dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = true;
+    lockInput(true); input.placeholder = 'Waiting for Jody…';
+    voiceButton.setAttribute('aria-disabled', 'true');
+    // The countdown ticks every second for the eyes; a screen reader hears it once.
+    line.setAttribute('aria-hidden', 'true');
+    polite.announce(`Jody is here and may reply. Verso answers in ${Math.max(1, Math.round((until - Date.now()) / 60_000))} min if he does not.`);
     scrollToAnswer();
     return new Promise(resolve => {
       let tick = 0;
@@ -207,8 +235,8 @@ export function initChatDock(): void {
         if (!waiting) return;
         waiting = null;
         clearInterval(tick); clearInterval(poll);
-        input.disabled = false; input.placeholder = placeholder;
-        dock!.querySelector<HTMLButtonElement>('#dock-voice')!.disabled = false;
+        lockInput(voiceActive()); input.placeholder = voiceActive() ? 'Voice is on' : placeholder;
+        voiceButton.setAttribute('aria-disabled', 'false');
         track('chat_wait', { result: how });
         resolve(how);
       };
@@ -233,7 +261,10 @@ export function initChatDock(): void {
   let suggested: string | null = null;
   async function ask(query: string, retryTurn?: HTMLElement, fallback = false): Promise<void> {
     query = query.trim();
-    if (!query || request || waiting) return;
+    // A typed answer and a voice session never run at once. The input used to be
+    // `disabled` while voice was on, which was the only thing keeping them apart;
+    // it stays focusable now, so this refusal is the guard.
+    if (!query || !canAsk({ requesting: request !== null, waiting: waiting !== null, voiceStarting, voice: voiceSnapshot() })) return;
     const source = fallback ? 'fallback' : retryTurn ? 'retry' : query === suggested ? 'suggestion' : 'typed';
     suggested = null;
     let topic: string | undefined;
@@ -243,8 +274,11 @@ export function initChatDock(): void {
     if (!retryTurn) appendTemplate('#tpl-you').querySelector<HTMLElement>('.said')!.textContent = query;
     const turn = retryTurn ?? appendTemplate('#tpl-site');
     if (retryTurn) {
+      // Replacing the turn removes the retry button; keep focus in the dock.
+      const hadFocus = dock!.contains(document.activeElement);
       const template = dock!.querySelector<HTMLTemplateElement>('#tpl-site')!;
       turn.querySelector('.said')!.replaceChildren(template.content.querySelector('.answer')!.cloneNode(true));
+      if (hadFocus) input.focus({ preventScroll: true });
     }
     const answer = turn.querySelector<HTMLElement>('.answer')!;
     const said = turn.querySelector<HTMLElement>('.said')!;
@@ -254,7 +288,9 @@ export function initChatDock(): void {
     let links: string[] = [];
     let destination: string | null = null;
     let holdUntil = 0;
-    const timer = setTimeout(() => { if (waited) waited.hidden = false; }, 12_000);
+    const stream = createStreamAnnouncer(line => polite.announce(line));
+    polite.announce('Verso is thinking.');
+    const timer = setTimeout(() => { if (waited) waited.hidden = false; polite.announce('Taking a little longer…'); }, 12_000);
     try {
       await requestChat({ query, cid: readCid(), page: location.pathname, ...(fallback ? { fallback } : {}) }, {
         signal: request.signal,
@@ -262,7 +298,7 @@ export function initChatDock(): void {
           if (typeof event.cid === 'string') { try { sessionStorage.setItem('verso:cid', event.cid); } catch { /* Optional. */ } }
           if (typeof event.mid === 'string') turn.dataset.mid = event.mid;
           if (typeof event.text === 'string' && event.text) {
-            clearTimeout(timer); text += event.text; renderText(answer, text); scrollToAnswer();
+            clearTimeout(timer); text += event.text; renderText(answer, text); stream.update(text); scrollToAnswer();
           }
           if (event.card?.kind === 'navigate') destination = event.card.url;
           if (event.card) {
@@ -277,6 +313,7 @@ export function initChatDock(): void {
       });
       if (holdUntil) outcome = 'held';
       else if (!text.trim()) throw new Error('Nothing came back. Please try again.');
+      stream.end(text);
       // Links are drawn once the route has confirmed each one is a real page.
       if (links.length) renderText(answer, text, new Set(links));
       writeNumber(ASKED_KEY, Date.now()); pollReplies();
@@ -287,8 +324,14 @@ export function initChatDock(): void {
       outcome = request?.signal.aborted ? 'stopped' : message.startsWith('That took too long') ? 'timeout' : 'error';
       if (!text) answer.replaceChildren();
       const recovery = appendTemplate('#tpl-retry', said);
-      recovery.querySelector<HTMLElement>('.dock-error')!.textContent = error instanceof Error ? error.message : 'Connection lost. Please try again.';
-      recovery.querySelector('button')!.addEventListener('click', () => { void ask(query, turn); }, eventOptions);
+      const failure = error instanceof Error ? error.message : 'Connection lost. Please try again.';
+      recovery.querySelector<HTMLElement>('.dock-error')!.textContent = failure;
+      assertive.announce(failure);
+      const retry = recovery.querySelector<HTMLButtonElement>('button')!;
+      retry.addEventListener('click', () => { void ask(query, turn); }, eventOptions);
+      // Keyboard and screen reader users land on the way forward, unless they have moved on.
+      const active = document.activeElement;
+      if (!active || active === document.body || dock!.contains(active)) retry.focus({ preventScroll: true });
     } finally {
       clearTimeout(timer); request = null; busy(false); scrollToAnswer();
       track('chat_question', { source, outcome, topic, turn: conversation.querySelectorAll('.turn.you').length });
@@ -303,10 +346,11 @@ export function initChatDock(): void {
   form.addEventListener('submit', event => {
     event.preventDefault();
     if (request) { request.abort(); return; }
+    if (voiceActive()) { polite.announce('Voice is on. Turn it off to type a question.'); return; }
     void ask(input.value);
   }, eventOptions);
-  input.addEventListener('focus', () => open(), eventOptions);
-  dock.querySelector('#dock-close')!.addEventListener('click', closeFromButton, eventOptions);
+  input.addEventListener('focus', () => { if (restoringFocus) return; trigger = null; open(); }, eventOptions);
+  dock.querySelector('#dock-close')!.addEventListener('click', closeFromKeyboardOrButton, eventOptions);
   newChat.addEventListener('click', () => {
     if (request) return;
     waiting?.('cancel'); showLive(0, false);
@@ -316,17 +360,18 @@ export function initChatDock(): void {
     conversation.replaceChildren(); empty.hidden = false; input.value = ''; input.focus({ preventScroll: true });
     track('chat_new');
   }, eventOptions);
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeFromButton(); }, eventOptions);
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeFromKeyboardOrButton(); }, eventOptions);
+  // A click target removed by its own handler (the retry button) is not an outside click, hence isConnected.
   document.addEventListener('click', event => {
     const target = event.target instanceof Element ? event.target : null;
     const opener = target?.closest<HTMLElement>('[data-verso-open]');
     if (opener) {
-      trigger = opener;
       const prompt = opener.dataset.versoPrompt;
       open(prompt ? 'suggestion' : 'button');
       if (!request && prompt) { input.value = prompt; suggested = prompt; }
       input.focus({ preventScroll: true });
-    } else if (target && !dock!.contains(target)) close();
+      trigger = opener; // after focus(), which clears it
+    } else if (target?.isConnected && !dock!.contains(target)) close();
   }, eventOptions);
 
   // Which of what Verso put on screen people follow: cards, case study parts, links in the answer.
@@ -347,8 +392,24 @@ export function initChatDock(): void {
   let countdown = 0;
   let renderer: ReturnType<VoiceModule['createVoiceRenderer']> | null = null;
   let voiceStarted = 0;
-  function status(text: string | null, tone: 'live' | 'note' = 'note'): void {
+  /** The mic was tapped and the session has not reported connecting yet. */
+  let voiceStarting = false;
+  let micOn = false;
+  let cancelWarnings = () => {};
+  let warningsFor = 0;
+  const voiceSnapshot = () => voice?.voiceSession().getSnapshot() ?? null;
+  const voiceActive = () => isVoiceActive({ voiceStarting, voice: voiceSnapshot() });
+  /**
+   * The line above the composer. It is not a live region: the countdown
+   * rewrites it every second, and a screen reader hears one-off notes through
+   * the announcers instead (`speak`), only when the text actually changes.
+   */
+  function status(text: string | null, tone: 'live' | 'note' = 'note', speak: 'polite' | 'assertive' | null = null): void {
+    const changed = (text ?? '') !== voiceStatus.textContent;
     voiceStatus.hidden = !text; voiceStatus.textContent = text ?? ''; voiceStatus.dataset.tone = tone;
+    // The ticking countdown is for the eyes; spoken warnings come from scheduleTimeWarnings.
+    if (tone === 'live') voiceStatus.setAttribute('aria-hidden', 'true'); else voiceStatus.removeAttribute('aria-hidden');
+    if (text && speak && changed) (speak === 'assertive' ? assertive : polite).announce(text);
   }
   function paintVoice(): void {
     if (!voice) return;
@@ -362,12 +423,22 @@ export function initChatDock(): void {
     }
     voiceButton.dataset.state = connecting ? 'connecting' : live ? 'live' : 'idle';
     voiceButton.setAttribute('aria-pressed', String(live || connecting));
-    voiceButton.setAttribute('aria-label', live || connecting ? 'End voice conversation' : 'Talk to Verso');
+    // The label stays "Talk to Verso"; aria-pressed carries on and off.
+    if (live || connecting) voiceStarting = false;
     // One conversation at a time: typing waits while Verso is listening.
-    input.disabled = live || connecting || Boolean(request);
-    input.placeholder = live || connecting ? 'Voice is on' : placeholder;
+    lockInput(live || connecting || Boolean(request) || waiting !== null);
+    input.placeholder = live || connecting ? 'Voice is on' : waiting ? 'Waiting for Jody…' : placeholder;
+    const streaming = live && snapshot.media.audio.isStreaming;
+    if (streaming !== micOn) { micOn = streaming; polite.announce(streaming ? 'Microphone on. Go ahead and talk.' : 'Microphone off.'); }
+    // Spoken warnings before the limit, from the session's own deadline.
+    if (live && snapshot.endsAt) {
+      if (warningsFor !== snapshot.endsAt) {
+        cancelWarnings(); warningsFor = snapshot.endsAt;
+        cancelWarnings = scheduleTimeWarnings(snapshot.endsAt, left => polite.announce(voiceTimeWarning(left)));
+      }
+    } else { cancelWarnings(); warningsFor = 0; }
     clearInterval(countdown);
-    if (connecting) status('Connecting…');
+    if (connecting) status('Connecting…', 'note', 'polite');
     else if (live && snapshot.media.audio.isStreaming) {
       const tick = () => {
         const left = Math.max(0, (snapshot.endsAt ?? Date.now()) - Date.now());
@@ -377,7 +448,7 @@ export function initChatDock(): void {
       tick(); countdown = window.setInterval(tick, 1000);
     } else if (!live) {
       const ended = voice.endedMessage(snapshot.endReason);
-      if (ended || voiceStatus.dataset.tone === 'live') status(ended);
+      if (ended || voiceStatus.dataset.tone === 'live') status(ended, 'note', 'polite');
     }
     renderer?.update(snapshot.messages);
   }
@@ -392,6 +463,7 @@ export function initChatDock(): void {
       scroll: scrollToAnswer,
     });
     const session = module.voiceSession();
+    micOn = session.getSnapshot().media.audio.isStreaming;
     // A session carried across navigation keeps its transcript on screen already.
     renderer.reset(session.getSnapshot().messages);
     unsubscribe = session.subscribe(paintVoice);
@@ -401,16 +473,18 @@ export function initChatDock(): void {
   idle(() => { void loadVoice().then(attachVoice).catch(() => {}); });
   voiceButton.addEventListener('click', () => {
     if (voice && voiceButton.getAttribute('aria-pressed') === 'true') { voice.stopVoice(); status(null); return; }
-    if (request) return;
-    open(); status('Connecting…');
+    // aria-disabled does not block clicks: a question in flight or held for Jody keeps the mic off.
+    if (request || waiting || voiceStarting) return;
+    voiceStarting = true;
+    open(); status('Connecting…', 'note', 'polite');
     const start = (module: VoiceModule) => {
       attachVoice(module);
-      module.startVoice().catch(error => { module.stopVoice(); status(module.voiceErrorMessage(error)); });
+      module.startVoice().catch(error => { module.stopVoice(); status(module.voiceErrorMessage(error), 'note', 'assertive'); }).finally(() => { voiceStarting = false; paintVoice(); });
     };
     // Already loaded: start inside this tap so iOS lets audio play.
     if (voice) start(voice);
-    else void loadVoice().then(start).catch(() => status('Voice could not load. You can keep typing.'));
+    else void loadVoice().then(start).catch(() => { voiceStarting = false; status('Voice could not load. You can keep typing.', 'note', 'assertive'); });
   }, eventOptions);
 
-  dispose = () => { request?.abort(); waiting?.('cancel'); listeners.abort(); unsubscribe(); clearInterval(countdown); clearTimeout(pollTimer); clearTimeout(liveTimer); };
+  dispose = () => { request?.abort(); waiting?.('cancel'); listeners.abort(); unsubscribe(); clearInterval(countdown); cancelWarnings(); polite.destroy(); assertive.destroy(); clearTimeout(pollTimer); clearTimeout(liveTimer); };
 }

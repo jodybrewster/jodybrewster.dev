@@ -4,7 +4,7 @@
     /* palette — cool paper, deep forest accent */
     --ink:        #14181d;
     --ink-soft:   #3d444d;
-    --ink-faint:  #828a93;
+    --ink-faint:  #5f6770;
     --paper:      #f1f2f0;
     --paper-warm: #e6e8e4;
     --rule:       #cbcec9;
@@ -64,7 +64,7 @@
     :root:not([data-theme="light"]) {
       --ink:        #e4e6e2;
       --ink-soft:   #a8aca6;
-      --ink-faint:  #6e726c;
+      --ink-faint:  #8a8e88;
       --paper:      #13161a;
       --paper-warm: #1c1f23;
       --rule:       #2a2d31;
@@ -76,7 +76,7 @@
   :root[data-theme="dark"] {
     --ink:        #e4e6e2;
     --ink-soft:   #a8aca6;
-    --ink-faint:  #6e726c;
+    --ink-faint:  #8a8e88;
     --paper:      #13161a;
     --paper-warm: #1c1f23;
     --rule:       #2a2d31;

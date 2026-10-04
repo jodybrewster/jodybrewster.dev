@@ -50,6 +50,14 @@ describe('site limits', () => {
     expect(await check(askLimiter, 'v3')).toMatchObject({ ok: false, code: 'quota_exhausted', rule: 'tokens' });
   });
 
+  it('caps MCP tool calls at 20 a minute per visitor and 2,000 a day across everyone', async () => {
+    const { check, mcpLimiter } = await load();
+    for (let i = 0; i < 20; i++) expect((await check(mcpLimiter, 'v1')).ok).toBe(true);
+    expect(await check(mcpLimiter, 'v1')).toMatchObject({ ok: false, rule: 'ip' });
+    for (let i = 0; i < 1980; i++) await check(mcpLimiter, `visitor-${i % 99}-${Math.floor(i / 99)}`);
+    expect(await check(mcpLimiter, 'someone-new')).toMatchObject({ ok: false, rule: 'day' });
+  });
+
   it('allows 60 reply polls a minute per visitor', async () => {
     const { check, repliesLimiter } = await load();
     for (let i = 0; i < 60; i++) expect((await check(repliesLimiter, 'v1')).ok).toBe(true);

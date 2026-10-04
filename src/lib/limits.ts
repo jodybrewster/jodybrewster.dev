@@ -54,9 +54,13 @@ export const corpusLimiter = lazy('rl:chat', {
   ip: { kind: 'rate', scope: 'subject', limit: 5, window: '1 m' },
 });
 
-// MCP is public and unauthenticated, so its limits are its only protection.
+// MCP is public and unauthenticated, so its limits are its only protection:
+// 20 tool calls a minute per visitor, and 2,000 a day across everyone, so
+// many addresses cannot drain the embedding, vector or Redis quotas
+// (search_writing calls Voyage and Upstash Vector).
 export const mcpLimiter = lazy('rl:mcp', {
   ip: { kind: 'rate', scope: 'subject', limit: 20, window: '1 m' },
+  day: { kind: 'rate', scope: 'global', limit: 2000, window: '1 d' },
 });
 
 // ask_jody calls Claude. Besides 5 an hour per IP and 50 calls a day, each

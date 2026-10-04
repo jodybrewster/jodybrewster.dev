@@ -12,7 +12,7 @@
 import {
   GeminiLiveSession, createFunctionTool,
   type FunctionTool, type GeminiLiveConfig,
-} from '@jodybrewster/gemini-live';
+} from '@jodybrewster/gemini-live/voice';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type CardIndex } from '../verso-tools';
 import { SEARCH_SITE_DECLARATION, VOICE_MODEL, VOICE_NAME, VOICE_PROMPT, VOICE_SESSION_MS } from '../verso-voice';
 

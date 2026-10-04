@@ -14,8 +14,12 @@ import { envSwitchKey, type SwitchName } from '@jodybrewster/gemini-live/server/
 const NAMES: Record<string, SwitchName> = { chat: 'chat', voice: 'voice', search_site: 'tool:search_site', ask_jody: 'tool:ask_jody' };
 const STATES = ['on', 'off', 'force-off'] as const;
 
+// Pinned, so the lockfile-free npx run is still a known CLI on the machine
+// that holds the Vercel login.
+const VERCEL_CLI = 'vercel@62.2.0';
+
 function vercel(args: string[], input?: string): number {
-  const result = spawnSync('npx', ['vercel', ...args], { input, stdio: [input === undefined ? 'inherit' : 'pipe', 'inherit', 'inherit'] });
+  const result = spawnSync('npx', ['--yes', VERCEL_CLI, ...args], { input, stdio: [input === undefined ? 'inherit' : 'pipe', 'inherit', 'inherit'] });
   return result.status ?? 1;
 }
 
@@ -27,10 +31,15 @@ function main(): void {
     process.exit(1);
   }
   const key = envSwitchKey(switchName);
-  // Remove first: `vercel env add` refuses a variable that already exists.
-  vercel(['env', 'rm', key, 'production', '--yes']);
-  if (state !== 'on' && vercel(['env', 'add', key, 'production'], state) !== 0) {
-    console.error(`Could not set ${key}. Nothing changed after the removal above; check \`npx vercel env ls\`.`);
+  if (state === 'on') {
+    // Unset means on. A failed removal leaves the switch as it was.
+    if (vercel(['env', 'rm', key, 'production', '--yes']) !== 0) {
+      console.error(`Could not remove ${key}; the switch is unchanged. Check \`npx ${VERCEL_CLI} env ls\`.`);
+      process.exit(1);
+    }
+  } else if (vercel(['env', 'add', key, 'production', '--force'], state) !== 0) {
+    // An upsert: there is never a moment with the variable unset (on).
+    console.error(`Could not set ${key}; it keeps its previous value. Check \`npx ${VERCEL_CLI} env ls\`.`);
     process.exit(1);
   }
   console.log(`${key} is now ${state === 'on' ? 'unset (on)' : state} for Production. Run \`npx vercel --prod\` to apply it; the first request after the deploy records the change in the audit log.`);

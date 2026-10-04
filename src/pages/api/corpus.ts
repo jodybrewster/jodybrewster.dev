@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { searchVectors, getChunkText } from '../../lib/rag';
-import { isOriginAllowed } from '../../lib/origin';
+import { isCanonicalHost, isOriginAllowed, otherHost } from '../../lib/origin';
 import { check, corpusLimiter, visitor } from '../../lib/limits';
 import { isOn, SEARCH_OFF } from '../../lib/switches';
 import { getRedis } from '../../lib/redis';
@@ -24,6 +24,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 export const POST: APIRoute = async ({ request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
+  if (!isCanonicalHost(request)) return otherHost();
   if (!(await isOn('tool:search_site'))) return new Response(SEARCH_OFF, { status: 503, headers: { 'X-Switched-Off': 'tool:search_site', 'Cache-Control': 'no-store' } });
   const started = Date.now();
   let body: unknown;

@@ -10,6 +10,7 @@ import { env } from './env';
 import { getRedis } from './redis';
 import { sendNotice } from './telegram';
 import { SWITCHES, switchEnv } from './switches';
+import { withDeadline } from './deadline';
 
 /**
  * The site's tamper-evident audit log (M1 1.7, site step S4): a keyed hash
@@ -186,11 +187,12 @@ export function auditSwitchChanges(): Promise<void> {
       const now: Record<string, boolean> = {};
       for (const name of SWITCHES) now[name] = await switches.isOn(name);
       const stateKey = `${s.prefix}:switch-state`;
-      const before = await redis.get<Record<string, boolean> | string>(stateKey);
+      // Bounded: a stalled Upstash must not hold every request waiting on this check.
+      const before = await withDeadline(() => redis.get<Record<string, boolean> | string>(stateKey), 1500);
       const last = typeof before === 'string' ? JSON.parse(before) as Record<string, boolean> : before;
       if (last && SWITCHES.every(n => last[n] === now[n])) return;
       const written = await audit({ action: 'switch.changed', outcome: 'allow', details: { before: last ?? null, after: now } }, { anchor: last !== null });
-      if (written) await redis.set(stateKey, JSON.stringify(now));
+      if (written) await withDeadline(() => redis.set(stateKey, JSON.stringify(now)), 1500);
       else switchesChecked = null; // try again on the next request
     } catch (error) {
       console.error('[audit] switch check failed', error instanceof Error ? error.name : 'unknown');

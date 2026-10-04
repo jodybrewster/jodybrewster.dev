@@ -6,7 +6,7 @@ const dependencies = vi.hoisted(() => ({
 }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
-vi.mock('../origin', () => ({ isOriginAllowed: dependencies.isOriginAllowed }));
+vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: dependencies.isOriginAllowed }));
 vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.searchOn }));
 vi.mock('../limits', () => ({ check: dependencies.check, corpusLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../flags', () => ({ flags: { get chat() { return dependencies.chat; } } }));

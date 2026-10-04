@@ -21,7 +21,7 @@ import { listCollection, readDoc, readNowFile } from '../../lib/corpus';
 import { searchVectors, getChunkText } from '../../lib/rag';
 import { env } from '../../lib/env';
 import { MAX_QUERY_LEN } from '../../lib/verso';
-import { isForeignOrigin } from '../../lib/origin';
+import { isCanonicalHost, isForeignOrigin, otherHost } from '../../lib/origin';
 import { ASK_MAX_OUTPUT_TOKENS, askLimiter, check, mcpLimiter, visitor } from '../../lib/limits';
 import { createTokenBudget, estimateTokens, type Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { audit, auditRefusal, auditSwitchChanges } from '../../lib/audit';
@@ -298,6 +298,7 @@ const reply = (body: JsonRpcResponse, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 export const POST: APIRoute = async ({ request }) => {
+  if (!isCanonicalHost(request)) return otherHost();
   await auditSwitchChanges();
   // Other sites' pages could otherwise spend through their visitors' browsers.
   if (isForeignOrigin(request)) return reply(err(null, -32003, 'Forbidden'), 403);

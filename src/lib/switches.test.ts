@@ -24,6 +24,14 @@ describe('site switches', () => {
     expect(await isOn('voice')).toBe(true);
   });
 
+  it('treat an unrecognized value as off, so a typo stops the feature', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    environment.values = { SWITCH_CHAT: 'disabled', SWITCH_VOICE: 'ON' };
+    const { isOn } = await load();
+    expect(await isOn('chat')).toBe(false);
+    expect(await isOn('voice')).toBe(true);
+  });
+
   it('read the environment only: no store is ever consulted', async () => {
     const { switchEnv } = await load();
     expect(Object.keys(switchEnv())).toEqual(['SWITCH_CHAT', 'SWITCH_VOICE', 'SWITCH_TOOL_SEARCH_SITE', 'SWITCH_TOOL_ASK_JODY']);

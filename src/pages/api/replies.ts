@@ -12,11 +12,13 @@ import { isValidConversationId } from '../../lib/verso';
 import { readReplies } from '../../lib/conversation';
 import { liveUntil } from '../../lib/operator';
 import { check, repliesLimiter, visitor } from '../../lib/limits';
+import { isCanonicalHost, otherHost } from '../../lib/origin';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url, request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
+  if (!isCanonicalHost(request)) return otherHost();
   const cid = url.searchParams.get('cid');
   if (!isValidConversationId(cid)) return new Response('cid required', { status: 400 });
   // Polling is cheap but not free (two Redis reads): 60 a minute per IP

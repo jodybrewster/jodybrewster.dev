@@ -12,8 +12,18 @@ import { env } from './env';
  */
 export const SWITCHES = ['chat', 'voice', 'tool:search_site', 'tool:ask_jody'] as const satisfies readonly SwitchName[];
 
+/**
+ * The switch variables, with anything but on, off or force-off read as off:
+ * a typo such as "disabled" or "of" must stop the feature, not leave it on.
+ */
 export function switchEnv(): Record<string, string | undefined> {
-  return Object.fromEntries(SWITCHES.map(name => [envSwitchKey(name), env(envSwitchKey(name))]));
+  return Object.fromEntries(SWITCHES.map(name => {
+    const key = envSwitchKey(name);
+    const raw = env(key)?.trim().toLowerCase();
+    if (!raw || raw === 'on' || raw === 'off' || raw === 'force-off') return [key, raw || undefined];
+    console.warn(`[switches] ${key}="${raw}" is not on, off or force-off; treating it as off`);
+    return [key, 'off'];
+  }));
 }
 
 let switches: ReturnType<typeof createSwitches> | null = null;

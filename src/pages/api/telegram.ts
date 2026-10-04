@@ -15,6 +15,7 @@ import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
 import { appendReply, appendTurn } from '../../lib/conversation';
 import { audit, ref } from '../../lib/audit';
+import { isCanonicalHost } from '../../lib/origin';
 import { LIVE_WINDOW_MS, goLive, resolveTelegramMessage, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
 import {
@@ -69,7 +70,7 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!flags.chat) return notFound();
+  if (!flags.chat || !isCanonicalHost(request)) return notFound();
   const secret = env('TELEGRAM_WEBHOOK_SECRET');
   if (!secret) return notFound();
   // The one place a non-2xx is safe: this is not Telegram calling.

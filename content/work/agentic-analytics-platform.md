@@ -4,7 +4,7 @@ sector: "Fortune 100 industrial equipment manufacturer"
 role: "Lead Developer / Architect"
 duration: "Q1–Q3 2026, ongoing"
 pillar: "Agentic delivery as method"
-sub: "A custom generative analytics platform for a brand strategy team, designed, specified, and delivered agentically by one architect."
+sub: "A custom generative analytics platform for a brand strategy team, designed, specified, and delivered agentically."
 ---
 
 <figure style="margin: 8px 0 44px;">
@@ -68,7 +68,7 @@ The second decision was methodological: run the delivery itself agentically, so 
 
 ### The solution
 
-The Brand Impact Tracker: a custom Next.js application with the warehouse's native AI layer (Snowflake Cortex) as its intelligence engine. Cortex is the brain; the app is the branded body. Agent responses return as structured JSON and render as live React components on a generative canvas, not chatbot text. The information architecture is the two personas made structural: Finding, an atomic insight; Analysis, an on-demand interactive session titled by its originating question; Brief, a scheduled push publication for the executive. Built as a Turbo monorepo with scoped packages, a Storybook-documented component library, and enterprise identity-provider auth; delivered by one architect working with the client's data lead, whose pre-aggregated funnel stage tables made the semantic layer a vocabulary exercise rather than a rebuild. This was a two-agent build: Claude Code owned the application layer, Snowflake's data-native agent owned the warehouse side.
+The Brand Impact Tracker: a custom Next.js application with the warehouse's native AI layer (Snowflake Cortex) as its intelligence engine. Cortex is the brain; the app is the branded body. Agent responses return as structured JSON and render as live React components on a generative canvas, not chatbot text. The information architecture is the two personas made structural: Finding, an atomic insight; Analysis, an on-demand interactive session titled by its originating question; Brief, a scheduled push publication for the executive. Built as a Turbo monorepo with scoped packages, a Storybook-documented component library, and enterprise identity-provider auth; delivered with the client's data lead, whose pre-aggregated funnel stage tables made the semantic layer a vocabulary exercise rather than a rebuild. This was a two-agent build: Claude Code owned the application layer, Snowflake's data-native agent owned the warehouse side.
 
 <div class="diagram">
   <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg" aria-label="The three artifact types: Finding flows into Analysis and Brief; Analysis graduates into Brief">

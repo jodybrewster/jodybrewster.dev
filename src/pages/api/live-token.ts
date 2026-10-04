@@ -1,81 +1,98 @@
 import type { APIRoute } from 'astro';
-import { GoogleGenAI, Modality } from '@google/genai';
-import { getVoiceIpLimiter, getVoiceGlobalLimiter, clientIp, isOriginAllowed } from '../../lib/rate-limit';
-import { getRedis } from '../../lib/redis';
+import { Modality } from '@google/genai';
+import { voiceTokenRouteFromEnv, type VoiceTokenRouteOptions } from '@jodybrewster/gemini-live/server';
+import { createSwitches } from '@jodybrewster/gemini-live/server/switches';
 import { VOICE_MODEL, VOICE_NAME, VOICE_PROMPT, VOICE_SESSION_MS, SEARCH_SITE_DECLARATION } from '../../lib/verso-voice';
 import { VERSO_TOOL_DECLARATIONS } from '../../lib/verso-tools';
 import { env } from '../../lib/env';
 import { flags } from '../../lib/flags';
-import { withDeadline } from '../../lib/deadline';
 
 export const prerender = false;
-const UNAVAILABLE = 'Voice is temporarily unavailable. Try typing instead.';
-const json = (body: Record<string, unknown>, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 /**
- * Mints a single-use Gemini Live token for one voice session.
+ * Mints a single-use Gemini Live token for one voice session, through the
+ * framework's handler (`createVoiceTokenHandler`, M1 1.4) with the site's
+ * settings.
  *
  * The browser talks to Google directly, so this token is the only lever the
  * site has over what a session can do. It is locked to Verso's model, prompt
- * and tools, it can open one session within a minute, and it dies shortly
+ * and tools, it can open one session within a minute, and it dies a minute
  * after the session cap. `lockAdditionalFields` stays unset on purpose: that
  * locks the whole config, and it is the only form Google accepts with `tools`
  * in it (`[]` fails with "field_mask is invalid"). The cost is that the
  * client's own activity-detection settings are ignored for server defaults.
+ *
+ * The handler checks the origin (the site's own, plus the preview URL on a
+ * preview), caps sessions at 3 per visitor and 40 site-wide per UTC day on
+ * Upstash (the visitor is Vercel's client IP, IPv6 by /64), refuses with 503
+ * when Redis or the key is missing or the store fails, and obeys the voice
+ * switch, which comes from SWITCH_VOICE alone (off or force-off; nothing in
+ * Redis can change it).
  */
-export const POST: APIRoute = async ({ request }) => {
+
+const SITE_ORIGINS = ['https://jodybrewster.dev', 'https://www.jodybrewster.dev'];
+const DEV_ORIGINS = ['http://localhost:4321', 'http://127.0.0.1:4321'];
+const KEYS = [
+  'GEMINI_API_KEY', 'NODE_ENV', 'VERCEL', 'VERCEL_ENV', 'VERCEL_URL', 'VERCEL_BRANCH_URL',
+  'RATE_LIMIT_STORE', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN',
+  'VOICE_ALLOWED_ORIGINS', 'VOICE_SESSIONS_PER_VISITOR_PER_DAY', 'VOICE_SESSIONS_PER_DAY', 'SWITCH_VOICE',
+] as const;
+
+type Env = Record<string, string | undefined>;
+
+/**
+ * The environment the handler reads, from Astro's and Vercel's sources, with
+ * the site's defaults: on Vercel the limit store is Upstash and the allowed
+ * origins are the site's own (plus this preview's URLs on a preview); in
+ * `astro dev` NODE_ENV is development, so the handler allows the dev origins
+ * and keeps counts in memory.
+ */
+export function voiceEnv(read: (key: string) => string | undefined = env): Env {
+  const out: Env = Object.fromEntries(KEYS.map(key => [key, read(key)]));
+  out.NODE_ENV ??= import.meta.env.DEV ? 'development' : 'production';
+  if (out.VERCEL) {
+    out.RATE_LIMIT_STORE ??= 'upstash';
+    const preview = out.VERCEL_ENV === 'production' ? [] : [out.VERCEL_URL, out.VERCEL_BRANCH_URL].filter(Boolean).map(host => `https://${host}`);
+    out.VOICE_ALLOWED_ORIGINS ??= [...SITE_ORIGINS, ...preview].join(',');
+  }
+  return out;
+}
+
+const constraints = () => ({
+  model: VOICE_MODEL,
+  config: {
+    systemInstruction: VOICE_PROMPT,
+    responseModalities: [Modality.AUDIO],
+    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE_NAME } } },
+    inputAudioTranscription: {},
+    outputAudioTranscription: {},
+    tools: [{ functionDeclarations: [SEARCH_SITE_DECLARATION, ...VERSO_TOOL_DECLARATIONS].map(
+      ({ name, description, parameters }) => ({ name, description, parametersJsonSchema: parameters })) }],
+  },
+});
+
+/** The route, built from an environment; `mint` stands in for Google in tests. */
+export function createLiveTokenRoute(source: Env, mint?: VoiceTokenRouteOptions['mint']): (req: Request) => Promise<Response> {
+  const voice = createSwitches({ env: source });
+  return voiceTokenRouteFromEnv({
+    app: 'site',
+    constraints,
+    sessionMs: VOICE_SESSION_MS,
+    devOrigins: DEV_ORIGINS,
+    perVisitorPerDay: 3,
+    sitePerDay: 40,
+    enabled: () => voice.isOn('voice'),
+    env: source,
+    mint,
+  });
+}
+
+let route: ((req: Request) => Promise<Response>) | null = null;
+const handle: APIRoute = ({ request }) => {
   if (!flags.chat) return new Response('Not found', { status: 404 });
-  if (!isOriginAllowed(request)) return new Response('Forbidden', { status: 403 });
-  if (!getRedis() && env('VERCEL_ENV') === 'production') return json({ error: UNAVAILABLE }, 503);
-  const key = env('GEMINI_API_KEY');
-  if (!key) return json({ error: UNAVAILABLE }, 503);
-  try {
-    const denied = await withDeadline(async signal => {
-      const ipLimiter = getVoiceIpLimiter();
-      if (ipLimiter) {
-        const result = await ipLimiter.limit(clientIp(request));
-        signal.throwIfAborted();
-        if (result.reason === 'timeout') return json({ error: UNAVAILABLE }, 503);
-        if (!result.success) return json({ error: 'That is all the voice time for today. You can keep typing.' }, 429);
-      }
-      const globalLimiter = getVoiceGlobalLimiter();
-      if (globalLimiter) {
-        const result = await globalLimiter.limit('global');
-        signal.throwIfAborted();
-        if (result.reason === 'timeout') return json({ error: UNAVAILABLE }, 503);
-        if (!result.success) return json({ error: 'Voice has hit its daily cap. You can keep typing.' }, 429);
-      }
-      return null;
-    }, 4000, request.signal);
-    if (denied) return denied;
-  } catch {
-    return json({ error: UNAVAILABLE }, 503);
-  }
-  try {
-    const now = Date.now();
-    const ai = new GoogleGenAI({ apiKey: key, httpOptions: { apiVersion: 'v1alpha' } });
-    const token = await withDeadline(signal => ai.authTokens.create({ config: {
-      uses: 1,
-      newSessionExpireTime: new Date(now + 60_000).toISOString(),
-      expireTime: new Date(now + VOICE_SESSION_MS + 60_000).toISOString(),
-      liveConnectConstraints: {
-        model: VOICE_MODEL,
-        config: {
-          systemInstruction: VOICE_PROMPT,
-          responseModalities: [Modality.AUDIO],
-          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE_NAME } } },
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
-          tools: [{ functionDeclarations: [SEARCH_SITE_DECLARATION, ...VERSO_TOOL_DECLARATIONS].map(
-            ({ name, description, parameters }) => ({ name, description, parametersJsonSchema: parameters })) }],
-        },
-      },
-      abortSignal: signal,
-    } }), 8000, request.signal);
-    if (!token.name) throw new Error('No token');
-    return json({ token: token.name, expiresAt: new Date(now + VOICE_SESSION_MS + 60_000).toISOString() });
-  } catch {
-    console.error('[live-token] mint failed');
-    return json({ error: UNAVAILABLE }, 503);
-  }
+  route ??= createLiveTokenRoute(voiceEnv());
+  return route(request);
 };
+
+export const POST = handle;
+export const OPTIONS = handle;

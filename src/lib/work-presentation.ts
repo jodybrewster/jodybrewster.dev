@@ -7,6 +7,8 @@ export interface WorkPresentation {
   imageNote?: string;
   /** Crops a tall hero to this aspect ratio from the top; the lightbox still opens the whole image. */
   imageAspect?: string;
+  /** Listed first on /work with a Featured label. */
+  featured?: boolean;
   tags: string[];
   categories: string[];
   challenge: string;
@@ -39,6 +41,7 @@ export const workPresentation: Record<string, WorkPresentation> = {
   },
   'agentic-analytics-platform': {
     title: 'Brand Impact Tracker',
+    featured: true,
     description: 'AI-powered analytics with Snowflake, generative UI, and enterprise integration.',
     image: '/images/work/agentic-analytics-platform/hero.png',
     alt: 'Brand Impact Tracker daily brief showing brand performance signals, an ask-the-data input, and attention cards.',

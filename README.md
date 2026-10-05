@@ -10,7 +10,7 @@ Built with [Astro 5](https://astro.build), deployed to [Vercel](https://vercel.c
 - **Content:** Markdown files synced from an Obsidian vault
 - **Fonts:** Barlow Semi Condensed (thin display headlines), Plus Jakarta Sans (body), JetBrains Mono (mono)
 - **Search:** Pagefind (static index, generated post-build)
-- **AI/Chat:** Verso, the site's chat. Google Gemini + Upstash Vector (RAG over site content), streamed over SSE with conversation history held server-side in Upstash Redis. Mobile pages have one fixed chat composer with Stop and Retry controls. See `CLAUDE.md` for the details.
+- **AI/Chat:** Verso, the site's chat. Google Gemini + Upstash Vector (RAG over site content), streamed over SSE with conversation history held server-side in Upstash Redis. Mobile pages have one fixed chat composer with Stop and Retry controls. **[docs/verso.md](docs/verso.md) is the plain summary of every Verso feature**; `CLAUDE.md` has the details.
 - **Agent surface:** MCP server, `.md` URL pattern, `llms.txt`, A2A agent card
 - **Analytics:** Google Analytics 4 (`G-4DLGJN6CZ5`) loaded directly, production builds only, plus custom events and a 30-day Verso transcript log (see below)
 
@@ -24,6 +24,12 @@ npm run sync       # sync content from Obsidian vault → content/
 npm test           # vitest run
 npm run telegram:setup   # register the Telegram webhook (-- --info shows delivery errors)
 npm run conversations    # download Verso transcripts as Markdown → .conversations/
+npm run conversation:delete  # find and delete one visitor's conversation (see docs/verso.md)
+npm run switch           # turn chat, voice or an agent tool off or on (Production env, applies on deploy)
+npm run audit:verify     # check the audit log against a Telegram anchor (key from the Keychain)
+npm run embed -- --dry-run   # check the corpus Verso answers from, offline
+npm run test:headers     # after a build: security headers and policy checks in three browsers
+npm run security:approve # after a build: approve a new inline script's hash
 ```
 
 ## Routes
@@ -37,6 +43,7 @@ The site opens on `/home`, not on `/`. The root is a redirect (declared in `astr
 | `/library` | A Three.js shelf of books, albums, and notebooks. Its own full-bleed document, no masthead or footer, pinned to the light palette, and the only page that loads Three.js |
 | `/writing`, `/notes`, `/work`, `/portfolio`, `/research` | Index and `[slug]` pages per collection |
 | `/now`, `/about`, `/agent`, `/search` | Standalone pages |
+| `/privacy` | What the site collects, who handles it (by category) and how long it is kept; linked from the footer, `/library` and the chat dock |
 
 The `jodybrewster.dev` notebook on the shelf holds a live iframe of `/home` and opens into it, so the shelf stays running behind the site rather than unloading. See `CLAUDE.md` for the rules that keep that iframe alive.
 
@@ -83,7 +90,7 @@ Setup:
 
 1. Set `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_ID` and `TELEGRAM_WEBHOOK_SECRET` in Vercel (Production) and in `.env`.
 2. Send `/start` to the bot once from your own account, or every send fails with 403.
-3. Run `npm run telegram:setup` to point the bot at `https://jodybrewster.dev/api/telegram`.
+3. Run `npm run telegram:setup` to point the bot at `https://www.jodybrewster.dev/api/telegram`.
 4. If nothing arrives, `npm run telegram:setup -- --info` shows Telegram's last delivery error.
 
 The webhook has to be on `www.jodybrewster.dev`: the bare domain redirects there, and Telegram treats a redirect as a failed delivery.
@@ -120,18 +127,19 @@ Marking `contact_click` and `file_download` as key events makes them easy to fol
 
 ## Verso transcripts
 
-Every question, Verso's answer and Jody's replies are written to a transcript log in Redis and kept for 30 days (`src/lib/transcripts.ts`).
-Emails and phone numbers are replaced with `[email]` and `[phone]` before anything is stored.
-The chat dock tells visitors that Jody sees what is asked and keeps conversations for 30 days.
+Every question, Verso's answer and Jody's replies are written to a transcript log in Redis and kept for 30 days from the conversation's first message (`src/lib/transcripts.ts`).
+Emails, phone numbers and other personal details and secrets are replaced (`[email]`, `[phone]` and so on) before anything is stored.
+The chat dock tells visitors that Jody sees what is asked and that the site keeps conversations for 30 days, and links to `/privacy`.
 
 `npm run conversations` downloads them as Markdown into `.conversations/`, which is gitignored because it holds visitors' words.
 Each download starts with counts and topics, then lists every conversation with the page it started on.
+Downloads keep to the same 30 days: each run deletes its own earlier files once their oldest conversation is 30 days old.
 
 ```bash
 npm run conversations                   # the last 7 days
 npm run conversations -- --days 30      # further back (the log keeps 30)
 npm run conversations -- --digest       # add a Gemini summary: themes, weak answers, missing content
-npm run conversations -- --vault        # write into the Obsidian vault instead
+npm run conversations -- --digest --vault  # also put the summary (never transcripts) in the Obsidian vault
 npm run conversations -- --out file.md  # write to a specific file
 ```
 
@@ -153,7 +161,9 @@ PROD_UPSTASH_REDIS_*=  # Production Redis, read only by npm run conversations
 TELEGRAM_BOT_TOKEN=    # Verso notices to Jody's phone (from @BotFather)
 TELEGRAM_OWNER_ID=     # Jody's numeric Telegram user id
 TELEGRAM_WEBHOOK_SECRET= # Any long random string, checked on every webhook call
-PREVIEW_PASSWORD=      # Basic auth gate (remove for public launch)
+SWITCH_CHAT= SWITCH_VOICE= SWITCH_TOOL_SEARCH_SITE= SWITCH_TOOL_ASK_JODY=  # off or force-off; unset is on (set with npm run switch)
+CRON_SECRET=           # Vercel Production only: authorizes the daily audit anchor cron
+# AUDIT_CHAIN_KEY      # Vercel Production only (sensitive) and the macOS Keychain; never in .env
 ```
 
 Verso operations, corpus refresh/rollback and representative answer checks are documented in [docs/verso-evaluation.md](docs/verso-evaluation.md). Production Vercel builds safely refresh the five-collection index after building the site; local builds do not call the embedding service.

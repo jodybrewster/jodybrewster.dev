@@ -11,7 +11,7 @@
  *   npm run conversation:delete -- --cid <id>
  *
  * Delete it, with the audit chain key on stdin (never in .env):
- *   pbpaste | npm run conversation:delete -- --cid <id> --yes
+ *   security find-generic-password -s "jodybrewster.dev AUDIT_CHAIN_KEY" -w | npm run conversation:delete -- --cid <id> --yes
  *
  * What goes is listed in src/lib/conversation-delete.ts. The key on stdin is
  * checked against the newest entry in the chain first (checkChainKey in
@@ -99,7 +99,7 @@ async function remove(id: string): Promise<void> {
   }
   if (!yes) {
     console.log(`Dry run. Deleting would remove:\n${describe(holdings).join('\n')}`);
-    console.log('\nTo delete: pbpaste | npm run conversation:delete -- --cid <id> --yes  (audit chain key on stdin)');
+    console.log('\nTo delete: security find-generic-password -s "jodybrewster.dev AUDIT_CHAIN_KEY" -w | npm run conversation:delete -- --cid <id> --yes  (audit chain key on stdin, from the Keychain)');
     return;
   }
 

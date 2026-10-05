@@ -4,7 +4,7 @@
  * read from stdin, never from .env, so it never sits on disk next to a
  * production write token:
  *
- *   pbpaste | npm run audit:verify -- --anchor 120:9f2c...@2026-10-05 [--anchor ...] [--from 1:abcd...] [--max-age-days 2]
+ *   security find-generic-password -s "jodybrewster.dev AUDIT_CHAIN_KEY" -w | npm run audit:verify -- --anchor 120:9f2c...@2026-10-05 [--anchor ...] [--from 1:abcd...] [--max-age-days 2]
  *
  * Paste anchors from the Telegram messages ("Audit anchor (...): seq:hash@date");
  * after a month was dropped, pass its "audit.segment.dropped" lastSeq:lastHash as --from.

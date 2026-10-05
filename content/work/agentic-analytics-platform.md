@@ -2,9 +2,9 @@
 title: "Brand Impact Tracker: an agentic build, built agentically"
 sector: "Fortune 100 industrial equipment manufacturer"
 role: "Lead Developer / Architect"
-duration: "Q1–Q3 2026, ongoing"
+duration: "Q1–Q2 2026"
 pillar: "Agentic delivery as method"
-sub: "A custom generative analytics platform for a brand strategy team, designed, specified, and delivered agentically."
+sub: "A custom generative analytics platform for a brand strategy team, designed, specified, and delivered agentically into production."
 ---
 
 <figure style="margin: 8px 0 44px;">
@@ -62,7 +62,7 @@ Marketing investment flowed across a full funnel, Awareness through Loyalty, but
 
 The engagement began as a narrower question: had the incumbent BI platform hit its AI ceiling? The evaluation said yes, and structurally rather than incrementally. The incumbent and its leading competitor both generate native visuals inside their own chrome; neither can deliver a conversational, generative analytics experience or a branded external distribution layer. That finding forced the first real decision: recommend a custom build without torching the incumbent. Its embed footprint across the CRM and intranet is load-bearing infrastructure, so rip-and-replace was rejected for a three-layer architecture: preserve the existing BI surface with inline AI affordances, add a purpose-built generative surface beside it, thread one AI capability layer through both. The pitch was grounded in the client's own AI charter rather than dissatisfaction with tooling, which kept the recommendation politically defensible.
 
-The second decision was methodological: run the delivery itself agentically, so the process would demonstrate the thesis. Research surfaced two personas: the operational user who interrogates data weekly, and the executive who needs data composed into narrative on their cadence. The discipline was refusing to invent more. Encoded as markdown skills, the personas became executable: every screen composed as one, critiqued as the other, before human review. The engagement's strategy lives as a knowledge bundle (one concept per markdown file, cross-linked, conformed to Google's Open Knowledge Format) that agents execute from directly, so the strategy can't rot without the build breaking. Design quality is enforced by a curated craft stack (Impeccable, UI/UX Pro, Taste, plus custom-built skills) encoding hand-made design-system decisions: Fraunces, JetBrains Mono, Inter, dark grammar, brand via palette tokens only. Taste holds whether I'm watching or not. And the POC was treated as a requirements-extraction instrument, not a proof: silent demos, forced tradeoffs.
+The second decision was methodological: run the delivery itself agentically, so the process would demonstrate the thesis. Research surfaced two personas: the operational user who interrogates data weekly, and the executive who needs data composed into narrative on their cadence. The discipline was refusing to invent more. The engagement's strategy lives as a knowledge bundle (one concept per markdown file, cross-linked, conformed to Google's Open Knowledge Format) that agents execute from directly, so the strategy can't rot without the build breaking. Design quality is enforced by a curated craft stack (Impeccable, UI/UX Pro, Taste, plus custom-built skills) encoding hand-made design-system decisions: Fraunces, JetBrains Mono, Inter, dark grammar, brand via palette tokens only. Taste holds whether I'm watching or not. And the POC was treated as a requirements-extraction instrument, not a proof: silent demos, forced tradeoffs.
 
 ## § 04 — solution
 
@@ -104,14 +104,14 @@ The Brand Impact Tracker: a custom Next.js application with the warehouse's nati
 
 <div class="metric-row">
   <div class="metric">
-    <p class="n">15</p>
-    <p class="l"><svg class="icon sm"><use href="#i-layers"/></svg> Screens from one spec file</p>
-    <p class="c">derived from 33 agent-analyzed dashboard screenshots; the spec was the work, the code was the printout</p>
+    <p class="n">live</p>
+    <p class="l"><svg class="icon sm"><use href="#i-check"/></svg> In production</p>
+    <p class="c">the proof of concept became a billable delivery engagement, and the platform shipped</p>
   </div>
   <div class="metric">
-    <p class="n">1</p>
-    <p class="l"><svg class="icon sm"><use href="#i-user"/></svg> Architect, studio-shaped output</p>
-    <p class="c">application, design system, component library, pitch materials, sprint playbook; work that conventionally staffs three to four roles</p>
+    <p class="n">3</p>
+    <p class="l"><svg class="icon sm"><use href="#i-layers"/></svg> Layers, nothing ripped out</p>
+    <p class="c">the existing embedded BI kept, a generative surface added beside it, one AI capability layer through both</p>
   </div>
   <div class="metric">
     <p class="n">sec</p>
@@ -126,6 +126,6 @@ And a standards-conformant knowledge bundle as a deliverable: the client's accum
 
 ### What this taught us
 
-The generalizable insight: in agentic delivery, the durable asset is curated context, not the model. The brief, the build, and the handoff can share one substrate. The product rests on a semantic layer that gives an AI agent trustworthy meaning over warehouse tables; the method rests on a knowledge bundle that gives coding agents trustworthy meaning over the project. Same idea, two altitudes. Next on my list is an eval harness for the method itself: "the persona critique caught it" is still an anecdote, and the method deserves the same rigor as the product.
+The generalizable insight: in agentic delivery, the durable asset is curated context, not the model. The brief, the build, and the handoff can share one substrate. The product rests on a semantic layer that gives an AI agent trustworthy meaning over warehouse tables; the method rests on a knowledge bundle that gives coding agents trustworthy meaning over the project. Same idea, two altitudes.
 
 *Built with Claude Code, Snowflake Cortex, one OKF bundle, two personas, and an unreasonable number of markdown files.*

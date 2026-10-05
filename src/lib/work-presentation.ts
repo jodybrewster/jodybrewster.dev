@@ -51,7 +51,7 @@ export const workPresentation: Record<string, WorkPresentation> = {
     challenge: 'Brand performance lived across disconnected tools. Ad-hoc questions entered an analyst backlog measured in weeks, and existing BI tools could not provide a branded experience for the dealer network.',
     solution: 'A custom Next.js application with Snowflake Cortex composes structured answers as live React components. Findings, interactive analyses, and scheduled briefs give operational and executive users different ways into the same data.',
     outcome: 'Question-to-answer time reduced from weeks to seconds in the demonstrated experience.',
-    scale: 'Operations users and executives on one platform; proof of concept carried into a billable delivery engagement.',
+    scale: 'Operations users and executives on one platform; proof of concept carried into a billable delivery engagement and into production.',
     architecture: [
       { title: 'Data foundation', icon: 'layers', items: ['Funnel-stage tables', 'Semantic meaning', 'Snowflake warehouse'] },
       { title: 'Intelligence', icon: 'sparkle', items: ['Snowflake Cortex', 'Structured JSON', 'One AI capability layer'] },

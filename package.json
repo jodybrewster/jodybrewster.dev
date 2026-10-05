@@ -16,6 +16,7 @@
     "spotify-auth": "tsx scripts/spotify-auth.ts",
     "telegram:setup": "tsx scripts/telegram-setup.ts",
     "conversations": "tsx scripts/conversations.ts",
+    "conversation:delete": "tsx scripts/conversation-delete.ts",
     "books": "tsx scripts/sync-book-covers.ts",
     "games": "tsx scripts/sync-game-covers.ts",
     "test": "vitest run",

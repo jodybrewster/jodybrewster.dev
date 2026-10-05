@@ -7,6 +7,9 @@
 #chat-dock .dock-close svg { width: 18px; height: 18px; stroke-width: 2.25; }
 #chat-dock .dock-close:hover, #chat-dock .dock-close:focus-visible { color: var(--accent); border-color: var(--accent); }
 #chat-dock .dock-data-note { font: 400 10px/1.6 var(--sans); color: var(--ink-soft); margin: 0 0 20px; }
+/* The way to the privacy page: ink rather than the note's soft grey and a little heavier, so it reads as a link at 10px. */
+#chat-dock .dock-data-note a { color: var(--ink); font-weight: 600; border-bottom: 0; text-decoration: underline; text-decoration-color: var(--ink-soft); text-underline-offset: 2px; }
+#chat-dock .dock-data-note a:hover, #chat-dock .dock-data-note a:focus-visible { color: var(--accent); text-decoration-color: var(--accent); }
 #chat-dock .dock-recovery { margin-top: 10px; }
 #chat-dock .dock-error { color: var(--ink-soft); font: 400 13px/1.6 var(--sans); }
 #chat-dock .dock-retry { border: 1px solid var(--rule); border-radius: 7px; min-height: 44px; padding: 8px 14px; background: var(--paper-warm); color: var(--ink); font: 500 12px/1.5 var(--sans); cursor: pointer; }

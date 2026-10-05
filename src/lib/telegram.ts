@@ -169,9 +169,9 @@ export async function sendTurn(text: string, signal?: AbortSignal): Promise<numb
   return typeof result?.message_id === 'number' ? result.message_id : null;
 }
 
-/** Confirmations. No force_reply, since there is nothing to answer. */
-export async function sendNotice(text: string, signal?: AbortSignal): Promise<void> {
-  await tgCall('sendMessage', {
+/** Confirmations. No force_reply, since there is nothing to answer. Resolves whether Telegram took it. */
+export async function sendNotice(text: string, signal?: AbortSignal): Promise<boolean> {
+  return null !== await tgCall('sendMessage', {
     chat_id: env('TELEGRAM_OWNER_ID'),
     text,
     disable_web_page_preview: true,

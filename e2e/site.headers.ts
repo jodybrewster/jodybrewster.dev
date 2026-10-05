@@ -27,7 +27,7 @@ async function watchViolations(page: Page): Promise<() => Promise<string[]>> {
 }
 
 test('every response carries the headers, with a policy that runs no injected script', async ({ request }) => {
-  for (const path of ['/home', '/writing', '/worklets/playback.js', '/no-such-page']) {
+  for (const path of ['/home', '/writing', '/privacy', '/worklets/playback.js', '/no-such-page']) {
     const response = await request.get(path, { maxRedirects: 0 });
     const h = response.headers();
     const policy = h['content-security-policy'] ?? '';
@@ -49,7 +49,7 @@ test('pages and the client router run with no policy violations', async ({ page 
   const net = await mockNetwork(page, undefined, HOST, ANALYTICS);
   const violations = await watchViolations(page);
   // Each a soft navigation by the client router, from the home page.
-  for (const path of ['/writing', '/work', '/notes', '/about', '/library']) {
+  for (const path of ['/writing', '/work', '/notes', '/about', '/privacy', '/library']) {
     await page.goto('/home');
     await expect(page.locator('.home-verso-button')).toBeVisible();
     await page.locator(`a[href="${path}"]`).first().click();

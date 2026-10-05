@@ -22,8 +22,8 @@ import { getRedis } from './redis';
 import { redactText } from './redact';
 
 export const TRANSCRIPT_TTL_S = 30 * 86400;
-const INDEX = 'chat:log:index';
-const logKey = (cid: string) => `chat:log:${cid}`;
+export const TRANSCRIPT_INDEX = 'chat:log:index';
+export const logKey = (cid: string) => `chat:log:${cid}`;
 
 export interface TranscriptEntry {
   /** visitor | Verso | Jody */
@@ -77,10 +77,10 @@ export async function logEntries(
     await redis.multi()
       .rpush(key, ...entries.map(entry => JSON.stringify({ ...entry, t: redactText(entry.t) })))
       .expire(key, TRANSCRIPT_TTL_S, 'NX')
-      .zadd(INDEX, { nx: true }, { score: now, member: cid })
+      .zadd(TRANSCRIPT_INDEX, { nx: true }, { score: now, member: cid })
       // Only entries two windows old: by then every list's own TTL has
       // removed it, so the index never forgets a log the read path must delete.
-      .zremrangebyscore(INDEX, 0, now - 2 * TRANSCRIPT_TTL_S * 1000)
+      .zremrangebyscore(TRANSCRIPT_INDEX, 0, now - 2 * TRANSCRIPT_TTL_S * 1000)
       .exec();
   } catch (err) {
     console.error('[transcripts] write failed', err instanceof Error ? err.name : 'Error');
@@ -108,18 +108,18 @@ export async function readTranscripts(since: number, redis: TranscriptRedis): Pr
   const cutoff = now - TRANSCRIPT_TTL_S * 1000;
   // Expired conversations: delete each log before forgetting it in the index,
   // so one whose TTL never landed is still removed.
-  const expired = await redis.zrange<string[]>(INDEX, 0, cutoff, { byScore: true });
+  const expired = await redis.zrange<string[]>(TRANSCRIPT_INDEX, 0, cutoff, { byScore: true });
   for (const cid of expired) {
     await redis.del(logKey(cid));
-    await redis.zrem(INDEX, cid);
+    await redis.zrem(TRANSCRIPT_INDEX, cid);
   }
-  const cids = await redis.zrange<string[]>(INDEX, Math.max(0, since - TRANSCRIPT_TTL_S * 1000), now, { byScore: true });
+  const cids = await redis.zrange<string[]>(TRANSCRIPT_INDEX, Math.max(0, since - TRANSCRIPT_TTL_S * 1000), now, { byScore: true });
   const transcripts: Transcript[] = [];
   for (const cid of cids) {
     const entries = (await redis.lrange(logKey(cid), 0, -1)).map(parseEntry).filter((e): e is TranscriptEntry => e !== null);
     if (entries.length && entries[0].ts < cutoff) {
       await redis.del(logKey(cid));
-      await redis.zrem(INDEX, cid);
+      await redis.zrem(TRANSCRIPT_INDEX, cid);
       continue;
     }
     if (entries.length && entries[entries.length - 1].ts >= since) transcripts.push({ cid, last: entries[entries.length - 1].ts, entries });
@@ -149,10 +149,10 @@ export function summarize(transcripts: Transcript[]) {
 
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export function formatTranscripts(transcripts: Transcript[], opts: { since: number; until: number; digest?: string }): string {
+function header(transcripts: Transcript[], opts: { since: number; until: number; digest?: string }, title: string): string[] {
   const s = summarize(transcripts);
   const lines = [
-    `# Verso conversations, ${stamp(opts.since).slice(0, 10)} to ${stamp(opts.until).slice(0, 10)}`,
+    `# ${title}, ${stamp(opts.since).slice(0, 10)} to ${stamp(opts.until).slice(0, 10)}`,
     '',
     `${count(s.conversations, 'conversation')}, ${count(s.questions, 'question')}, ${s.failed} unanswered, ${count(s.replies, 'reply', 'replies')} from Jody. Times are UTC.`,
     '',
@@ -160,6 +160,16 @@ export function formatTranscripts(transcripts: Transcript[], opts: { since: numb
     '',
   ];
   if (opts.digest) lines.push('## Digest', '', opts.digest.trim(), '');
+  return lines;
+}
+
+/** The counts, topics and digest without the conversations, for places that must not hold transcripts. */
+export function formatDigest(transcripts: Transcript[], opts: { since: number; until: number; digest: string }): string {
+  return header(transcripts, opts, 'Verso digest').join('\n');
+}
+
+export function formatTranscripts(transcripts: Transcript[], opts: { since: number; until: number; digest?: string }): string {
+  const lines = header(transcripts, opts, 'Verso conversations');
   for (const transcript of transcripts) {
     const first = transcript.entries.find(e => e.r === 'u');
     const meta = [stamp(transcript.entries[0].ts), transcript.cid.slice(0, 4), first?.page && `from ${first.page}`].filter(Boolean);

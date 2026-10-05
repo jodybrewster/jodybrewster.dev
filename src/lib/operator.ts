@@ -45,9 +45,11 @@ export interface OperatorRedis {
   del(...keys: string[]): Promise<number>;
 }
 
-const tgKey = (messageId: number) => `chat:tg:${messageId}`;
-const liveKey = (cid: string) => `chat:live:${cid}`;
-const heldKey = (cid: string) => `chat:held:${cid}`;
+export const tgKey = (messageId: number) => `chat:tg:${messageId}`;
+/** Every Telegram mapping, for finding one conversation's (src/lib/conversation-delete.ts). */
+export const TG_KEY_MATCH = 'chat:tg:*';
+export const liveKey = (cid: string) => `chat:live:${cid}`;
+export const heldKey = (cid: string) => `chat:held:${cid}`;
 
 /** How long Verso stays quiet after Jody replies, waiting to see if he has more to say. */
 export const LIVE_WINDOW_MS = 120_000;

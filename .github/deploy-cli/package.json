@@ -1,0 +1,8 @@
+{
+  "name": "deploy-cli",
+  "private": true,
+  "description": "Pins the Vercel CLI the Deploy workflow runs, so its whole tree is locked with integrity hashes.",
+  "dependencies": {
+    "vercel": "62.4.0"
+  }
+}

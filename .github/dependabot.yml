@@ -1,0 +1,21 @@
+# Keeps the deploy workflow's SHA-pinned actions and its pinned Vercel CLI
+# current. The site's own dependencies are updated by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    # A release must age a week before it is proposed, so a poisoned
+    # version has time to be pulled before it can reach the deploy job.
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: npm
+    directory: /.github/deploy-cli
+    schedule:
+      interval: monthly
+    # A release must age a week before it is proposed, so a poisoned
+    # version has time to be pulled before it can reach the deploy job.
+    cooldown:
+      default-days: 7

@@ -12,23 +12,21 @@ permissions:
   contents: read
 
 # Queue deploys instead of cancelling one mid-upload; the newest merge wins.
+# Keyed on the ref so a dispatch from another branch, which the production
+# environment refuses anyway, cannot displace a pending deploy of main.
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://www.jodybrewster.dev
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -37,7 +35,36 @@ jobs:
 
       - run: npm test
 
+  # The token lives only in this job, on its own runner, so nothing from the
+  # project's dependency tree ever runs beside it. The CLI comes from its own
+  # lockfile in .github/deploy-cli, installed without scripts, and outside the
+  # checkout so it is not uploaded. The secrets belong to the production
+  # environment, which only main can deploy to.
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://www.jodybrewster.dev
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          # Never restore a cache the test job, which runs project code, wrote.
+          package-manager-cache: false
+
+      - name: Install the pinned Vercel CLI
+        run: |
+          cp .github/deploy-cli/package.json .github/deploy-cli/package-lock.json "$RUNNER_TEMP/"
+          npm ci --ignore-scripts --no-audit --no-fund --prefix "$RUNNER_TEMP"
+
       - name: Deploy to Vercel
-        run: npx --yes vercel@62 deploy --prod --token="$VERCEL_TOKEN"
+        run: '"$RUNNER_TEMP/node_modules/.bin/vercel" deploy --prod'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

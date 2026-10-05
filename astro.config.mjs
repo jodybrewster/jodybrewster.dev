@@ -51,6 +51,11 @@ export default defineConfig({
   // Optimize Dep) and the shelf never boots. Pre-bundling at startup means
   // there is nothing left to discover.
   vite: {
+    // No inlined scripts or assets: every processed script becomes a
+    // same-origin file, which the security policy allows by origin. Inline
+    // module scripts would also make the client router insert a data: script
+    // to wait for them, which the policy refuses (scripts/security-headers.ts).
+    build: { assetsInlineLimit: 0 },
     optimizeDeps: {
       include: [
         'three',

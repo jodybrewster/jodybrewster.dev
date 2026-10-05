@@ -1610,7 +1610,7 @@
         </button>
       </div>
 
-      <form class="input-row" onsubmit="event.preventDefault();">
+      <form class="input-row">
         <span class="input-icon"><svg class="icon"><use href="#i-search"/></svg></span>
         <input type="text" id="chat-q" placeholder="Ask a question, or pick a probe above…" />
         <button type="submit">Ask <svg class="icon sm"><use href="#i-send"/></svg></button>
@@ -1785,11 +1785,11 @@
         <p>Every essay, note, and brief is available as raw markdown. Add <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">.md</code> to any URL, or send <code style="font-family:var(--mono);font-size:0.85em;background:var(--paper-warm);padding:1px 6px;border-radius:2px;border:1px solid var(--rule)">Accept: text/markdown</code>. A curated index lives at the site root.</p>
         <div class="url">
           <span><span class="url-method">GET</span> jody.site/llms.txt</span>
-          <span class="copy" onclick="copyMe(this, 'https://jody.site/llms.txt')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <span class="copy" data-copy="https://jody.site/llms.txt"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
         </div>
         <div class="url">
           <span><span class="url-method">GET</span> jody.site/writing/the-trouble-with-agent.md</span>
-          <span class="copy" onclick="copyMe(this, 'https://jody.site/writing/the-trouble-with-agent.md')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <span class="copy" data-copy="https://jody.site/writing/the-trouble-with-agent.md"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
         </div>
       </div>
 
@@ -1802,7 +1802,7 @@
         <p>Six tools over the published corpus. Streamable HTTP transport. Unauthenticated for read tools; this is a public read-only surface, so OAuth would be theater.</p>
         <div class="url">
           <span>mcp.jody.site</span>
-          <span class="copy" onclick="copyMe(this, 'https://mcp.jody.site')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <span class="copy" data-copy="https://mcp.jody.site"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
         </div>
         <div class="tools">
           <span class="t">search_writing</span>
@@ -1823,7 +1823,7 @@
         <p>If your agent speaks A2A, an agent card is published at the well-known path. Three skills: discuss writing, discuss collaboration style, recommend essays. OAuth is declared but not enforced for read skills in v0.</p>
         <div class="url">
           <span>jody.site/.well-known/agent-card.json</span>
-          <span class="copy" onclick="copyMe(this, 'https://jody.site/.well-known/agent-card.json')"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
+          <span class="copy" data-copy="https://jody.site/.well-known/agent-card.json"><svg class="icon sm"><use href="#i-copy"/></svg> Copy</span>
         </div>
       </div>
 
@@ -1922,6 +1922,11 @@
       }
     });
   });
+
+  // Wired here, not in onclick/onsubmit attributes, which the site's
+  // security policy refuses to run.
+  document.querySelectorAll("form.input-row").forEach(form => form.addEventListener("submit", e => e.preventDefault()));
+  document.querySelectorAll("[data-copy]").forEach(el => el.addEventListener("click", () => copyMe(el, el.dataset.copy)));
 
   // copy-to-clipboard for endpoint URLs
   function copyMe(el, text) {

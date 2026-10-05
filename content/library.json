@@ -550,6 +550,12 @@
       "author": "Chip Huyen",
       "url": "https://openlibrary.org/works/OL39671094W",
       "cover": "/media/books/book-ai-engineering.jpg"
+    },
+    {
+      "title": "The Mom Test",
+      "author": "Rob Fitzpatrick",
+      "url": "https://openlibrary.org/works/OL23982116W",
+      "cover": "/media/books/book-the-mom-test.jpg"
     }
   ]
 }

@@ -94,7 +94,8 @@ Setup:
 4. If nothing arrives, `npm run telegram:setup -- --info` shows Telegram's last delivery error.
 
 The webhook has to be on `www.jodybrewster.dev`: the bare domain redirects there, and Telegram treats a redirect as a failed delivery.
-Deploys go out with `npx vercel --prod`, since the project is not connected to GitHub; `.vercelignore` keeps `.env` out of the upload.
+Merging to main deploys production through `.github/workflows/deploy.yml`, which runs the tests and then `vercel deploy --prod`.
+A deploy by hand is still `npx vercel --prod`; `.vercelignore` keeps `.env` out of that upload.
 
 Voice conversations stay in the browser, so they are not sent to Telegram or logged.
 

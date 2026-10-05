@@ -20,9 +20,9 @@
  * change. After checking where each new one comes from, record the set
  * with `npm run security:approve` (after a build).
  *
- * For the same reason (Vercel reads the adapter's config.json, not
- * vercel.json, for this site) it copies vercel.json's `crons` into
- * config.json, so the daily audit anchor runs.
+ * Crons are left to vercel.json: `vercel build` concatenates vercel.json's
+ * `crons` with config.json's without de-duplicating, so copying them here
+ * registered the audit anchor twice and Vercel refused the deploy.
  *
  *   tsx scripts/security-headers.ts [--check | --approve]   # --check: report only; --approve: record the current inline scripts
  */
@@ -104,9 +104,7 @@ function main(): void {
   const headers = securityHeaders(hashes);
   console.log(`security headers: ${hashes.size} inline script hashes, policy ${headers[MARK].length} characters`);
   if (check) return;
-  const config = JSON.parse(readFileSync(CONFIG, 'utf8')) as { routes?: Array<Record<string, unknown>>; crons?: Array<{ path: string; schedule: string }> };
-  const crons = (JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons?: Array<{ path: string; schedule: string }> }).crons ?? [];
-  if (crons.length) config.crons = crons;
+  const config = JSON.parse(readFileSync(CONFIG, 'utf8')) as { routes?: Array<Record<string, unknown>> };
   // Re-runnable: replace a route this script added before.
   const routes = (config.routes ?? []).filter(r => !(r.headers && MARK in (r.headers as Record<string, string>)));
   config.routes = [{ src: '^/(.*)$', headers, continue: true }, ...routes];

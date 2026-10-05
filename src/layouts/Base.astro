@@ -1,4 +1,5 @@
 ---
+import { scriptJson } from '../lib/script-json';
 import '../styles/global.css';
 import '../styles/chat-mobile.css';
 import { ClientRouter } from 'astro:transitions';
@@ -43,7 +44,7 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false } = As
   )}
 
   {jsonLd && (
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+    <script is:inline type="application/ld+json" set:html={scriptJson(jsonLd)} />
   )}
 
   <Analytics />

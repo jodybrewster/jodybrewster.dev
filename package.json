@@ -26,7 +26,8 @@
     "transcripts:sweep": "tsx scripts/sweep-transcripts.ts",
     "audit:verify": "tsx scripts/audit-verify.ts",
     "switch": "tsx scripts/switch.ts",
-    "test:headers": "playwright test -c playwright.headers.config.ts"
+    "test:headers": "playwright test -c playwright.headers.config.ts",
+    "security:approve": "tsx scripts/security-headers.ts --approve"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",

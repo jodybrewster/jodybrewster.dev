@@ -1,4 +1,5 @@
 ---
+import { scriptJson } from '../lib/script-json';
 /**
  * /library - the shelf.
  *
@@ -48,7 +49,7 @@ const jsonLd = {
     rel="stylesheet"
   />
 
-  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+  <script is:inline type="application/ld+json" set:html={scriptJson(jsonLd)} />
 
   <Analytics />
 

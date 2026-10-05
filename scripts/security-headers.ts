@@ -13,13 +13,18 @@
  * swaps never meet a different one); styles allow 'unsafe-inline' because
  * the pages use style attributes, which styles cannot turn into script.
  * The build fails on an inline event handler, which would need
- * 'unsafe-hashes'.
+ * 'unsafe-hashes', and on any inline script whose hash is not in
+ * security/inline-scripts.json: hashing whatever the build contains would
+ * also trust a script injected through content (a crafted album title
+ * breaking out of a JSON block), so a new inline script is a reviewed
+ * change. After checking where each new one comes from, record the set
+ * with `npm run security:approve` (after a build).
  *
  * For the same reason (Vercel reads the adapter's config.json, not
  * vercel.json, for this site) it copies vercel.json's `crons` into
  * config.json, so the daily audit anchor runs.
  *
- *   tsx scripts/security-headers.ts [--check]   # --check: report, change nothing
+ *   tsx scripts/security-headers.ts [--check | --approve]   # --check: report only; --approve: record the current inline scripts
  */
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -31,6 +36,7 @@ const OUTPUT = '.vercel/output';
 const STATIC = join(OUTPUT, 'static');
 const CONFIG = join(OUTPUT, 'config.json');
 const MARK = 'content-security-policy';
+const APPROVED = 'security/inline-scripts.json';
 
 function htmlFiles(dir: string): string[] {
   return readdirSync(dir).flatMap(name => {
@@ -70,17 +76,31 @@ export function securityHeaders(hashes: Iterable<string>): Record<string, string
 
 function main(): void {
   const check = process.argv.includes('--check');
-  const hashes = new Set<string>();
+  const approve = process.argv.includes('--approve');
+  const found = new Map<string, string>(); // hash -> a page it appears on
   const handlers: string[] = [];
   for (const file of htmlFiles(STATIC)) {
+    const page = file.slice(STATIC.length + 1);
     const scan = scanHtml(readFileSync(file, 'utf8'));
-    scan.hashes.forEach(h => hashes.add(h));
-    handlers.push(...scan.handlers.map(h => `${file.slice(STATIC.length + 1)}: ${h}`));
+    for (const h of scan.hashes) if (!found.has(h)) found.set(h, page);
+    handlers.push(...scan.handlers.map(h => `${page}: ${h}`));
   }
   if (handlers.length) {
     console.error(`Inline event handlers need 'unsafe-hashes'; move them into scripts:\n${handlers.join('\n')}`);
     process.exit(1);
   }
+  if (approve) {
+    writeFileSync(APPROVED, `${JSON.stringify({ hashes: [...found.keys()].sort() }, null, 2)}\n`);
+    console.log(`approved ${found.size} inline scripts in ${APPROVED}`);
+    return;
+  }
+  const approved = new Set<string>((JSON.parse(readFileSync(APPROVED, 'utf8')) as { hashes: string[] }).hashes);
+  const unknown = [...found].filter(([h]) => !approved.has(h));
+  if (unknown.length) {
+    console.error(`Inline scripts not in ${APPROVED} (a new script, an edited one, or one injected through content):\n${unknown.map(([h, page]) => `${h} on ${page}`).join('\n')}\nCheck each, then run \`npm run security:approve\`.`);
+    process.exit(1);
+  }
+  const hashes = new Set(found.keys());
   const headers = securityHeaders(hashes);
   console.log(`security headers: ${hashes.size} inline script hashes, policy ${headers[MARK].length} characters`);
   if (check) return;

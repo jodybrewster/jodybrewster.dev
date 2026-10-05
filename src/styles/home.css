@@ -135,10 +135,10 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .home-section-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 0 7px; }
 .home-text-link { display: inline-flex; gap: 8px; align-items: center; color: var(--home-muted); font-size: 12px; min-height: 32px; }
 .home-text-link:hover { color: var(--home-cyan); }
-.project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; }
+.project-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
 .project-card { min-width: 0; overflow: hidden; border: 1px solid var(--home-rule) !important; border-radius: var(--home-radius); background: var(--home-surface); color: var(--home-ink); transition: transform .2s, border-color .2s; }
 .project-card:hover { color: var(--home-ink); transform: translateY(-3px); border-color: var(--home-cyan) !important; }
-.project-preview { position: relative; height: 108px; overflow: hidden; background: #0b1826; border-bottom: 1px solid var(--home-rule); }
+.project-preview { position: relative; aspect-ratio: 4 / 1; overflow: hidden; background: #0b1826; border-bottom: 1px solid var(--home-rule); }
 .project-preview img { display: block; width: 100%; height: auto; transition: transform .3s; }
 .project-card:hover .project-preview img { transform: scale(1.025); }
 .project-analytics .project-preview img { margin-top: -5%; }

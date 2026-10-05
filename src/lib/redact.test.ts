@@ -62,25 +62,41 @@ describe("defaultRedactor", () => {
 
 describe("defaultRedactor on hostile input", () => {
   // Every rule must stay linear in V8 (gitleaks writes for Go's linear RE2;
-  // the same patterns can backtrack in JavaScript). A quadratic rule takes
-  // seconds on these; a linear one takes milliseconds.
-  const n = MAX_CHARS;
-  it.each([
-    ["letters before an @", "a".repeat(n) + "@"],
-    ["dotted labels after an @", "x@" + "a.".repeat(n / 2)],
-    ["a long digit run", "1".repeat(n)],
-    ["digits and punctuation", "1(".repeat(n / 2)],
-    ["dashed digits", "1-".repeat(n / 2)],
-    ["dotted digits", "1.".repeat(n / 2)],
-    ["colons", "a:".repeat(n / 2)],
-    ["a token prefix", "eyJ" + "a".repeat(n)],
-    ["version strings", "v1.2.3.".repeat(n / 7)],
-    ["phone-like words", "call 415 ".repeat(n / 9)],
-  ])("handles %s in linear time", (_name, input) => {
+  // the same patterns can backtrack in JavaScript). Each input is timed at a
+  // quarter of its length and at full length: linear work grows about 4x,
+  // quadratic about 16x. A ratio, not a fixed budget in milliseconds: the
+  // suite runs files in parallel, and a fixed budget failed on a busy machine
+  // (the phone library alone takes a few hundred ms on 100,000 characters).
+  // Runs alternate between the sizes so load hits both alike, and the fastest
+  // of each is kept, since load only ever adds time.
+  const n = MAX_CHARS / 2;
+  const time = (input: string, out: number[]) => {
     const started = performance.now();
     defaultRedactor.redact(input);
-    expect(performance.now() - started).toBeLessThan(2_000);
-  });
+    out.push(performance.now() - started);
+  };
+  it.each([
+    ["letters before an @", (k: number) => "a".repeat(k) + "@"],
+    ["dotted labels after an @", (k: number) => "x@" + "a.".repeat(k / 2)],
+    ["a long digit run", (k: number) => "1".repeat(k)],
+    ["digits and punctuation", (k: number) => "1(".repeat(k / 2)],
+    ["dashed digits", (k: number) => "1-".repeat(k / 2)],
+    ["dotted digits", (k: number) => "1.".repeat(k / 2)],
+    ["colons", (k: number) => "a:".repeat(k / 2)],
+    ["a token prefix", (k: number) => "eyJ" + "a".repeat(k)],
+    ["version strings", (k: number) => "v1.2.3.".repeat(Math.floor(k / 7))],
+    ["phone-like words", (k: number) => "call 415 ".repeat(Math.floor(k / 9))],
+  ])("handles %s in linear time", (_name, make) => {
+    const small = make(n / 4);
+    const large = make(n);
+    defaultRedactor.redact(small); // warm up the JIT before timing
+    const a: number[] = [];
+    const b: number[] = [];
+    for (let i = 0; i < 3; i++) { time(small, a); time(large, b); }
+    // The small run is floored at 20ms: a rule that fast on 12,500 characters is not the danger (a backtracking
+    // one takes seconds), and the ratio of two runs of a few milliseconds is mostly GC and scheduler noise.
+    expect(Math.min(...b) / Math.max(Math.min(...a), 20)).toBeLessThan(10);
+  }, 30_000);
 
   it("cuts a string past the limit before matching, with a marker", () => {
     const { text } = defaultRedactor.redact("a".repeat(MAX_CHARS) + " jane@example.com");

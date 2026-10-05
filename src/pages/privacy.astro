@@ -1,0 +1,136 @@
+---
+import Studio from '../layouts/Studio.astro';
+
+// Change with the page: the eyebrow and the footer both show it.
+const effective = new Date('2026-10-04T12:00:00Z');
+const effectiveIso = effective.toISOString().slice(0, 10);
+const effectiveText = effective.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+const retention = [
+  ['Follow-up context for the chat', '24 hours after the last message'],
+  ['Chat transcripts', '30 days from the first message'],
+  ['Copies of conversations sent to me', 'Until I delete them'],
+  ['The security log', 'About 13 months'],
+  ['Counters that limit abuse', 'Less than a day'],
+  ["Providers' own short-term logs", 'Under their own terms'],
+];
+---
+<Studio title="Privacy — Jody Brewster" description="What jodybrewster.dev collects, why, who else handles it and how long it is kept.">
+  <main class="privacy-main studio-container">
+    <article class="essay-shell">
+      <a href="/home" class="back">
+        <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to home
+      </a>
+
+      <p class="studio-eyebrow">/ privacy · effective <time datetime={effectiveIso}>{effectiveText}</time></p>
+      <h1 class="enter-title">Privacy</h1>
+
+      <p class="lede">What this site collects, why, who else handles it and how long it is kept. The site has no accounts and collects little, so this is short.</p>
+
+      <div class="essay-body enter-fade" style="--enter-delay: 180ms">
+        <section aria-labelledby="who">
+          <h2 id="who">Who runs the site</h2>
+          <p>I'm Jody Brewster and I run this site myself. For anything on this page, email me at <a href="mailto:jody@jodybrewster.dev">jody@jodybrewster.dev</a>.</p>
+        </section>
+
+        <section aria-labelledby="verso">
+          <h2 id="verso">What Verso is</h2>
+          <p>Verso, the chat on every page, is an AI. It answers from my published writing and work, and it can be wrong. Nothing it says is professional advice. I see what's asked and sometimes reply myself, under my own name. Please don't type anything into it you would not want kept.</p>
+        </section>
+
+        <section aria-labelledby="collected">
+          <h2 id="collected">What is collected and why</h2>
+          <ul>
+            <li><strong>Chat questions and answers</strong>, to answer you, to keep the thread for a follow-up, so I can read along and reply, and so I can see what people ask and improve the site, sometimes with an AI-written summary that never quotes anyone. Email addresses, phone numbers and similar details are removed from what the site saves and from the copies I see. The AI providers that write the answers receive your questions as you typed them.</li>
+            <li><strong>Questions through the agent (MCP) interface</strong> go to an AI provider to be answered. The site does not store them.</li>
+            <li><strong>Voice.</strong> In voice mode your audio streams to Google's speech AI while you talk. The site does not record or store it. Providers may keep copies for a limited time under their own terms, for example to detect abuse.</li>
+            <li><strong>Network addresses</strong>, briefly, to limit abuse. The counters built from them expire within a day, and the host's logs keep addresses for a short period.</li>
+            <li><strong>A security log</strong> of what the site did, such as answering, refusing a request or a setting being changed. It holds no message content.</li>
+            <li><strong>Analytics</strong>: page views and how the site and chat are used, for example that a question was asked and its general topic, never its words. This uses Google Analytics, which sets cookies. Google explains <a href="https://policies.google.com/technologies/partner-sites">how it uses information from sites that use its services</a>.</li>
+            <li><strong>Tab storage.</strong> While you chat, your browser keeps the conversation's id and whether you have seen a reply. The chat cannot work without it, and it clears when the tab closes.</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="recipients">
+          <h2 id="recipients">Who else receives it</h2>
+          <p>Other companies run parts of the site, and each receives what its part needs:</p>
+          <ul>
+            <li>AI model providers, to write answers, to find the relevant writing and for voice</li>
+            <li>hosting and data storage</li>
+            <li>a messaging service that delivers copies of conversations to me</li>
+            <li>analytics</li>
+            <li>content delivery, for fonts and images</li>
+          </ul>
+          <p>These providers are in the United States and other countries.</p>
+        </section>
+
+        <section aria-labelledby="retention">
+          <h2 id="retention">How long it is kept</h2>
+          <dl class="privacy-retention">
+            {retention.map(([what, how]) => (
+              <div><dt>{what}</dt><dd>{how}</dd></div>
+            ))}
+          </dl>
+        </section>
+
+        <section aria-labelledby="rights">
+          <h2 id="rights">Legal basis and your rights</h2>
+          <p>Where laws such as the GDPR or the UK GDPR apply, I rely on legitimate interests: answering the questions you ask and keeping the site from being abused. You have the right to access, delete, correct and restrict what is held about you, and to object to its use. You can also complain to a data protection supervisory authority. Transfers to providers in other countries rely on the providers' standard safeguards.</p>
+        </section>
+
+        <section aria-labelledby="requests">
+          <h2 id="requests">Deleting a conversation</h2>
+          <p>Conversations are anonymous, so to find yours I need roughly when you had it and a few words of what you asked. Email me with those and I will delete it, from the site and from my copies. That does not reach what providers keep in their own short-term logs.</p>
+          <p>I don't send transcripts out to anyone. Conversations are anonymous, so I can't confirm who wrote one, and sending it could expose someone else's words. That limits the right of access here; deleting is the request I can act on.</p>
+        </section>
+
+        <section aria-labelledby="dnt">
+          <h2 id="dnt">Do Not Track</h2>
+          <p>The site does not respond to Do Not Track signals. Google may collect information about your activity on this site and on other sites through its cookies. You can block or clear them in your browser.</p>
+        </section>
+
+        <section aria-labelledby="children">
+          <h2 id="children">Children</h2>
+          <p>The site is not intended for anyone under 18.</p>
+        </section>
+
+        <section aria-labelledby="changes">
+          <h2 id="changes">Changes</h2>
+          <p>When this page changes, the date at the top changes with it.</p>
+        </section>
+      </div>
+
+      <div class="essay-footer">
+        <span>
+          <svg class="icon sm"><use href="#i-shield"/></svg> Effective {effectiveText}
+        </span>
+        <a href="/home">
+          <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to home
+        </a>
+      </div>
+    </article>
+  </main>
+</Studio>
+
+<style>
+  .privacy-main { padding-top: 52px; padding-bottom: 80px; }
+  .privacy-main .essay-shell { max-width: 900px; }
+  .privacy-main .essay-shell h1 { margin-bottom: 16px; }
+  .privacy-main .essay-shell .lede { max-width: 650px; margin: 0 0 42px; color: var(--studio-muted); font-size: 18px; line-height: 1.65; }
+  .privacy-main .essay-body { max-width: 680px; color: var(--studio-muted); }
+  .privacy-main .essay-body section + section { margin-top: 40px; }
+  .privacy-main .essay-body h2 { margin: 0 0 12px; font-size: 20px; line-height: 1.35; color: var(--studio-ink); }
+  .privacy-main .essay-body p { margin: 0 0 16px; }
+  .privacy-main .essay-body ul { margin: 0 0 16px; padding-left: 20px; }
+  .privacy-main .essay-body li { margin: 0 0 10px; padding-left: 4px; }
+  .privacy-main .essay-body strong { font-weight: 600; color: var(--studio-ink); }
+  .privacy-retention { margin: 0; border-top: 1px solid var(--studio-rule); }
+  .privacy-retention div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--studio-rule); }
+  .privacy-retention dt { color: var(--studio-ink); }
+  .privacy-retention dd { margin: 0; }
+  @media (max-width: 720px) {
+    .privacy-main { padding-top: 20px; padding-bottom: 50px; }
+    .privacy-main .essay-shell .lede { font-size: 16px; margin-bottom: 32px; }
+    .privacy-retention div { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

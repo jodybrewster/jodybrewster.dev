@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 import {
   chainKeyFromEnv,
+  chainLink,
   createUpstashAuditStore,
   type ChainKey,
   type UpstashAuditStore,
@@ -86,8 +87,18 @@ type Entry = Omit<Parameters<UpstashAuditStore['record']>[0], 'ts'>;
  * off or the write failed).
  */
 export async function audit(entry: Entry, { anchor = false } = {}): Promise<boolean> {
+  return (await auditAnchored(entry, { anchor })).written;
+}
+
+/**
+ * audit(), also reporting whether the anchor reached Telegram, for a caller
+ * that must say so when it did not (an entry with no anchor after it can be
+ * trimmed by the Redis token alone). `anchored` is false when no anchor was
+ * asked for.
+ */
+export async function auditAnchored(entry: Entry, { anchor = true } = {}): Promise<{ written: boolean; anchored: boolean }> {
   const s = setup();
-  if (!s) return false;
+  if (!s) return { written: false, anchored: false };
   try {
     await s.store.record({ ts: new Date().toISOString(), ...entry });
   } catch (error) {
@@ -96,13 +107,51 @@ export async function audit(entry: Entry, { anchor = false } = {}): Promise<bool
       lastFailureNotice = Date.now();
       notify(`Audit log write failed (${entry.action}): ${error instanceof Error ? error.message : 'unknown error'}`);
     }
-    return false;
+    return { written: false, anchored: false };
   }
-  if (anchor) {
-    const head = await s.store.head().catch(() => null);
-    if (head) await sendAnchor(head, entry.action);
+  if (!anchor) return { written: true, anchored: false };
+  const head = await s.store.head().catch(() => null);
+  return { written: true, anchored: head ? await sendAnchor(head, entry.action) : false };
+}
+
+/** The slice of the store checkChainKey reads. */
+export type ChainReader = Pick<UpstashAuditStore, 'head' | 'segments' | 'entries'>;
+
+export type ChainKeyCheck =
+  | { ok: true; seq: number }
+  | { ok: false; reason: 'off' | 'empty' | 'key-id' | 'mismatch' | 'head'; detail: string };
+
+/**
+ * Whether `key` is the key the chain is signed with, before anything is
+ * written with it: the newest entry's link is recomputed the way
+ * `audit:verify` does and must match its stored hash, and that entry must be
+ * the head. A wrong key (any long enough string decodes to one) would
+ * otherwise sign a link nobody can verify into the production chain.
+ *
+ * An empty chain proves nothing either way, so it is refused too: the site's
+ * chain is never empty once the daily cron has run, and a first entry is the
+ * site's to write, not a script's. Defaults to the configured store and key.
+ */
+export async function checkChainKey(store?: ChainReader, key?: ChainKey): Promise<ChainKeyCheck> {
+  if (!store || !key) {
+    const s = setup();
+    if (!s) return { ok: false, reason: 'off', detail: 'The audit log is not configured (Production, AUDIT_CHAIN_KEY and Upstash).' };
+    store ??= s.store;
+    key ??= s.key;
   }
-  return true;
+  const head = await store.head();
+  const segments = await store.segments();
+  let last: Awaited<ReturnType<ChainReader['entries']>>[number] | undefined;
+  for (let i = segments.length - 1; i >= 0 && !last; i--) last = (await store.entries(segments[i])).at(-1);
+  if (!head && !last) return { ok: false, reason: 'empty', detail: 'The audit chain has no entries, so the key cannot be checked against it.' };
+  if (!head || !last || head.seq !== last.seq || head.hash !== last.hash) {
+    return { ok: false, reason: 'head', detail: 'The chain head does not match its newest entry; run npm run audit:verify.' };
+  }
+  if (last.keyId !== key.id) return { ok: false, reason: 'key-id', detail: `The newest entry was signed with key id "${last.keyId}", not "${key.id}".` };
+  if (chainLink(key, last.prevHash, last.seq, { keyId: last.keyId, event: last.event }) !== last.hash) {
+    return { ok: false, reason: 'mismatch', detail: 'That key does not verify the newest entry: it is not the chain key.' };
+  }
+  return { ok: true, seq: last.seq };
 }
 
 const day = (d = new Date()) => d.toISOString().slice(0, 10);
@@ -125,12 +174,12 @@ export async function auditRefusal(action: string, reason: string): Promise<void
 }
 
 /** The anchor message, which `npm run audit:verify` takes as `--anchor seq:hash@date`. */
-export async function sendAnchor(at: { seq: number; hash: string }, why: string, extra = ''): Promise<void> {
+export async function sendAnchor(at: { seq: number; hash: string }, why: string, extra = ''): Promise<boolean> {
   try {
-    await sendNotice(`Audit anchor (${why}): ${at.seq}:${at.hash}@${day()}${extra ? `\n${extra}` : ''}`);
-  } catch {
-    console.error('[audit] anchor not sent');
-  }
+    if (await sendNotice(`Audit anchor (${why}): ${at.seq}:${at.hash}@${day()}${extra ? `\n${extra}` : ''}`)) return true;
+  } catch { /* reported below */ }
+  console.error('[audit] anchor not sent');
+  return false;
 }
 
 /**

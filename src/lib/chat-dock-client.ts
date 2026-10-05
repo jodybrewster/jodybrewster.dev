@@ -385,6 +385,9 @@ export function initChatDock(): void {
     close();
   }, eventOptions);
 
+  // The privacy page is read with the chat out of the way, as with links in the conversation.
+  dock.querySelector('.dock-data-note a')?.addEventListener('click', () => close(), eventOptions);
+
   const voiceButton = dock.querySelector<HTMLButtonElement>('#dock-voice')!;
   const voiceStatus = dock.querySelector<HTMLElement>('#dock-voice-status')!;
   let voice: VoiceModule | null = null;

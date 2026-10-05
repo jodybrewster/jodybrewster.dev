@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  TRANSCRIPT_TTL_S, formatTranscripts, logEntries, readTranscripts, summarize, type TranscriptRedis, type TranscriptTransaction,
+  TRANSCRIPT_TTL_S, formatDigest, formatTranscripts, logEntries, readTranscripts, summarize, type TranscriptRedis, type TranscriptTransaction,
 } from './transcripts';
 
 vi.mock('./redis', () => ({ getRedis: () => null }));
@@ -191,5 +191,13 @@ describe('formatTranscripts', () => {
     expect(md).toContain('Visitor (hiring):\n\nIs he available?');
     expect(md).toContain('Visitor (experience, no answer):');
     expect(md).toContain('Jody:\n\nYes, email me.');
+  });
+
+  it('writes a digest with the counts and none of the conversations', () => {
+    const md = formatDigest(transcripts, { since: Date.UTC(2026, 8, 21), until: Date.UTC(2026, 8, 28), digest: '### Themes' });
+    expect(md).toContain('# Verso digest, 2026-09-21 to 2026-09-28');
+    expect(md).toContain('1 conversation, 3 questions, 1 unanswered, 1 reply from Jody.');
+    expect(md).toContain('## Digest\n\n### Themes');
+    for (const said of ['Is he available?', 'The site does not say.', 'Yes, email me.', 'a3f1', '/about']) expect(md).not.toContain(said);
   });
 });

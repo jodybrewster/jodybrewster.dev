@@ -50,7 +50,7 @@ The site collects two things. Verso's questions and answers go to Jody's phone, 
 
 Analytics on a site whose argument is restraint deserves a stated position rather than a default. The one worth holding: measure whether the writing reaches people, not who they are. That means page views and referrers are in scope and behavioural profiling is not. Events follow the same line: they count what people do with the site (open the chat, follow a card, reach for the contact links) and carry values the site chooses, never what a visitor typed. What people ask Verso is read in the transcripts, which are kept 30 days, redacted of contact details and disclosed in the dock.
 
-There is no privacy policy. With Verso transcripts and GA4 both live, that gap is now the site's most visible unfinished edge, and it should close before the site carries real traffic.
+`/privacy` covers what the site collects, the categories of providers that handle it (no vendor names), how long it is kept and how to ask for a conversation to be deleted. The dock carries only the short notice and a link to it. GA4 still runs without a consent banner, an accepted risk.
 
 **Earned authority, not borrowed credibility.** No credentials list, no employer logos, no follower counts. The quality of the thinking is the credential. The design should reinforce this by presenting ideas without scaffolding them in social proof.
 

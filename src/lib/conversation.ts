@@ -33,7 +33,7 @@ export interface RedisLike {
  * Key names. The `rl:*` prefixes belong to the rate limiter
  * (lib/limits.ts) - nothing here may read or write them.
  */
-const convKey = (cid: string) => `chat:conv:${cid}`;
+export const convKey = (cid: string) => `chat:conv:${cid}`;
 
 async function guard<T>(label: string, fallback: T, run: () => Promise<T>): Promise<T> {
   try {

@@ -155,3 +155,78 @@ describe('site audit', () => {
     expect(deps.records).toHaveLength(2);
   });
 });
+
+describe('anchor status', () => {
+  it('reports whether the anchor reached Telegram, and audit() still answers only whether it wrote', async () => {
+    const { audit, auditAnchored } = await load();
+    deps.sendNotice.mockResolvedValue(true);
+    expect(await auditAnchored({ action: 'conversation.deleted', outcome: 'allow' })).toEqual({ written: true, anchored: true });
+    deps.sendNotice.mockResolvedValue(false);
+    expect(await auditAnchored({ action: 'conversation.deleted', outcome: 'allow' })).toEqual({ written: true, anchored: false });
+    deps.sendNotice.mockRejectedValue(new Error('down'));
+    expect(await auditAnchored({ action: 'conversation.deleted', outcome: 'allow' })).toEqual({ written: true, anchored: false });
+    expect(await audit({ action: 'operator.reply', outcome: 'allow' }, { anchor: true })).toBe(true);
+    deps.fail = true;
+    expect(await auditAnchored({ action: 'conversation.deleted', outcome: 'allow' })).toEqual({ written: false, anchored: false });
+  });
+});
+
+describe('checkChainKey', async () => {
+  const { GENESIS_HASH, chainKeyFromEnv, chainLink } = await import('@jodybrewster/gemini-live/server/audit');
+  const right = chainKeyFromEnv({ AUDIT_CHAIN_KEY: KEY });
+  // Any sentence of 43+ characters decodes as base64 to 32 bytes: the clipboard mistake this guards against.
+  const wrong = chainKeyFromEnv({ AUDIT_CHAIN_KEY: 'this is a sentence that happens to be on the clipboard right now' });
+
+  type Stored = { seq: number; prevHash: string; hash: string; keyId: string; event: { ts: string; action: string; outcome: 'allow' } };
+  function chain(count: number, key = right): Stored[] {
+    const out: Stored[] = [];
+    let prevHash = GENESIS_HASH;
+    for (let seq = 1; seq <= count; seq++) {
+      const event = { ts: `2026-10-0${seq}T00:00:00Z`, action: 'chat.answer', outcome: 'allow' as const };
+      const hash = chainLink(key, prevHash, seq, { keyId: key.id, event });
+      out.push({ seq, prevHash, hash, keyId: key.id, event });
+      prevHash = hash;
+    }
+    return out;
+  }
+  const store = (segments: Record<string, Stored[]>, head = Object.values(segments).flat().at(-1)) => ({
+    head: async () => (head ? { seq: head.seq, hash: head.hash } : null),
+    segments: async () => Object.keys(segments).sort(),
+    entries: async (segment: string) => segments[segment] ?? [],
+  });
+
+  it('passes the key that signed the newest entry', async () => {
+    const { checkChainKey } = await load();
+    expect(await checkChainKey(store({ '2026-10': chain(3) }), right)).toEqual({ ok: true, seq: 3 });
+  });
+
+  it('refuses any other key, before anything is written with it', async () => {
+    const { checkChainKey } = await load();
+    expect(await checkChainKey(store({ '2026-10': chain(3) }), wrong)).toMatchObject({ ok: false, reason: 'mismatch' });
+    expect(deps.records).toHaveLength(0);
+  });
+
+  it('finds the newest entry in an earlier month when the current one is still empty', async () => {
+    const { checkChainKey } = await load();
+    expect(await checkChainKey(store({ '2026-09': chain(2), '2026-10': [] }), right)).toEqual({ ok: true, seq: 2 });
+  });
+
+  it('refuses an empty chain, which cannot prove a key either way', async () => {
+    const { checkChainKey } = await load();
+    expect(await checkChainKey(store({}), right)).toMatchObject({ ok: false, reason: 'empty' });
+  });
+
+  it('refuses when the head is not the newest entry, or the entry names another key id', async () => {
+    const { checkChainKey } = await load();
+    const entries = chain(3);
+    expect(await checkChainKey(store({ '2026-10': entries }, entries[1]), right)).toMatchObject({ ok: false, reason: 'head' });
+    const rotated = chainKeyFromEnv({ AUDIT_CHAIN_KEY: KEY, AUDIT_CHAIN_KEY_ID: 'k2' });
+    expect(await checkChainKey(store({ '2026-10': entries }), rotated)).toMatchObject({ ok: false, reason: 'key-id' });
+  });
+
+  it('uses the configured key and store by default, and says so when the log is off', async () => {
+    deps.env.VERCEL_ENV = 'preview';
+    const { checkChainKey } = await load();
+    expect(await checkChainKey()).toMatchObject({ ok: false, reason: 'off' });
+  });
+});

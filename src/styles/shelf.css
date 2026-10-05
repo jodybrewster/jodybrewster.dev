@@ -111,6 +111,24 @@ html:has(> .library-page) {
   outline-offset: 3px;
 }
 
+/* The privacy notice, reachable from the one page without the site footer. */
+.library__privacy {
+  top: auto;
+  bottom: clamp(14px, 2.4vh, 26px);
+  padding: 8px 14px;
+}
+
+/* Below 900px the centered hint reaches the bottom-left corner, and on phones an opened item's card spans the
+   bottom of the screen, so the link mirrors Back in the top-right corner instead, where nothing else sits. */
+@media (max-width: 900px) {
+  .library__privacy {
+    top: clamp(14px, 2.4vh, 26px);
+    bottom: auto;
+    left: auto;
+    right: clamp(14px, 2.4vw, 30px);
+  }
+}
+
 /* -- Stage ---------------------------------------------------------------- */
 
 .library {

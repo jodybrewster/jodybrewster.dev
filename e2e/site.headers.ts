@@ -46,6 +46,8 @@ test('every response carries the headers, with a policy that runs no injected sc
 });
 
 test('pages and the client router run with no policy violations', async ({ page }) => {
+  // Seven page loads; the default 30 s ran out on a hosted CI runner.
+  test.setTimeout(90_000);
   const net = await mockNetwork(page, undefined, HOST, ANALYTICS);
   const violations = await watchViolations(page);
   // Each a soft navigation by the client router, from the home page.

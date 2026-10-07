@@ -13,7 +13,7 @@ if (!entry || !entry.data.publish) return new Response('Not found', { status: 40
 
 const { Content } = await render(entry);
 
-const date = entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const date = entry.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const tagList = entry.data.tags ?? [];
 const primaryTag = tagList[0] ?? '';
 ---

@@ -7,7 +7,7 @@ const projects = (await getCollection('portfolio'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 ---
 <Studio title="Portfolio — Jody Brewster" description="Selected interface and product design work — portals, mobile apps, mapping tools, and design systems.">

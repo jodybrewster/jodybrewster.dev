@@ -23,7 +23,7 @@ const number = String(entries.length - idx).padStart(3, '0');
 
 const { Content } = await render(entry);
 
-const date = entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const date = entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 const isoDate = entry.data.pubDate.toISOString();
 ---
 <Essay

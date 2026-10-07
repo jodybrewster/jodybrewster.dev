@@ -114,3 +114,6 @@ html:not([data-soft-nav]) .studio-page .essay-hero { animation: essay-hero-in 90
     animation-iteration-count: 1 !important;
   }
 }
+/* Inline illustrations inside an article body, framed like the lead image and cropped to the card's 2:1. */
+.studio-page .essay-body .essay-figure { margin: 40px 0; border: 1px solid var(--studio-rule); border-radius: 12px; overflow: hidden; background: var(--studio-surface); }
+.studio-page .essay-body .essay-figure img { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; object-fit: cover; }

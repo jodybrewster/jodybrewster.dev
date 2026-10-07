@@ -91,9 +91,12 @@ export function createLiveTokenRoute(source: Env, mint?: VoiceTokenRouteOptions[
 
 let route: ((req: Request) => Promise<Response>) | null = null;
 const handle: APIRoute = async ({ request }) => {
-  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
   await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   route ??= createLiveTokenRoute(voiceEnv());
   const response = await route(request);
   // A minted token, or a refusal (throttled), never the visitor's address.

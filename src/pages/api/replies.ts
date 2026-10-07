@@ -13,12 +13,17 @@ import { readReplies } from '../../lib/conversation';
 import { liveUntil } from '../../lib/operator';
 import { check, repliesLimiter, visitor } from '../../lib/limits';
 import { isCanonicalHost, otherHost } from '../../lib/origin';
+import { auditSwitchChanges } from '../../lib/audit';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url, request }) => {
-  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
+  await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   const cid = url.searchParams.get('cid');
   if (!isValidConversationId(cid)) return new Response('cid required', { status: 400 });
   // Polling is cheap but not free (two Redis reads): 60 a minute per IP

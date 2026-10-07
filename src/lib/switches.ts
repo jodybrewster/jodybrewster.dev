@@ -27,16 +27,16 @@ export function switchEnv(): Record<string, string | undefined> {
 }
 
 /**
- * Whether the chat exists at all: true only when `SWITCH_CHAT` is unset or
- * "on". Prerendered pages read it at build time, so anything else builds
- * the site with no dock, no Verso button and no mention of Verso; the chat,
- * corpus, live-token, replies and telegram routes read it per request and
- * answer 404. One variable, the same one the run-time switch reads, so the
- * chat cannot be half off.
+ * Whether the chat is built at all: false only when `SWITCH_CHAT` is
+ * `force-off`, the break-glass value. Prerendered pages read it at build
+ * time, so a force-off build has no dock, no Verso button and no Verso
+ * mention, and the chat, corpus, live-token, replies and telegram routes
+ * read it per request and answer 404. Plain `off` (and any unrecognized
+ * value, which switchEnv reads as off) keeps the dock; the chat route then
+ * answers with the paused copy through isOn('chat').
  */
 export function chatBuilt(): boolean {
-  const raw = env(envSwitchKey('chat'))?.trim().toLowerCase();
-  return !raw || raw === 'on';
+  return env(envSwitchKey('chat'))?.trim().toLowerCase() !== 'force-off';
 }
 
 let switches: ReturnType<typeof createSwitches> | null = null;

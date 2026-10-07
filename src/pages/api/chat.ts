@@ -51,9 +51,12 @@ interface CitedSource {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
   await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   // Switched off (SWITCH_CHAT): friendly copy the dock shows as is.
   if (!(await isOn('chat'))) return new Response(CHAT_OFF, { status: 503, headers: { 'X-Switched-Off': 'chat', 'Cache-Control': 'no-store' } });
   const started = Date.now();

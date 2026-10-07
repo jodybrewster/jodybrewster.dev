@@ -25,7 +25,7 @@ npm test           # vitest run
 npm run telegram:setup   # register the Telegram webhook (-- --info shows delivery errors)
 npm run conversations    # download Verso transcripts as Markdown → .conversations/
 npm run conversation:delete  # find and delete one visitor's conversation (see docs/verso.md)
-npm run switch           # turn chat, voice or an agent tool off or on (Production env, applies on deploy)
+npm run switch           # turn chat, voice or an agent tool off or on (Production env, applies on deploy; chat off pauses it with friendly copy, force-off removes it from the site at the next build)
 npm run audit:verify     # check the audit log against a Telegram anchor (key from the Keychain)
 npm run embed -- --dry-run   # check the corpus Verso answers from, offline
 npm run test:headers     # after a build: security headers and policy checks in three browsers

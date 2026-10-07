@@ -3,7 +3,8 @@
  * Production environment with the Vercel CLI. It never deploys: the change
  * applies at the next `npx vercel --prod`, and the first request after that
  * records it in the audit log. It needs no audit key or Redis token. Chat
- * off also removes the dock, since the build reads the same variable.
+ * off pauses the chat with friendly copy; chat force-off also removes the
+ * dock from the site at that build.
  *
  *   npm run switch -- chat off          # or: voice, search_site, ask_jody
  *   npm run switch -- voice force-off   # same effect, marked as a break-glass

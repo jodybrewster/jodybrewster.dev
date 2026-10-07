@@ -14,7 +14,7 @@ import type { APIRoute } from 'astro';
 import { env } from '../../lib/env';
 import { chatBuilt } from '../../lib/switches';
 import { appendReply, appendTurn } from '../../lib/conversation';
-import { audit, ref } from '../../lib/audit';
+import { audit, auditSwitchChanges, ref } from '../../lib/audit';
 import { isCanonicalHost } from '../../lib/origin';
 import { LIVE_WINDOW_MS, goLive, resolveTelegramMessage, takeHeld } from '../../lib/operator';
 import { logEntries } from '../../lib/transcripts';
@@ -70,7 +70,12 @@ async function deliverReply(msg: TelegramMessage, text: string): Promise<void> {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!chatBuilt() || !isCanonicalHost(request)) return notFound();
+  if (!isCanonicalHost(request)) return notFound();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
+  await auditSwitchChanges();
+  if (!chatBuilt()) return notFound();
   const secret = env('TELEGRAM_WEBHOOK_SECRET');
   if (!secret) return notFound();
   // The one place a non-2xx is safe: this is not Telegram calling.

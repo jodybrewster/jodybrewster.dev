@@ -39,13 +39,13 @@ describe('site switches', () => {
 });
 
 describe('chatBuilt', () => {
-  it('is true only when SWITCH_CHAT is unset or on', async () => {
+  it('is false only when SWITCH_CHAT is force-off; off and unknown values keep the chat built', async () => {
     const { chatBuilt } = await load();
-    for (const value of [undefined, '', 'on', ' ON ']) {
+    for (const value of [undefined, '', 'on', ' ON ', 'off', 'disabled', 'of']) {
       environment.values = { SWITCH_CHAT: value };
       expect(chatBuilt()).toBe(true);
     }
-    for (const value of ['off', 'force-off', 'disabled', 'of']) {
+    for (const value of ['force-off', ' Force-Off ']) {
       environment.values = { SWITCH_CHAT: value };
       expect(chatBuilt()).toBe(false);
     }

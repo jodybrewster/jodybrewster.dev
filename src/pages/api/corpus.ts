@@ -4,6 +4,7 @@ import { isCanonicalHost, isOriginAllowed, otherHost } from '../../lib/origin';
 import { check, corpusLimiter, visitor } from '../../lib/limits';
 import { chatBuilt, isOn, SEARCH_OFF } from '../../lib/switches';
 import { getRedis } from '../../lib/redis';
+import { auditSwitchChanges } from '../../lib/audit';
 import { MAX_QUERY_LEN } from '../../lib/verso';
 import { env } from '../../lib/env';
 import { withDeadline } from '../../lib/deadline';
@@ -22,8 +23,12 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
+  await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!(await isOn('tool:search_site'))) return new Response(SEARCH_OFF, { status: 503, headers: { 'X-Switched-Off': 'tool:search_site', 'Cache-Control': 'no-store' } });
   const started = Date.now();
   let body: unknown;

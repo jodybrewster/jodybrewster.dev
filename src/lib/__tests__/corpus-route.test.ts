@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(), check: vi.fn(),
-  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, switchChat: undefined as string | undefined, searchOn: true,
+  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, switchChat: undefined as string | undefined, searchOn: true, auditSwitchChanges: vi.fn(),
 }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
+vi.mock('../audit', async importOriginal => ({ ...(await importOriginal<typeof import('../audit')>()), auditSwitchChanges: dependencies.auditSwitchChanges }));
 vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: dependencies.isOriginAllowed }));
 vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.searchOn }));
 vi.mock('../limits', () => ({ check: dependencies.check, corpusLimiter: () => null, visitor: () => 'test-ip' }));
@@ -82,9 +83,16 @@ describe('POST /api/corpus', () => {
   it('is gated by SWITCH_CHAT and the origin check', async () => {
     dependencies.isOriginAllowed.mockReturnValue(false);
     expect((await post()).status).toBe(403);
-    dependencies.switchChat = 'off';
+    dependencies.switchChat = 'force-off';
     expect((await post()).status).toBe(404);
     expect(dependencies.searchVectors).not.toHaveBeenCalled();
+    expect(dependencies.auditSwitchChanges).toHaveBeenCalled();
+  });
+
+  it.each([undefined, 'on', 'off', 'disabled'])('still searches when SWITCH_CHAT is %s', async value => {
+    dependencies.switchChat = value;
+    expect((await post()).status).toBe(200);
+    expect(dependencies.auditSwitchChanges).toHaveBeenCalledOnce();
   });
 
   it('refuses in production without Redis, but runs locally without it', async () => {

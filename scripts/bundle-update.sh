@@ -8,8 +8,9 @@
 # main. Before anything is written here, the script checks that:
 #   - the release is published (not a draft), immutable and was created by
 #     github-actions[bot];
-#   - its tag points at a commit with a successful push run of
-#     .github/workflows/release.yml on main whose "release" job succeeded;
+#   - its tag points at a commit whose bundle package.json is this version
+#     and which has a successful push run of .github/workflows/release.yml
+#     on main whose "release" job succeeded;
 #   - it has exactly two assets, the tarball and its .sha256;
 #   - the downloaded tarball's sha256 matches both the digest GitHub
 #     recorded for the asset and the .sha256 file;
@@ -114,6 +115,14 @@ if [ "$ref_type" = "tag" ]; then
 fi
 [ "$ref_type" = "commit" ] || die "tag $TAG does not point at a commit"
 [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || die "tag $TAG points at '$sha', not a commit sha"
+
+# The bundle at that commit must be this version. Without it, a tag for a
+# new version placed on an older release commit (which has a successful
+# release run) would pass the run check below.
+tagged_version="$(gh api "repos/$REPO/contents/packages/gemini-live-bundle/package.json?ref=$sha" --jq .content | base64 --decode | node -e '
+  process.stdout.write(String(JSON.parse(require("fs").readFileSync(0, "utf8")).version ?? ""));
+')" || die "cannot read the bundle version at $sha"
+[ "$tagged_version" = "$VERSION" ] || die "the bundle at $sha is version '$tagged_version', not $VERSION"
 
 # A successful push run of release.yml on main at that commit, whose
 # "release" job succeeded.

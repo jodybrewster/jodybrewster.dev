@@ -1,3 +1,4 @@
+import { readSseFrames } from '@jodybrewster/gemini-live/core';
 import type { Card } from './verso-tools';
 
 export interface ChatSource { type: string; url: string; title: string; date?: string }
@@ -41,27 +42,28 @@ export async function requestChat(
       throw new Error('Chat is temporarily unavailable. Please try again.');
     }
     if (!res.body) throw new Error('Nothing came back. Please try again.');
-    reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    while (!stopped) {
-      const { done, value } = await reader.read();
+    const source = res.body.getReader();
+    reader = source;
+    // readSseFrames takes the stream and locks it, so it reads through this
+    // pass-through while the site keeps the real reader: stop and timeout
+    // cancel that one directly, without waiting on the parser.
+    const frames = readSseFrames(new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        const { done, value } = await source.read();
+        if (done) controller.close();
+        else controller.enqueue(value);
+      },
+    }, { highWaterMark: 0 }));
+    for await (const frame of frames) {
       if (stopped) return;
-      if (done) throw new Error('The answer was interrupted. Please try again.');
-      buffer += decoder.decode(value, { stream: true });
-      let boundary: number;
-      while ((boundary = buffer.indexOf('\n\n')) >= 0) {
-        const frame = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-        if (!frame.startsWith('data: ')) continue;
-        let event: ChatEvent;
-        try { event = JSON.parse(frame.slice(6)); } catch { continue; }
-        if (!event || typeof event !== 'object') continue;
-        if (typeof event.error === 'string') throw new Error(event.error);
-        options.onEvent(event);
-        if (event.done) return;
-      }
+      const event = frame as ChatEvent | null;
+      if (!event || typeof event !== 'object') continue;
+      if (typeof event.error === 'string') throw new Error(event.error);
+      options.onEvent(event);
+      if (event.done) return;
     }
+    if (stopped) return;
+    throw new Error('The answer was interrupted. Please try again.');
   }
 
   try {

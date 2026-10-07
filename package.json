@@ -28,7 +28,8 @@
     "audit:verify": "tsx scripts/audit-verify.ts",
     "switch": "tsx scripts/switch.ts",
     "test:headers": "playwright test -c playwright.headers.config.ts",
-    "security:approve": "tsx scripts/security-headers.ts --approve"
+    "security:approve": "tsx scripts/security-headers.ts --approve",
+    "bundle:update": "bash scripts/bundle-update.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",

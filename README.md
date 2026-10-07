@@ -30,6 +30,7 @@ npm run audit:verify     # check the audit log against a Telegram anchor (key fr
 npm run embed -- --dry-run   # check the corpus Verso answers from, offline
 npm run test:headers     # after a build: security headers and policy checks in three browsers
 npm run security:approve # after a build: approve a new inline script's hash
+npm run bundle:update -- <version>  # vendor a released @jodybrewster/gemini-live (checks it first; needs gh)
 ```
 
 ## Routes

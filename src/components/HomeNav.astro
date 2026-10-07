@@ -1,5 +1,5 @@
 ---
-import { flags } from '../lib/flags';
+import { chatBuilt } from '../lib/switches';
 import BrandMark from './BrandMark.astro';
 
 const pathname = Astro.url.pathname;
@@ -31,7 +31,7 @@ const links = [
     <a class="home-icon-button" href="/search" aria-label="Search the site" title="Search the site">
       <svg class="icon" aria-hidden="true"><use href="#i-search" /></svg>
     </a>
-    {flags.chat && (
+    {chatBuilt() && (
       <button class="home-verso-button" data-verso-open aria-label="Talk to Verso" aria-controls="chat-dock" aria-expanded="false">
         <svg class="home-waveform" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
           <path d="M2 12v4M6 8v12M10 3v22M14 10v8M18 6v16M22 11v6M26 13v2" />

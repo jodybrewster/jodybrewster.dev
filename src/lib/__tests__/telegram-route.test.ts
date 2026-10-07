@@ -5,7 +5,6 @@ const deps = vi.hoisted(() => ({
   sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(), logEntries: vi.fn(), appendTurn: vi.fn(), goLive: vi.fn(), takeHeld: vi.fn(),
 }));
 vi.mock('../env', () => ({ env: (key: string) => deps.env[key] }));
-vi.mock('../flags', () => ({ flags: { chat: true } }));
 vi.mock('../conversation', () => ({ appendReply: deps.appendReply, appendTurn: deps.appendTurn }));
 vi.mock('../transcripts', () => ({ logEntries: deps.logEntries }));
 vi.mock('../operator', () => ({
@@ -45,6 +44,12 @@ describe('POST /api/telegram', () => {
   it('does not exist without a webhook secret', async () => {
     deps.env = {};
     expect((await post(fromOwner({ text: 'hi' }))).status).toBe(404);
+  });
+
+  it.each(['off', 'force-off'])('does not exist when SWITCH_CHAT is %s', async value => {
+    deps.env.SWITCH_CHAT = value;
+    expect((await post(fromOwner({ text: 'hi' }))).status).toBe(404);
+    expect(deps.appendReply).not.toHaveBeenCalled();
   });
 
   it('refuses a caller without the secret', async () => {

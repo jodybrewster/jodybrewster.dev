@@ -4,7 +4,7 @@ import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag'
 import { isCanonicalHost, isOriginAllowed, otherHost } from '../../lib/origin';
 import { chatLimiter, check, visitor } from '../../lib/limits';
 import { audit, auditRefusal, auditSwitchChanges, ref } from '../../lib/audit';
-import { CHAT_OFF, isOn } from '../../lib/switches';
+import { CHAT_OFF, chatBuilt, isOn } from '../../lib/switches';
 import type { Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { getRedis } from '../../lib/redis';
 import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
@@ -13,7 +13,6 @@ import {
   retrievalQuery, buildMessages, type ConversationTurn,
 } from '../../lib/verso';
 import { env } from '../../lib/env';
-import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
@@ -52,7 +51,7 @@ interface CitedSource {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!flags.chat) return new Response('Not found', { status: 404 });
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
   await auditSwitchChanges();
   // Switched off (SWITCH_CHAT): friendly copy the dock shows as is.

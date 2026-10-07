@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
-  check: vi.fn(), spend: vi.fn(), chatOn: true,
+  check: vi.fn(), spend: vi.fn(), chatOn: true, switchChat: undefined as string | undefined,
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
   liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(), alertModelFailure: vi.fn(),
@@ -24,8 +24,9 @@ vi.mock('../conversation', () => ({
   readHistory: dependencies.readHistory, conversationLength: dependencies.conversationLength,
   appendTurn: dependencies.appendTurn,
 }));
-vi.mock('../flags', () => ({ flags: { chat: true } }));
-vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? 'production' : 'test-key' }));
+vi.mock('../env', () => ({
+  env: (key: string) => key === 'VERCEL_ENV' ? 'production' : key === 'SWITCH_CHAT' ? dependencies.switchChat : 'test-key',
+}));
 const { ApiError } = vi.hoisted(() => ({
   ApiError: class extends Error { constructor(public status: number) { super(`status ${status}`); } },
 }));
@@ -84,6 +85,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   dependencies.getRedis.mockReturnValue({});
   dependencies.chatOn = true;
+  dependencies.switchChat = undefined;
   dependencies.spend.mockResolvedValue(null);
   dependencies.check.mockResolvedValue({ ok: true, spend: dependencies.spend, refund: vi.fn(), charge: vi.fn(), release: vi.fn() });
   dependencies.searchVectors.mockResolvedValue([]);
@@ -326,6 +328,14 @@ describe('POST /api/chat reliability', () => {
     expect(await response.text()).toMatch(/paused/);
     expect(dependencies.check).not.toHaveBeenCalled();
     expect(dependencies.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it.each(['off', 'force-off', 'disabled'])('does not exist when SWITCH_CHAT is %s, as in a build without the dock', async value => {
+    dependencies.switchChat = value;
+    expect((await post()).status).toBe(404);
+    expect(dependencies.check).not.toHaveBeenCalled();
+    dependencies.switchChat = 'on';
+    expect((await post()).status).not.toBe(404);
   });
 
   it('refuses past the per-IP rate and once the daily quota is gone, before any model call', async () => {

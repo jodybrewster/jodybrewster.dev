@@ -26,6 +26,19 @@ export function switchEnv(): Record<string, string | undefined> {
   }));
 }
 
+/**
+ * Whether the chat exists at all: true only when `SWITCH_CHAT` is unset or
+ * "on". Prerendered pages read it at build time, so anything else builds
+ * the site with no dock, no Verso button and no mention of Verso; the chat,
+ * corpus, live-token, replies and telegram routes read it per request and
+ * answer 404. One variable, the same one the run-time switch reads, so the
+ * chat cannot be half off.
+ */
+export function chatBuilt(): boolean {
+  const raw = env(envSwitchKey('chat'))?.trim().toLowerCase();
+  return !raw || raw === 'on';
+}
+
 let switches: ReturnType<typeof createSwitches> | null = null;
 
 /** Whether a switch is on. An unreadable state counts as off. */

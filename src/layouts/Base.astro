@@ -9,7 +9,7 @@ import HomeNav from '../components/HomeNav.astro';
 import Footer from '../components/Footer.astro';
 import ChatDock from '../components/ChatDock.astro';
 import Analytics from '../components/Analytics.astro';
-import { flags } from '../lib/flags';
+import { chatBuilt } from '../lib/switches';
 
 interface Props {
   title: string;
@@ -21,6 +21,8 @@ interface Props {
 }
 
 const { title, description, jsonLd, markdownHref, bodyClass, home = false } = Astro.props;
+// SWITCH_CHAT, read when the page is built: anything but on builds no dock.
+const chat = chatBuilt();
 ---
 <!doctype html>
 <html lang="en" data-theme="dark">
@@ -51,14 +53,14 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false } = As
 
   <ClientRouter />
 </head>
-<body class={bodyClass} data-chat-enabled={flags.chat ? '' : undefined}>
+<body class={bodyClass} data-chat-enabled={chat ? '' : undefined}>
   <IconSprite />
   <div class="shell">
     {home ? <HomeNav /> : <Nav />}
     <slot />
     <Footer />
   </div>
-  {flags.chat && <ChatDock />}
+  {chat && <ChatDock />}
   <script>
     // Pages reached by an in-site navigation are marked, so entrances that the page change already covers
     // (a lead image that travels in from its card, the full home intro) can step aside. A full load clears it.

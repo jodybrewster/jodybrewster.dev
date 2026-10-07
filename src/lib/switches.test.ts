@@ -37,3 +37,17 @@ describe('site switches', () => {
     expect(Object.keys(switchEnv())).toEqual(['SWITCH_CHAT', 'SWITCH_VOICE', 'SWITCH_TOOL_SEARCH_SITE', 'SWITCH_TOOL_ASK_JODY']);
   });
 });
+
+describe('chatBuilt', () => {
+  it('is true only when SWITCH_CHAT is unset or on', async () => {
+    const { chatBuilt } = await load();
+    for (const value of [undefined, '', 'on', ' ON ']) {
+      environment.values = { SWITCH_CHAT: value };
+      expect(chatBuilt()).toBe(true);
+    }
+    for (const value of ['off', 'force-off', 'disabled', 'of']) {
+      environment.values = { SWITCH_CHAT: value };
+      expect(chatBuilt()).toBe(false);
+    }
+  });
+});

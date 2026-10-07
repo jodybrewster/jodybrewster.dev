@@ -2,15 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(), check: vi.fn(),
-  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, chat: true, searchOn: true,
+  isOriginAllowed: vi.fn(), environment: 'production' as string | undefined, switchChat: undefined as string | undefined, searchOn: true,
 }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
 vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: dependencies.isOriginAllowed }));
 vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.searchOn }));
 vi.mock('../limits', () => ({ check: dependencies.check, corpusLimiter: () => null, visitor: () => 'test-ip' }));
-vi.mock('../flags', () => ({ flags: { get chat() { return dependencies.chat; } } }));
-vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? dependencies.environment : undefined }));
+vi.mock('../env', () => ({
+  env: (key: string) => key === 'VERCEL_ENV' ? dependencies.environment : key === 'SWITCH_CHAT' ? dependencies.switchChat : undefined,
+}));
 
 import { POST } from '../../pages/api/corpus';
 
@@ -31,7 +32,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.spyOn(console, 'info').mockImplementation(() => {});
   dependencies.environment = 'production';
-  dependencies.chat = true;
+  dependencies.switchChat = undefined;
   dependencies.searchOn = true;
   dependencies.getRedis.mockReturnValue({});
   dependencies.check.mockResolvedValue(({ ok: true, spend: vi.fn().mockResolvedValue(null), refund: vi.fn(), charge: vi.fn(), release: vi.fn() }));
@@ -78,10 +79,10 @@ describe('POST /api/corpus', () => {
     expect((await post({ query: 'x'.repeat(601) })).status).toBe(413);
   });
 
-  it('is gated by the chat flag and the origin check', async () => {
+  it('is gated by SWITCH_CHAT and the origin check', async () => {
     dependencies.isOriginAllowed.mockReturnValue(false);
     expect((await post()).status).toBe(403);
-    dependencies.chat = false;
+    dependencies.switchChat = 'off';
     expect((await post()).status).toBe(404);
     expect(dependencies.searchVectors).not.toHaveBeenCalled();
   });

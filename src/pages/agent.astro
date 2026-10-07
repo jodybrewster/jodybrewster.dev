@@ -1,7 +1,7 @@
 ---
 import Studio from '../layouts/Studio.astro';
 import PageHeader from '../components/PageHeader.astro';
-import { flags } from '../lib/flags';
+import { chatBuilt } from '../lib/switches';
 ---
 <Studio
   title="For agents — Jody Brewster"
@@ -96,7 +96,7 @@ import { flags } from '../lib/flags';
           <span class="num"></span>
           <div>
             <h4><svg class="icon sm"><use href="#i-user"/></svg> Third person, always</h4>
-            <p>{flags.chat ? 'Verso and the MCP tools speak' : 'The MCP tools speak'} <em>about</em> Jody, not <em>as</em> him. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
+            <p>{chatBuilt() ? 'Verso and the MCP tools speak' : 'The MCP tools speak'} <em>about</em> Jody, not <em>as</em> him. Don't post-process the output to convert third person to first. The disclosure is the point.</p>
           </div>
         </div>
         <div class="pp">

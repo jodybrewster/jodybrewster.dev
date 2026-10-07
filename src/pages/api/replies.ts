@@ -7,7 +7,7 @@
  * Jody's turns and whether he is live come back, never the transcript.
  */
 import type { APIRoute } from 'astro';
-import { flags } from '../../lib/flags';
+import { chatBuilt } from '../../lib/switches';
 import { isValidConversationId } from '../../lib/verso';
 import { readReplies } from '../../lib/conversation';
 import { liveUntil } from '../../lib/operator';
@@ -17,7 +17,7 @@ import { isCanonicalHost, otherHost } from '../../lib/origin';
 export const prerender = false;
 
 export const GET: APIRoute = async ({ url, request }) => {
-  if (!flags.chat) return new Response('Not found', { status: 404 });
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
   const cid = url.searchParams.get('cid');
   if (!isValidConversationId(cid)) return new Response('cid required', { status: 400 });

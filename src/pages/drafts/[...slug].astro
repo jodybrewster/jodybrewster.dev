@@ -1,8 +1,10 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
-import Base from '../../layouts/Base.astro';
-import PageHeader from '../../components/PageHeader.astro';
-import EssayCard from '../../components/EssayCard.astro';
+import Studio from '../../layouts/Studio.astro';
+import Essay from '../../layouts/Essay.astro';
+import Icon from '../../components/Icon.astro';
+import { articleImage } from '../../lib/article-images';
+import { pullQuotes } from '../../lib/pull-quotes';
 import {
   draftTitle,
   draftDescription,
@@ -25,6 +27,10 @@ export async function getStaticPaths() {
   ];
 }
 
+// Drafts are named YYYY-MM-DD-slug; the slug without the date is what the
+// piece is published under, so its image and pull quotes show here first.
+const publishedSlug = (id: string) => id.replace(/^\d{4}-\d{2}-\d{2}-/, '');
+
 const { slug } = Astro.params;
 const entry = slug ? await getEntry('drafts', slug) : undefined;
 const rendered = entry ? await render(entry) : null;
@@ -36,84 +42,106 @@ const all = (await getCollection('drafts'))
     body: d.body ?? '',
     title: d.data.title ?? draftTitle(d.body ?? '', d.id),
     date: d.data.date ?? draftDate(d.id),
+    description: d.data.description ?? draftDescription(d.body ?? ""),
   }))
   .sort((a, b) => b.date.valueOf() - a.date.valueOf());
 
-const takes = entry ? draftTakeCount(entry.body ?? '') : 0;
-const pageTitle = entry
-  ? `${entry.data.title ?? draftTitle(entry.body ?? '', entry.id)} — draft`
-  : 'Drafts — local only';
+const body = entry?.body ?? '';
 ---
-<Base title={pageTitle} description="Unpublished drafts, visible only on the dev server.">
-  <main class="page active" style="padding: 72px 0 100px;">
-    {entry && Content ? (
-      <article class="essay-shell">
-        <a href="/drafts" class="back">
-          <svg class="icon sm"><use href="#i-arrow-left"/></svg> Back to drafts
-        </a>
+{entry && Content ? (
+  <Essay
+    title={entry.data.title ?? draftTitle(body, entry.id)}
+    description={entry.data.description}
+    date={formatDraftDate(entry.data.date ?? draftDate(entry.id))}
+    readTime={draftReadTime(body)}
+    tags={entry.data.tags.length ? entry.data.tags : ["Draft"]}
+    sectionHref="/drafts"
+    sectionLabel="drafts"
+    heroImage={articleImage('writing', publishedSlug(entry.id))}
+    pullQuotes={pullQuotes(publishedSlug(entry.id), body)}
+  >
+    <Content />
+  </Essay>
+) : (
+  <Studio title="Drafts, local only" description="Unpublished drafts, visible only on the dev server.">
+    <main class="drafts-main studio-container">
+      <header class="drafts-header">
+        <p class="studio-eyebrow">{`${all.length} ${all.length === 1 ? 'draft' : 'drafts'} · dev server only`}</p>
+        <h1 class="enter-title">Drafts</h1>
+        <p class="drafts-lede">Waiting on annotations. Nothing here is published, and this page does not exist in a production build.</p>
+      </header>
 
-        <p class="draft-flag">
-          Draft &middot; not published &middot; {takes} {takes === 1 ? 'take' : 'takes'} pending
-        </p>
-
-        <div class="essay-meta">
-          <span><svg class="icon sm"><use href="#i-calendar"/></svg> {formatDraftDate(entry.data.date ?? draftDate(entry.id))}</span>
-          <span><svg class="icon sm"><use href="#i-clock"/></svg> {draftReadTime(entry.body ?? '')}</span>
-        </div>
-
-        <div class="essay-body">
-          <Content />
-        </div>
-
-        <div class="essay-footer">
-          <span>posts/drafts/{entry.id}.md</span>
-          <a href="/drafts">
-            <svg class="icon sm"><use href="#i-arrow-up"/></svg> Back to drafts
-          </a>
-        </div>
-      </article>
-    ) : (
-      <Fragment>
-        <PageHeader
-          icon="i-book"
-          eyebrow={`${all.length} ${all.length === 1 ? 'draft' : 'drafts'}`}
-          title="Drafts"
-          description="Written by the daily-post skill, waiting on annotations. This page exists only on the dev server."
-        />
-
-        <ul class="essay-list">
-          {all.map((d, i) => (
-            <EssayCard
-              basePath="/drafts"
-              title={d.title}
-              date={formatDraftDate(d.date)}
-              description={draftDescription(d.body)}
-              tags={[`${draftTakeCount(d.body)} pending`]}
-              slug={d.id}
-              index={`№ ${String(all.length - i).padStart(3, '0')}`}
-              readTime={draftReadTime(d.body)}
-            />
-          ))}
-        </ul>
-      </Fragment>
-    )}
-  </main>
-</Base>
+      <div class="drafts-grid">
+        {all.map(d => (
+          <article class="drafts-card">
+            <a href={`/drafts/${d.id}`} class="drafts-card-link">
+              <div class="drafts-card-image"><img src={articleImage('writing', publishedSlug(d.id))} alt="" width="960" height="480" loading="lazy" decoding="async" /></div>
+              <div class="drafts-card-content">
+                <span class="drafts-card-kind">{`Draft · ${draftTakeCount(d.body)} pending`}</span>
+                <h2>{d.title}</h2>
+                <p>{d.description}</p>
+                <div class="drafts-card-bottom">
+                  <time datetime={d.date.toISOString().slice(0, 10)}>{`${formatDraftDate(d.date)} · ${draftReadTime(d.body)}`}</time>
+                  <span class="studio-arrow" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span>
+                </div>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+    </main>
+  </Studio>
+)}
 
 <style>
-  /* The interface speaking about itself, so: mono, faint, no accent. The one
-     accent moment on this page belongs to the back link. */
-  .draft-flag {
-    font-family: var(--mono);
-    font-size: var(--t-eyebrow);
-    letter-spacing: var(--ls-eyebrow);
-    text-transform: uppercase;
-    color: var(--ink-faint);
-    background: var(--paper-warm);
-    border: 1px solid var(--rule);
-    border-radius: 99px;
-    padding: 3px 10px;
-    display: inline-block;
-    margin: 0 0 18px;
+  /* Skill-written drafts carry their title as a leading # heading, which the
+     layout already shows above the body. */
+  :global(.essay-body > h1:first-child) { display: none; }
+  /* They also open with an italic byline above a rule. The essay's drop cap
+     belongs to the first paragraph of the piece, so it moves past the byline;
+     the values mirror `.essay-body > p:first-of-type::first-letter`. */
+  :global(.essay-body > p:first-of-type:has(+ hr)::first-letter) {
+    float: none;
+    font: inherit;
+    font-variation-settings: inherit;
+    margin: 0;
+    color: inherit;
+  }
+  :global(.essay-body > p:first-of-type + hr + p::first-letter) {
+    font-family: var(--display);
+    font-weight: 400;
+    font-variation-settings: "opsz" 60;
+    font-size: 72px;
+    float: left;
+    line-height: 0.85;
+    margin: 8px 12px 0 0;
+    color: var(--accent);
+  }
+
+  .drafts-main { padding-top: 34px; padding-bottom: 62px; }
+  .drafts-header { padding: 26px 0 34px; max-width: 670px; }
+  .drafts-header h1 { font: 300 clamp(40px, 4.4vw, 60px)/1.08 var(--headline); letter-spacing: -.01em; margin: 0 0 20px; }
+  .drafts-lede { color: var(--studio-muted); font-size: 15px; line-height: 1.7; max-width: 56ch; margin: 0; }
+  .drafts-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+  .drafts-card { min-width: 0; overflow: hidden; border: 1px solid var(--studio-rule); border-radius: 10px; background: var(--studio-surface); transition: transform 150ms, border-color 150ms; }
+  .drafts-card:hover, .drafts-card:focus-within { border-color: var(--studio-cyan); transform: translateY(-2px); }
+  .drafts-card-link { display: flex; flex-direction: column; height: 100%; color: var(--studio-ink); text-decoration: none; }
+  .drafts-card-image { overflow: hidden; aspect-ratio: 2 / 1; background: var(--studio-raised); }
+  .drafts-card-image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .drafts-card-content { display: flex; flex-direction: column; flex: 1; padding: 17px 18px 16px; }
+  .drafts-card-kind { font-size: 9px; font-weight: 500; color: var(--studio-muted); margin: 0 0 10px; letter-spacing: .1em; text-transform: uppercase; }
+  .drafts-card h2 { font: 650 16px/1.5 var(--sans); letter-spacing: -.015em; margin: 0 0 10px; }
+  .drafts-card p { color: var(--studio-muted); font-size: 12px; line-height: 1.6; margin: 0 0 18px; }
+  .drafts-card-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: auto; }
+  .drafts-card time { font-size: 10px; line-height: 1.6; color: var(--studio-muted); }
+  .drafts-card .studio-arrow { width: 29px; height: 29px; }
+  .drafts-card .studio-arrow .icon { width: 16px; height: 16px; }
+  @media (min-width: 721px) and (max-width: 1000px) {
+    .drafts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .drafts-main { padding-top: 10px; padding-bottom: 40px; }
+    .drafts-header h1 { font-size: clamp(30px, 7.8vw, 38px); }
+    .drafts-grid { grid-template-columns: 1fr; gap: 20px; }
   }
 </style>

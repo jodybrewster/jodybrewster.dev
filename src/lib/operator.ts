@@ -24,7 +24,7 @@
 
 import { getRedis } from './redis';
 import { CONV_TTL_S } from './conversation';
-import { redactText } from './redact';
+import { redactText } from '@jodybrewster/gemini-live/server/redact';
 import { formatTurnMessage, sendNotice, stripControlChars, sendTurn, telegramConfigured } from './telegram';
 
 export interface TurnNotice {

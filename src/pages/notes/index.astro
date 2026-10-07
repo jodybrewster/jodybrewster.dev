@@ -7,7 +7,7 @@ const notes = (await getCollection('notes', n => n.data.publish))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 function formatDate(d: Date) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 ---
 <Studio title="Lab notes — Jody Brewster" description="Shorter, less finished, sometimes wrong. Lab notes from a garden of ideas about AI, design, and practice.">

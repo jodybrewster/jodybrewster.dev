@@ -13,7 +13,7 @@ if (!entry) return new Response('Not found', { status: 404 });
 
 const { Content } = await render(entry);
 
-const date = entry.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+const date = entry.data.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 
 const jsonLd = {
   '@context': 'https://schema.org',

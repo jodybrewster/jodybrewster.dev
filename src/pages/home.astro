@@ -95,7 +95,7 @@ const jsonLd = {
     <section class="home-notebook home-container" aria-labelledby="notebook-title">
       <div class="notebook-heading"><div><p class="home-eyebrow">Beyond the build</p><h2 id="notebook-title">A look inside the notebook.</h2></div><a href="/research" class="home-text-link">All research <Icon name="arrow-right" class="icon" /></a></div>
       <div class="notebook-grid">
-        {research.map(entry => <a href={`/research/${entry.id}`} class="notebook-entry"><span class="home-eyebrow">Research · {entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span><h3>{entry.data.title}</h3><span class="notebook-read">Read the research <Icon name="arrow-right" class="icon" /></span></a>)}
+        {research.map(entry => <a href={`/research/${entry.id}`} class="notebook-entry"><span class="home-eyebrow">Research · {entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</span><h3>{entry.data.title}</h3><span class="notebook-read">Read the research <Icon name="arrow-right" class="icon" /></span></a>)}
       </div>
       <div class="notebook-links"><a href="/notes">Lab notes <Icon name="arrow-right" class="icon" /></a><a href="/now">What I'm working on <Icon name="arrow-right" class="icon" /></a><a href="/library" data-astro-reload>Explore my library <Icon name="arrow-right" class="icon" /></a><a href="/portfolio">More interface work <Icon name="arrow-right" class="icon" /></a></div>
     </section>

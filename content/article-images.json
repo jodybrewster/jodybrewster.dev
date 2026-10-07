@@ -1,5 +1,10 @@
 {
   "writing": {
+    "evals-are-the-new-prd": {
+      "subject": "a thick ring-bound requirements document, its pages yellowed and curling, used as a doorstop to hold open a plain wooden door. On the floor in the open space beside it sits a short neat stack of blank index cards held together by a small bulldog clip. The bulldog clip is the accent element. No legible text",
+      "ground": "denim",
+      "side": "left"
+    },
     "the-model-that-wont-talk-a-teardown-of-jev": {
       "subject": "a homemade sponge cake that has visibly collapsed, its middle sunk into a deep crater, on a plain plate, with a small paper sorting tag tied to it by string. The tag is the accent element and reads \"TECHNICAL ISSUE 0.94\", the only text in the image",
       "ground": "slate",
@@ -83,6 +88,23 @@
   "header": {
     "writing-header": {
       "subject": "a writer's desk seen from the side at night, kept low: a short desk lamp, a typewriter, a few stacked books, loose pages and a mug, all sitting in the lower half of the frame with nothing in the upper half but open ground. The pool of lamplight on the desk is the accent element",
+      "ground": "slate",
+      "side": "right"
+    }
+  },
+  "inline": {
+    "evals-are-the-new-prd-bearings": {
+      "subject": "a hiking compass with a clear rectangular baseplate lying on a folded paper trail map, a pencilled route drawn across the map with a few small check marks along it and a pencil resting nearby. The compass needle is the accent element. No legible text on the map",
+      "ground": "steel",
+      "side": "right"
+    },
+    "evals-are-the-new-prd-gauge": {
+      "subject": "a machinist's shallow metal tray on a workbench holding neat rows of identical steel bolts. In front of the tray one bolt stands upright on the bench with a small ring gauge resting around its thread, and two more bolts lie set apart from the rest. No hands and no people anywhere in the image. The ring gauge is the accent element and it is small. No text",
+      "ground": "cornflower",
+      "side": "left"
+    },
+    "evals-are-the-new-prd-tally": {
+      "subject": "the bottom of a wooden front door with a closed brass mail slot, and an empty doormat in front of it. A small mechanical hand tally counter, no bigger than a matchbox relative to the doormat, sits in one corner of the mat. Only the tally counter's body is the accent element; the mat, door and mail slot are off-white line. The counter's number window reads \"0216\", the only text in the image",
       "ground": "slate",
       "side": "right"
     }

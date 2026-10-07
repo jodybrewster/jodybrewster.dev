@@ -1,4 +1,10 @@
 {
+  "evals-are-the-new-prd": [
+    "An eval states the same intent in a form that keeps checking.",
+    "A system prompt has no compiler. The eval set is how you find out what moved before your users do.",
+    "An eval made only of failures rewards a model that refuses everything.",
+    "A case that passes every time still belongs in the suite, because a solved problem is the one nobody is watching."
+  ],
   "the-model-that-wont-talk-a-teardown-of-jev": [
     "The interesting part isn't the speed. It's the argument.",
     "It feels less like a cheaper chatbot and more like a fast decision layer that can act before the conversation moves on.",

@@ -3,7 +3,8 @@
 `jodybrewster-gemini-live-<version>.tgz` is the `@jodybrewster/gemini-live` package, built in Jody's private gemini-live-nextjs repo and installed from here with `file:` so Vercel needs no registry or token.
 
 It is not covered by this repository's LICENSE.
-It is licensed under the LICENSE file inside the tarball (`package/LICENSE`), a narrow grant that does not allow reuse outside the terms it states.
+It is licensed by the `@jodybrewster/gemini-live` license (`packages/gemini-live-bundle/LICENSE` in the framework repo), shipped as `package/LICENSE` in the tarball from version 0.4.0: a narrow grant that does not allow reuse outside the terms it states.
+Tarballs from earlier versions carry no license grant and are not licensed for use.
 Read that file before doing anything with the tarball beyond running this site.
 
 ## Updating it

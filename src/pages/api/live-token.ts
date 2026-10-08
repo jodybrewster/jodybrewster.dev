@@ -5,7 +5,7 @@ import { createSwitches } from '@jodybrewster/gemini-live/server/switches';
 import { VOICE_MODEL, VOICE_NAME, VOICE_PROMPT, VOICE_SESSION_MS, SEARCH_SITE_DECLARATION } from '../../lib/verso-voice';
 import { VERSO_TOOL_DECLARATIONS } from '../../lib/verso-tools';
 import { env } from '../../lib/env';
-import { flags } from '../../lib/flags';
+import { chatBuilt } from '../../lib/switches';
 import { isCanonicalHost, otherHost } from '../../lib/origin';
 import { audit, auditRefusal, auditSwitchChanges } from '../../lib/audit';
 
@@ -91,9 +91,12 @@ export function createLiveTokenRoute(source: Env, mint?: VoiceTokenRouteOptions[
 
 let route: ((req: Request) => Promise<Response>) | null = null;
 const handle: APIRoute = async ({ request }) => {
-  if (!flags.chat) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
   await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   route ??= createLiveTokenRoute(voiceEnv());
   const response = await route(request);
   // A minted token, or a refusal (throttled), never the visitor's address.

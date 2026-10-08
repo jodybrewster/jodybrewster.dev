@@ -7,8 +7,8 @@
  * different lifetimes, and the prompt never reads from here.
  *
  * Emails, phone numbers and similar details are redacted on write (see
- * src/lib/redact.ts), so the log never holds the contact details people type
- * into a chat box. The dock discloses the 30 days, which run from the first
+ * `@jodybrewster/gemini-live/server/redact`), so the log never holds the
+ * contact details people type into a chat box. The dock discloses the 30 days, which run from the first
  * message: the list gets its TTL once, when it is created, and a read deletes
  * any log whose first entry is older than that.
  *
@@ -19,7 +19,7 @@
  */
 
 import { getRedis } from './redis';
-import { redactText } from './redact';
+import { redactText } from '@jodybrewster/gemini-live/server/redact';
 
 export const TRANSCRIPT_TTL_S = 30 * 86400;
 export const TRANSCRIPT_INDEX = 'chat:log:index';

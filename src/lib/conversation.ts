@@ -13,7 +13,7 @@
  */
 
 import { getRedis } from './redis';
-import { redactText } from './redact';
+import { redactText } from '@jodybrewster/gemini-live/server/redact';
 import type { ConversationTurn } from './verso';
 
 export const CONV_TTL_S = 86400; // 24h

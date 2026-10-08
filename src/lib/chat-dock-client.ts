@@ -3,7 +3,8 @@ import { navigate } from 'astro:transitions/client';
 import { renderCard } from './card-render';
 import { track } from './track';
 import { renderAnswer } from './verso-links';
-import { canAsk, voiceActive as isVoiceActive, createAnnouncer, createStreamAnnouncer, scheduleTimeWarnings, voiceTimeWarning } from './a11y';
+import { createAnnouncer, createStreamAnnouncer, scheduleTimeWarnings } from '@jodybrewster/gemini-live/core';
+import { canAsk, voiceActive as isVoiceActive, voiceTimeWarning } from './a11y';
 
 type VoiceModule = typeof import('./live/voice') & typeof import('./live/voice-dock');
 let voiceModule: Promise<VoiceModule> | null = null;

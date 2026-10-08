@@ -4,8 +4,11 @@ vi.mock('../verso-tools', () => ({ VERSO_TOOL_DECLARATIONS: [
   { name: 'show_work', description: 'Show a case study.', parameters: { type: 'object', properties: { slug: { type: 'string' } }, required: ['slug'] } },
 ] }));
 
+const audit = vi.hoisted(() => ({ auditSwitchChanges: vi.fn() }));
+vi.mock('../audit', async importOriginal => ({ ...(await importOriginal<typeof import('../audit')>()), auditSwitchChanges: audit.auditSwitchChanges }));
+
 import type { VoiceTokenRequest } from '@jodybrewster/gemini-live/server';
-import { createLiveTokenRoute, voiceEnv } from '../../pages/api/live-token';
+import { POST, createLiveTokenRoute, voiceEnv } from '../../pages/api/live-token';
 
 const DEV = 'http://localhost:4321';
 // astro dev: counts in memory, the dev origins allowed, one visitor bucket.
@@ -20,7 +23,21 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   mint = vi.fn<(request: VoiceTokenRequest) => Promise<{ name?: string }>>().mockResolvedValue({ name: 'auth_tokens/abc' });
 });
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); audit.auditSwitchChanges.mockReset(); });
+
+describe('the live-token route and SWITCH_CHAT', () => {
+  const call = () => POST({ request: request() } as Parameters<typeof POST>[0]) as Promise<Response>;
+  it('does not exist when SWITCH_CHAT is force-off, after recording the switch change', async () => {
+    vi.stubEnv('SWITCH_CHAT', 'force-off');
+    expect((await call()).status).toBe(404);
+    expect(audit.auditSwitchChanges).toHaveBeenCalledOnce();
+  });
+  it.each(['', 'on', 'off', 'disabled'])('still exists when SWITCH_CHAT is %j', async value => {
+    vi.stubEnv('SWITCH_CHAT', value);
+    expect((await call()).status).not.toBe(404);
+    expect(audit.auditSwitchChanges).toHaveBeenCalledOnce();
+  });
+});
 
 describe('POST /api/live-token', () => {
   it("mints a single-use token locked to Verso's model, prompt and tools", async () => {

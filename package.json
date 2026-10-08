@@ -2,6 +2,7 @@
   "name": "jodybrewster-dev",
   "type": "module",
   "version": "0.0.1",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -28,7 +29,8 @@
     "audit:verify": "tsx scripts/audit-verify.ts",
     "switch": "tsx scripts/switch.ts",
     "test:headers": "playwright test -c playwright.headers.config.ts",
-    "security:approve": "tsx scripts/security-headers.ts --approve"
+    "security:approve": "tsx scripts/security-headers.ts --approve",
+    "bundle:update": "bash scripts/bundle-update.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
@@ -37,7 +39,7 @@
     "@astrojs/sitemap": "^3.0.0",
     "@astrojs/vercel": "^8.0.0",
     "@google/genai": "^2.24.0",
-    "@jodybrewster/gemini-live": "file:vendor/jodybrewster-gemini-live-0.3.0.tgz",
+    "@jodybrewster/gemini-live": "file:vendor/jodybrewster-gemini-live-0.4.0.tgz",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@upstash/redis": "^1.38.0",
     "@upstash/vector": "^1.2.3",

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   searchVectors: vi.fn(), getChunkText: vi.fn(), getRedis: vi.fn(),
-  check: vi.fn(), spend: vi.fn(), chatOn: true,
+  check: vi.fn(), spend: vi.fn(), chatOn: true, switchChat: undefined as string | undefined, auditSwitchChanges: vi.fn(),
   readHistory: vi.fn(), conversationLength: vi.fn(), appendTurn: vi.fn(),
   generateContentStream: vi.fn(), buildCardIndex: vi.fn(), notifyTurn: vi.fn(), logEntries: vi.fn(), generateContent: vi.fn(),
   liveUntil: vi.fn(), holdQuestion: vi.fn(), takeHeld: vi.fn(), alertModelFailure: vi.fn(),
@@ -18,14 +18,24 @@ vi.mock('../cards', () => ({ buildCardIndex: dependencies.buildCardIndex }));
 vi.mock('../rag', () => ({ searchVectors: dependencies.searchVectors, getChunkText: dependencies.getChunkText }));
 vi.mock('../redis', () => ({ getRedis: dependencies.getRedis }));
 vi.mock('../origin', async (importOriginal) => ({ ...(await importOriginal<typeof import('../origin')>()), isOriginAllowed: () => true }));
-vi.mock('../switches', async (importOriginal) => ({ ...(await importOriginal<typeof import('../switches')>()), isOn: async () => dependencies.chatOn }));
+// isOn reads SWITCH_CHAT as the site does; chatOn = false stands in for a switch that cannot be read.
+vi.mock('../switches', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../switches')>();
+  const { createSwitches } = await import('@jodybrewster/gemini-live/server/switches');
+  return {
+    ...original,
+    isOn: async (name: Parameters<typeof original.isOn>[0]) => dependencies.chatOn && createSwitches({ env: original.switchEnv() }).isOn(name),
+  };
+});
+vi.mock('../audit', async importOriginal => ({ ...(await importOriginal<typeof import('../audit')>()), auditSwitchChanges: dependencies.auditSwitchChanges }));
 vi.mock('../limits', () => ({ check: dependencies.check, chatLimiter: () => null, visitor: () => 'test-ip' }));
 vi.mock('../conversation', () => ({
   readHistory: dependencies.readHistory, conversationLength: dependencies.conversationLength,
   appendTurn: dependencies.appendTurn,
 }));
-vi.mock('../flags', () => ({ flags: { chat: true } }));
-vi.mock('../env', () => ({ env: (key: string) => key === 'VERCEL_ENV' ? 'production' : 'test-key' }));
+vi.mock('../env', () => ({
+  env: (key: string) => key === 'VERCEL_ENV' ? 'production' : key === 'SWITCH_CHAT' ? dependencies.switchChat : key.startsWith('SWITCH_') ? undefined : 'test-key',
+}));
 const { ApiError } = vi.hoisted(() => ({
   ApiError: class extends Error { constructor(public status: number) { super(`status ${status}`); } },
 }));
@@ -37,6 +47,7 @@ vi.mock('@google/genai', () => ({
 }));
 
 import { POST } from '../../pages/api/chat';
+import { CHAT_OFF } from '../switches';
 
 const never = () => new Promise<never>(() => {});
 const chunk = (...parts: Record<string, unknown>[]) => ({ candidates: [{ content: { role: 'model', parts } }] });
@@ -84,6 +95,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   dependencies.getRedis.mockReturnValue({});
   dependencies.chatOn = true;
+  dependencies.switchChat = undefined;
   dependencies.spend.mockResolvedValue(null);
   dependencies.check.mockResolvedValue({ ok: true, spend: dependencies.spend, refund: vi.fn(), charge: vi.fn(), release: vi.fn() });
   dependencies.searchVectors.mockResolvedValue([]);
@@ -326,6 +338,30 @@ describe('POST /api/chat reliability', () => {
     expect(await response.text()).toMatch(/paused/);
     expect(dependencies.check).not.toHaveBeenCalled();
     expect(dependencies.generateContentStream).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 when SWITCH_CHAT is force-off, after recording the switch change', async () => {
+    dependencies.switchChat = 'force-off';
+    expect((await post()).status).toBe(404);
+    expect(dependencies.auditSwitchChanges).toHaveBeenCalledOnce();
+    expect(dependencies.check).not.toHaveBeenCalled();
+  });
+
+  it.each(['off', 'disabled'])('answers with the paused copy when SWITCH_CHAT is %s, after recording it', async value => {
+    dependencies.switchChat = value;
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const response = await post();
+    expect(response.status).toBe(503);
+    expect(response.headers.get('x-switched-off')).toBe('chat');
+    expect(await response.text()).toBe(CHAT_OFF);
+    expect(dependencies.auditSwitchChanges).toHaveBeenCalledOnce();
+    expect(dependencies.check).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, 'on'])('answers when SWITCH_CHAT is %s', async value => {
+    dependencies.switchChat = value;
+    expect([404, 503]).not.toContain((await post()).status);
+    expect(dependencies.auditSwitchChanges).toHaveBeenCalledOnce();
   });
 
   it('refuses past the per-IP rate and once the daily quota is gone, before any model call', async () => {

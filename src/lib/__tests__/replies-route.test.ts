@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const deps = vi.hoisted(() => ({ readReplies: vi.fn(), liveUntil: vi.fn(), check: vi.fn() }));
-vi.mock('../flags', () => ({ flags: { chat: true } }));
+const deps = vi.hoisted(() => ({ readReplies: vi.fn(), liveUntil: vi.fn(), check: vi.fn(), auditSwitchChanges: vi.fn() }));
+vi.mock('../audit', async importOriginal => ({ ...(await importOriginal<typeof import('../audit')>()), auditSwitchChanges: deps.auditSwitchChanges }));
 vi.mock('../conversation', () => ({ readReplies: deps.readReplies }));
 vi.mock('../operator', () => ({ liveUntil: deps.liveUntil }));
 vi.mock('../limits', () => ({ check: deps.check, repliesLimiter: () => null, visitor: () => 'test-ip' }));
@@ -16,9 +16,25 @@ beforeEach(() => {
   deps.readReplies.mockReset().mockResolvedValue([{ t: 'Hi', ts: 5, q: 'Q' }]);
   deps.liveUntil.mockReset().mockResolvedValue(99);
   deps.check.mockReset().mockResolvedValue({ ok: true });
+  deps.auditSwitchChanges.mockReset();
+  vi.stubEnv('SWITCH_CHAT', '');
 });
+afterEach(() => { vi.unstubAllEnvs(); });
 
 describe('GET /api/replies', () => {
+  it('does not exist when SWITCH_CHAT is force-off, after recording the switch change', async () => {
+    vi.stubEnv('SWITCH_CHAT', 'force-off');
+    expect((await get(`?cid=${cid}`)).status).toBe(404);
+    expect(deps.auditSwitchChanges).toHaveBeenCalledOnce();
+    expect(deps.check).not.toHaveBeenCalled();
+  });
+
+  it.each(['', 'on', 'off', 'disabled'])('still answers when SWITCH_CHAT is %j', async value => {
+    vi.stubEnv('SWITCH_CHAT', value);
+    expect((await get(`?cid=${cid}`)).status).toBe(200);
+    expect(deps.auditSwitchChanges).toHaveBeenCalledOnce();
+  });
+
   it('limits polling per visitor, refusing before touching Redis', async () => {
     deps.check.mockResolvedValue({ ok: false, code: 'rate_limited', rule: 'ip', retryAfterSeconds: 42 });
     const limited = await get(`?cid=${cid}`);

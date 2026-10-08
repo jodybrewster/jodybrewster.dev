@@ -46,6 +46,10 @@ test('every response carries the headers, with a policy that runs no injected sc
 });
 
 test('pages and the client router run with no policy violations', async ({ page }) => {
+  // Seven page loads. Measured in Playwright's Linux image, the hard load of
+  // /library alone takes about 70 s of main-thread work on one CPU with no
+  // GPU (software WebGL and the shelf's texture work), 43 s on two.
+  test.setTimeout(180_000);
   const net = await mockNetwork(page, undefined, HOST, ANALYTICS);
   const violations = await watchViolations(page);
   // Each a soft navigation by the client router, from the home page.

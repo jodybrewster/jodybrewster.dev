@@ -26,6 +26,19 @@ export function switchEnv(): Record<string, string | undefined> {
   }));
 }
 
+/**
+ * Whether the chat is built at all: false only when `SWITCH_CHAT` is
+ * `force-off`, the break-glass value. Prerendered pages read it at build
+ * time, so a force-off build has no dock, no Verso button and no Verso
+ * mention, and the chat, corpus, live-token, replies and telegram routes
+ * read it per request and answer 404. Plain `off` (and any unrecognized
+ * value, which switchEnv reads as off) keeps the dock; the chat route then
+ * answers with the paused copy through isOn('chat').
+ */
+export function chatBuilt(): boolean {
+  return env(envSwitchKey('chat'))?.trim().toLowerCase() !== 'force-off';
+}
+
 let switches: ReturnType<typeof createSwitches> | null = null;
 
 /** Whether a switch is on. An unreadable state counts as off. */

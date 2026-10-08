@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const deps = vi.hoisted(() => ({
-  env: {} as Record<string, string | undefined>,
+  env: {} as Record<string, string | undefined>, auditSwitchChanges: vi.fn(),
   sendNotice: vi.fn(), appendReply: vi.fn(), resolveTelegramMessage: vi.fn(), logEntries: vi.fn(), appendTurn: vi.fn(), goLive: vi.fn(), takeHeld: vi.fn(),
 }));
 vi.mock('../env', () => ({ env: (key: string) => deps.env[key] }));
-vi.mock('../flags', () => ({ flags: { chat: true } }));
+vi.mock('../audit', async importOriginal => ({ ...(await importOriginal<typeof import('../audit')>()), auditSwitchChanges: deps.auditSwitchChanges }));
 vi.mock('../conversation', () => ({ appendReply: deps.appendReply, appendTurn: deps.appendTurn }));
 vi.mock('../transcripts', () => ({ logEntries: deps.logEntries }));
 vi.mock('../operator', () => ({
@@ -45,6 +45,19 @@ describe('POST /api/telegram', () => {
   it('does not exist without a webhook secret', async () => {
     deps.env = {};
     expect((await post(fromOwner({ text: 'hi' }))).status).toBe(404);
+  });
+
+  it('does not exist when SWITCH_CHAT is force-off, after recording the switch change', async () => {
+    deps.env.SWITCH_CHAT = 'force-off';
+    expect((await post(fromOwner({ text: 'hi' }))).status).toBe(404);
+    expect(deps.auditSwitchChanges).toHaveBeenCalledOnce();
+    expect(deps.appendReply).not.toHaveBeenCalled();
+  });
+
+  it.each([undefined, 'on', 'off', 'disabled'])('still exists when SWITCH_CHAT is %s', async value => {
+    deps.env.SWITCH_CHAT = value;
+    expect((await post(fromOwner({ text: 'hi' }), 'wrong')).status).toBe(401);
+    expect(deps.auditSwitchChanges).toHaveBeenCalledOnce();
   });
 
   it('refuses a caller without the secret', async () => {

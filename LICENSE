@@ -1,0 +1,31 @@
+Copyright (c) 2026 Jody Brewster. All rights reserved.
+
+This repository holds the code and the content of jodybrewster.dev: source
+code, build scripts, tests, designs, writing, notes and the other files Jody
+Brewster created, except the files in vendor/ and the third-party material
+described below. Those files are the property of Jody Brewster.
+
+The repository is public so it can be read. No license is granted to use,
+copy, modify, merge, publish, distribute, sublicense or sell any part of it,
+except under a written agreement signed by Jody Brewster. Viewing and forking
+it through GitHub's own features is allowed only as GitHub's terms of service
+require, and gives no other rights.
+
+Files in vendor/ are licensed separately, under their own terms (see
+vendor/README.md). Third-party software this site depends on is licensed by
+its own authors under its own terms.
+
+Third-party material is not covered by this license and stays the property
+of its owners. This includes book covers, album art, game art, trademarks
+and logos shown under public/media/ or fetched from other services. Jody
+Brewster does not claim them and grants no right in them. They appear here
+only to identify the works discussed. Rights holders who want an item
+removed can write through https://jodybrewster.dev.
+
+TO THE FULLEST EXTENT THE LAW ALLOWS, THE SOFTWARE AND CONTENT ARE PROVIDED
+"AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR OR COPYRIGHT HOLDER
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR CONTENT OR THE USE OR OTHER DEALINGS IN THEM.

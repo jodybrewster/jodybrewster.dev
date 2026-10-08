@@ -4,7 +4,7 @@ import { searchVectors, getChunkText, type SourceMetadata } from '../../lib/rag'
 import { isCanonicalHost, isOriginAllowed, otherHost } from '../../lib/origin';
 import { chatLimiter, check, visitor } from '../../lib/limits';
 import { audit, auditRefusal, auditSwitchChanges, ref } from '../../lib/audit';
-import { CHAT_OFF, isOn } from '../../lib/switches';
+import { CHAT_OFF, chatBuilt, isOn } from '../../lib/switches';
 import type { Allowed } from '@jodybrewster/gemini-live/server/limits';
 import { getRedis } from '../../lib/redis';
 import { readHistory, appendTurn, conversationLength } from '../../lib/conversation';
@@ -13,7 +13,6 @@ import {
   retrievalQuery, buildMessages, type ConversationTurn,
 } from '../../lib/verso';
 import { env } from '../../lib/env';
-import { flags } from '../../lib/flags';
 import { withDeadline } from '../../lib/deadline';
 import { VERSO_TOOL_DECLARATIONS, resolveCard, type Card } from '../../lib/verso-tools';
 import { buildCardIndex } from '../../lib/cards';
@@ -52,9 +51,12 @@ interface CitedSource {
 }
 
 export const POST: APIRoute = async ({ request }) => {
-  if (!flags.chat) return new Response('Not found', { status: 404 });
   if (!isCanonicalHost(request)) return otherHost();
+  // Before the force-off 404, so the first request after a deploy records
+  // the switch change; after the host check, so an old deployment's stale
+  // switches are never recorded.
   await auditSwitchChanges();
+  if (!chatBuilt()) return new Response('Not found', { status: 404 });
   // Switched off (SWITCH_CHAT): friendly copy the dock shows as is.
   if (!(await isOn('chat'))) return new Response(CHAT_OFF, { status: 503, headers: { 'X-Switched-Off': 'chat', 'Cache-Control': 'no-store' } });
   const started = Date.now();

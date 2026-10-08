@@ -39,7 +39,7 @@
     "@astrojs/sitemap": "^3.0.0",
     "@astrojs/vercel": "^8.0.0",
     "@google/genai": "^2.24.0",
-    "@jodybrewster/gemini-live": "file:vendor/jodybrewster-gemini-live-0.3.0.tgz",
+    "@jodybrewster/gemini-live": "file:vendor/jodybrewster-gemini-live-0.4.0.tgz",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@upstash/redis": "^1.38.0",
     "@upstash/vector": "^1.2.3",

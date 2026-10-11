@@ -1,0 +1,45 @@
+/* The site's one palette. Home and interior (studio) pages both read from these --ui-* tokens, so a color is
+   defined once. The older --home-* and --studio-* names stay as aliases because thousands of existing rules use
+   them; new code should use --ui-*. The site is dark only: /library is its own document and does not load this. */
+.home-page, .studio-page {
+  --headline: "Barlow Semi Condensed", "Arial Narrow", var(--sans);
+
+  --ui-bg: #050f16;
+  --ui-surface: #0a1721;
+  --ui-raised: #172633;
+  --ui-rule: #263b4c;
+  --ui-ink: #f4f7fb;
+  --ui-muted: #bbcee3;
+
+  --ui-cyan: #00c6e7;
+  --ui-orange: #ff9651;
+  --ui-purple: #b58aff;
+  --ui-pink: #f657ac;
+  --ui-green: #31da67;
+
+  --ui-radius: 10px;
+
+  --home-bg: var(--ui-bg);
+  --home-surface: var(--ui-surface);
+  --home-raised: var(--ui-raised);
+  --home-rule: var(--ui-rule);
+  --home-ink: var(--ui-ink);
+  --home-muted: var(--ui-muted);
+  --home-cyan: var(--ui-cyan);
+  --home-orange: var(--ui-orange);
+  --home-purple: var(--ui-purple);
+  --home-pink: var(--ui-pink);
+  --home-green: var(--ui-green);
+  --home-radius: var(--ui-radius);
+
+  --studio-bg: var(--ui-bg);
+  --studio-surface: var(--ui-surface);
+  --studio-raised: var(--ui-raised);
+  --studio-rule: var(--ui-rule);
+  --studio-ink: var(--ui-ink);
+  --studio-muted: var(--ui-muted);
+  --studio-cyan: var(--ui-cyan);
+  --studio-orange: var(--ui-orange);
+  --studio-purple: var(--ui-purple);
+  --studio-pink: var(--ui-pink);
+}

@@ -9,6 +9,7 @@ import CaseArchitecture from '../../components/case/CaseArchitecture.astro';
 import ImageLightbox from '../../components/case/ImageLightbox.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
+import Button from '../../components/Button.astro';
 
 export async function getStaticPaths() {
   const published = await getCollection('work', b => !b.data.draft);
@@ -58,7 +59,7 @@ const jsonLd = {
         <div class="case-story-heading"><p class="studio-eyebrow">Inside the engagement</p><h2 id="case-story-title">The decisions behind the work.</h2><p>{entry.data.title}</p></div>
         <div class="case-prose brief-shell"><Content /></div>
       </section>
-      <footer class="case-footer"><a href="/work" class="studio-text-link"><Icon name="arrow-left" class="icon" /> All work & case studies</a><a href={`${Astro.url.pathname.replace(/\/$/, '')}.md`} class="studio-text-link">Read as Markdown <Icon name="file" class="icon" /></a></footer>
+      <footer class="case-footer"><Button href="/work" variant="text"><Icon name="arrow-left" class="icon" /> All work & case studies</Button><Button href={`${Astro.url.pathname.replace(/\/$/, '')}.md`} variant="text" icon="file">Read as Markdown</Button></footer>
     </article>
     <ImageLightbox />
   </main>

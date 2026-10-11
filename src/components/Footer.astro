@@ -29,4 +29,11 @@ const year = new Date().getFullYear();
       <svg class="icon sm"><use href="#i-shield"/></svg> Privacy
     </a>
   </span>
+  <p class="credit">AI Slop made with <svg class="icon sm heart" aria-hidden="true"><use href="#i-heart"/></svg><span class="visually-hidden">love</span></p>
 </footer>
+
+<style>
+  /* Its own line under the footer row: flex-basis 100% forces the wrap. */
+  .credit { flex-basis: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font-size: 13px; letter-spacing: .18em; text-transform: uppercase; }
+  .heart { width: 15px; height: 15px; fill: var(--home-pink, var(--studio-pink, #f657ac)); stroke: none; }
+</style>

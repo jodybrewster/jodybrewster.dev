@@ -4,6 +4,7 @@ import Studio from '../../layouts/Studio.astro';
 import Icon from '../../components/Icon.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
+import Button from '../../components/Button.astro';
 
 const [briefs, portfolio] = await Promise.all([
   getCollection('work', b => !b.data.draft),
@@ -78,7 +79,7 @@ const filters = [
         ))}
       </div>
       <p class="work-empty" data-work-empty hidden>No projects in this category yet. Choose All to see the collection.</p>
-      <div class="work-footer"><p>More of the interfaces behind the work.</p><a href="/portfolio" class="studio-text-link">Explore the portfolio <Icon name="arrow-right" class="icon" /></a></div>
+      <div class="work-footer"><p>More of the interfaces behind the work.</p><Button href="/portfolio" variant="text" icon="arrow-right">Explore the portfolio</Button></div>
     </section>
   </main>
 </Studio>
@@ -146,7 +147,6 @@ const filters = [
   .work-empty[hidden] { display: none; }
   .work-footer { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--studio-rule); display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 13px; color: var(--studio-muted); }
   .work-footer p { margin: 0; }
-  :global(html[data-theme='light']) .work-office { opacity: .22; }
   @media (max-width: 720px) {
     .work-main { padding-top: 10px; padding-bottom: 40px; }
     .work-header { min-height: 265px; padding-top: 25px; }

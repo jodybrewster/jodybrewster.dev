@@ -25,7 +25,6 @@
 .studio-page .home-nav a, .studio-page .home-nav button { color: var(--studio-ink); }
 .studio-eyebrow { font-family: var(--sans); text-transform: uppercase; font-size: 11px; line-height: 1.5; letter-spacing: .2em; font-weight: 600; margin: 0 0 18px; color: var(--studio-muted); }
 .studio-tags { list-style: none; display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 16px 0 0; }
-.studio-tags li, .studio-tags > span { font-size: 11px; line-height: 1.5; padding: 5px 10px; border: 1px solid var(--studio-rule); background: var(--studio-raised); color: var(--studio-muted); border-radius: 7px; }
 .studio-arrow { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: var(--studio-ink); color: var(--studio-bg); }
 .studio-arrow .icon { width: 18px; height: 18px; }
 .studio-page .foot { max-width: var(--site-width); width: calc(100% - 2 * var(--site-gutter)); margin: 0 auto; padding: 26px 0 34px; gap: 20px; color: var(--studio-muted); }

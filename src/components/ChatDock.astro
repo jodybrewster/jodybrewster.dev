@@ -9,6 +9,7 @@
  * at a time and has a waiting state that never reads as a dead page.
  */
 import VersoPartTemplates from './VersoPartTemplates.astro';
+import Badge from './Badge.astro';
 ---
 <div class="chat-dock" id="chat-dock" transition:persist="verso-dock">
   <div class="dock-panel" id="dock-panel" inert>
@@ -24,17 +25,17 @@ import VersoPartTemplates from './VersoPartTemplates.astro';
         <div class="dock-default-greeting">
           <p>Hi, I'm Verso. Ask me about Jody’s products, the decisions behind them, or how he takes an idea into production.</p>
           <div class="dock-quick">
-            <button type="button" data-verso-open data-verso-prompt="What is Jody's experience?">Experience</button>
-            <button type="button" data-verso-open data-verso-prompt="What are Jody's featured projects?">Featured work</button>
-            <button type="button" data-verso-open data-verso-prompt="What is Jody's tech stack?">Tech stack</button>
+            <Badge as="button" size="sm" data-verso-open data-verso-prompt="What is Jody's experience?">Experience</Badge>
+            <Badge as="button" size="sm" data-verso-open data-verso-prompt="What are Jody's featured projects?">Featured work</Badge>
+            <Badge as="button" size="sm" data-verso-open data-verso-prompt="What is Jody's tech stack?">Tech stack</Badge>
           </div>
         </div>
         <div class="dock-page-welcome">
           <span class="dock-welcome-avatar" aria-hidden="true"><svg class="icon"><use href="#i-bot"/></svg></span>
           <div><p>Hi! I'm Verso. I can help you explore the products Jody has built, the decisions behind them, and the thinking that carried them into production. What would you like to know?</p>
             <div class="dock-suggestions">
-              <button type="button" data-verso-open data-verso-prompt="What products has Jody built end to end?">What products have you built end to end?</button>
-              <button type="button" data-verso-open data-verso-prompt="How does Jody take a product idea from prototype to production?">How do you take an idea to production?</button>
+              <Badge as="button" size="sm" data-verso-open data-verso-prompt="What products has Jody built end to end?">What products have you built end to end?</Badge>
+              <Badge as="button" size="sm" data-verso-open data-verso-prompt="How does Jody take a product idea from prototype to production?">How do you take an idea to production?</Badge>
             </div>
           </div>
         </div>

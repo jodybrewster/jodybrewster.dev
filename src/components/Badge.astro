@@ -1,0 +1,18 @@
+---
+// The site's only badge: labels, tags, chips and filter pills. Pass `href` for a link, `as="button"` for a control
+// (a filter or a chat prompt; use aria-pressed for toggles), nothing for a static label. Look: styles/badge.css.
+export interface Props {
+  href?: string;
+  as?: 'span' | 'button';
+  size?: 'sm' | 'md';
+  /** A solid white pill: the same look a pressed toggle gets, for a label that should stand out. */
+  strong?: boolean;
+  class?: string;
+  [attr: string]: unknown;
+}
+
+const { href, as = 'span', size = 'md', strong = false, class: className, ...attrs } = Astro.props;
+const Tag = href !== undefined ? 'a' : as;
+const classes = ['pill', size === 'sm' && 'pill-sm', strong && 'pill-strong', className].filter(Boolean).join(' ');
+---
+<Tag href={href} type={Tag === 'button' ? 'button' : undefined} class={classes} {...attrs}><slot /></Tag>

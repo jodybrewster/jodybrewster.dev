@@ -4,6 +4,7 @@ import Icon from './Icon.astro';
 import { articleImage } from '../lib/article-images';
 import { mediaTransitionName } from '../lib/transition-names';
 import Button from './Button.astro';
+import Badge from './Badge.astro';
 
 interface Props { researchOnly?: boolean; }
 const { researchOnly = false } = Astro.props;
@@ -31,7 +32,7 @@ function formatDate(date: Date) {
 ---
 <main id="main-content" class="writing-main studio-container">
   <header class="writing-header">
-    <div class="writing-office" aria-hidden="true"><img src="/images/articles/writing-header.webp" width="1536" height="1030" alt="" fetchpriority="high" /></div>
+    <div class="writing-office" aria-hidden="true"><img src="/images/articles/writing-header.webp" width="1160" height="604" alt="" fetchpriority="high" /></div>
     <div class="writing-header-copy">
       <p class="studio-eyebrow">{researchOnly ? 'The research notebook' : 'Writing & research'}</p>
       <h1 class="enter-title">Ideas, lessons, and<br />what I’m exploring.</h1>
@@ -42,7 +43,7 @@ function formatDate(date: Date) {
   <section class="writing-collection" aria-label={researchOnly ? 'Published research' : 'Published writing and research'} data-writing-index>
     <div class="writing-controls">
       <div class="writing-filters" role="group" aria-label="Filter articles by topic">
-        {filters.map(filter => <button type="button" data-writing-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="writing-grid">{filter.label}</button>)}
+        {filters.map(filter => <Badge as="button" data-writing-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="writing-grid">{filter.label}</Badge>)}
       </div>
       <label class="writing-search"><span class="writing-sr-only">Search articles</span><input type="search" placeholder="Search articles…" data-writing-search aria-controls="writing-grid" autocomplete="off" /><Icon name="search" class="icon" /></label>
     </div>
@@ -117,13 +118,11 @@ function formatDate(date: Date) {
   .writing-header-copy { position: relative; z-index: 1; max-width: 670px; }
   .writing-header h1 { font: 300 clamp(40px, 4.4vw, 60px)/1.08 var(--headline); letter-spacing: -.01em; margin: 0 0 20px; }
   .writing-lede { color: var(--studio-muted); font-size: 15px; line-height: 1.7; font-weight: 400; max-width: 56ch; margin: 0; }
-  .writing-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px -48px -30px 35%; overflow: hidden; opacity: .65; mask-image: linear-gradient(to right, transparent, black 45%), linear-gradient(to bottom, transparent, black 15%, black 60%, transparent); mask-composite: intersect; }
-  .writing-office img { width: 100%; height: 100%; object-fit: cover; object-position: center 45%; }
+  .writing-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px 0 -30px 35%; overflow: hidden; opacity: 1; mask-image: linear-gradient(to right, transparent, black 38%), linear-gradient(to bottom, transparent, black 12%, black 84%, transparent); mask-composite: intersect; }
+  /* The artwork is lifted a little: the original is a dim night scene and the page's own fade dims it further. */
+  .writing-office img { width: 100%; height: 100%; object-fit: cover; object-position: center bottom; filter: brightness(1.45) contrast(1.05) saturate(1.1); }
   .writing-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin: 12px 0 14px; }
   .writing-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .writing-filters button { appearance: none; border: 1px solid var(--studio-rule); border-radius: 99px; background: var(--studio-surface); color: var(--studio-muted); padding: 9px 15px; font: 500 12px/1.4 var(--sans); cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms; }
-  .writing-filters button:hover { border-color: var(--studio-cyan); color: var(--studio-ink); }
-  .writing-filters button[aria-pressed='true'] { background: var(--studio-ink); color: var(--studio-bg); border-color: var(--studio-ink); font-weight: 650; }
   .writing-search { display: flex; align-items: center; gap: 12px; padding: 10px 13px; border: 1px solid var(--studio-rule); border-radius: 7px; background: var(--studio-surface); min-width: 220px; width: 290px; transition: border-color 150ms; }
   .writing-search:focus-within { border-color: var(--studio-cyan); }
   .writing-search input { width: 100%; min-width: 0; padding: 0; border: none; border-radius: 0; background: transparent; color: var(--studio-ink); font: 400 12px/1.4 var(--sans); outline-offset: 7px; }
@@ -170,7 +169,6 @@ function formatDate(date: Date) {
     .writing-office { inset: -40px -20px 0 12%; opacity: .3; }
     .writing-controls { margin-top: 10px; gap: 16px; }
     .writing-filters { gap: 7px; }
-    .writing-filters button { font-size: 11px; padding: 8px 12px; }
     .writing-search { width: 100%; }
     .writing-grid { grid-template-columns: 1fr; gap: 20px; }
     .writing-card h2 { font-size: 16px; }
@@ -179,7 +177,7 @@ function formatDate(date: Date) {
     .writing-note { align-items: flex-start; flex-direction: column; gap: 12px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .writing-card, .writing-card-image img, .writing-filters button, .writing-search { transition: none; }
+    .writing-card, .writing-card-image img, .writing-search { transition: none; }
     .writing-card:hover, .writing-card:focus-within, .writing-card:hover img { transform: none; }
   }
 </style>

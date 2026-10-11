@@ -68,7 +68,9 @@ const links = [
     color: inherit;
     text-decoration: none;
   }
-  .home-monogram { display: block; width: 80px; height: 65px; }
+  /* The mark spans the text beside it: from the cap tops of the name to the baseline of the tagline, which is
+     about 36px at this type size, plus the soft glow edge. Its centre sits a hair below the text block's, so it gets a 2px nudge. */
+  .home-monogram { --brand-mark-width: auto; --brand-mark-height: 39px; display: flex; align-items: center; margin-top: 3px; }
   .home-wordmark {
     font-size: 17px;
     font-weight: 400;
@@ -222,7 +224,6 @@ const links = [
     .home-wordmark { font-size: clamp(11px, 2.8vw, 17px); letter-spacing: .15em; }
     .home-wordmark small { font-size: 7px; letter-spacing: .18em; }
     .home-brand { gap: 9px; min-width: 0; }
-    .home-monogram { --brand-mark-width:64px; --brand-mark-height:52px; width:64px; height:52px; }
     .home-nav-actions { gap: 5px; }
     .home-nav-actions > a { display: none; }
   }

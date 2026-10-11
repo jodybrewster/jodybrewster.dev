@@ -1,0 +1,57 @@
+/* Badges. Rendered by components/Badge.astro; this is the only place a pill's look is defined. A dark pill with a
+   thin flat hairline. Controls brighten the hairline on hover, and a pressed toggle (or `strong`) turns into a solid
+   white pill. No gradient, no spinning edge and no halo: these are labels, not actions. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--ui-pill-line);
+  border-radius: 99px;
+  background: var(--ui-bg);
+  color: var(--ui-ink);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-decoration: none;
+  appearance: none;
+  box-shadow: none;
+  transition: background .18s, color .18s, border-color .18s, box-shadow .18s;
+}
+.pill-sm { padding: 3px 10px; font-size: 11px; }
+button.pill, a.pill { cursor: pointer; }
+button.pill:hover, a.pill:hover { border-color: var(--ui-pill-line-hover); }
+.pill[aria-pressed='true'], .pill-strong {
+  border-color: #f4f7fb;
+  background: #f4f7fb;
+  color: #06111a;
+  font-weight: 650;
+  box-shadow: 0 0 10px rgb(255 255 255 / .22);
+}
+/* On hover a white gradient shine crosses the hairline: a ring-shaped overlay (the padding box masked away) whose
+   bright band slides left to right. A solid white pill has nothing to shine on, so it is left out. */
+.pill { position: relative; }
+.pill::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 30%, rgb(255 255 255 / .95) 50%, transparent 70%) 100% 0 / 250% 100% no-repeat;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+}
+.pill:hover::after { animation: pill-shine .7s ease-out both; }
+.pill[aria-pressed='true']::after, .pill-strong::after { display: none; }
+@keyframes pill-shine {
+  0% { opacity: 1; background-position: 100% 0; }
+  80% { opacity: 1; }
+  100% { opacity: 0; background-position: 0 0; }
+}
+@media (max-width: 720px) {
+  .pill:not(.pill-sm) { padding: 7px 12px; font-size: 11px; }
+}

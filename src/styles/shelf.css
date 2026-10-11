@@ -1,49 +1,13 @@
-/* /library - full-bleed shelf.
+/* /library - the floating room.
  *
- * Two views live in this file. The Three.js stage is the desktop experience;
- * the semantic shelf underneath it is the phone experience, the no-WebGL
- * fallback, and the keyboard path all at once. Only one is visible at a time,
- * but the semantic one always exists in the document.
+ * Two views live in this file. The Three.js stage is the room; the semantic
+ * list under it is the no-WebGL and no-script view and the keyboard path at
+ * once. Only one is visible at a time, but the list always exists in the
+ * document. `data-scene` on .library says which: unset while the scene boots,
+ * `live` once it draws, `off` when it is not coming.
  */
 
-/* The document root, not just the body. Mid-transition the body can be turned
-   out of the way, and without this the browser's white shows through. */
-html:has(> .library-page) {
-  background: #ece4d6;
-}
-
-.library-page {
-  --birch: #e2caa1;
-  --birch-shade: #c8ab7e;
-  --birch-deep: #a98a5d;
-  --plaster: #ece4d6;
-
-  /* The shelf is a lit interior: birch, warm plaster, paper. Those surfaces are
-     baked into the geometry and textures, so this page stays on the light
-     palette in both themes. Without this, dark mode hands it near-white ink on
-     a cream background and the labels disappear. */
-  color-scheme: light;
-  --ink: #14181d;
-  --ink-soft: #3d444d;
-  --ink-faint: #5f6770;
-  --paper: #f1f2f0;
-  --paper-warm: #e6e8e4;
-  --rule: #cbcec9;
-  --accent: #2d5d4f;
-  --accent-soft: #cfdcd6;
-
-  margin: 0;
-  background: var(--plaster);
-  color: var(--ink);
-  font-family: var(--sans);
-  /* `clip`, not `hidden`: `overflow-x: hidden` computes `overflow-y: auto`,
-     which makes the body its own scroll container and silently breaks
-     window.scrollTo, and with it the scroll-driven camera. */
-  overflow-x: clip;
-}
-
-/* The page title exists for documents and screen readers; the shelf rail
-   carries the visible wordmark. */
+/* The page title exists for documents and screen readers; the room carries the rest. */
 .library__h1,
 .library__skip {
   position: absolute;
@@ -60,290 +24,90 @@ html:has(> .library-page) {
   position: fixed;
   top: 12px;
   left: 12px;
-  z-index: 40;
+  z-index: 60;
   width: auto;
   height: auto;
   margin: 0;
   padding: 10px 14px;
   clip-path: none;
-  background: var(--accent);
-  color: #f6f7f5;
-  border-radius: 4px;
-  font-size: var(--t-meta-lg);
-  text-decoration: none;
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
 }
 
-/* -- Back to the site ------------------------------------------------------ */
-
-/* The only chrome on this page. It sits over the shelf, so it is kept faint
-   enough to read as a label resting on the room rather than a bar laid across
-   it, and comes up to full strength on hover. */
-.library__back {
+/* The nav floats over the sky, as the rest of the site's chrome does over its heroes. */
+.library-page .home-nav {
   position: fixed;
-  top: clamp(14px, 2.4vh, 26px);
-  left: clamp(14px, 2.4vw, 30px);
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px 8px 11px;
-  border-radius: 99px;
-  background: rgb(244 241 232 / 0.28);
-  backdrop-filter: blur(7px);
-  font-family: var(--mono);
-  font-size: var(--t-micro);
-  letter-spacing: var(--ls-eyebrow);
-  text-transform: uppercase;
-  color: rgb(38 30 20 / 0.62);
-  text-decoration: none;
-  transition: background-color .18s ease, color .18s ease;
+  inset: 0 0 auto;
+  z-index: 40;
+  text-shadow: 0 1px 14px rgb(5 15 22 / .45);
 }
 
-.library__back:hover {
-  background: rgb(244 241 232 / 0.7);
-  color: var(--ink);
-}
-
-.library__back:focus-visible {
-  background: rgb(244 241 232 / 0.7);
-  color: var(--ink);
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-/* The privacy notice, reachable from the one page without the site footer. */
-.library__privacy {
-  top: auto;
-  bottom: clamp(14px, 2.4vh, 26px);
-  padding: 8px 14px;
-}
-
-/* Below 900px the centered hint reaches the bottom-left corner, and on phones an opened item's card spans the
-   bottom of the screen, so the link mirrors Back in the top-right corner instead, where nothing else sits. */
-@media (max-width: 900px) {
-  .library__privacy {
-    top: clamp(14px, 2.4vh, 26px);
-    bottom: auto;
-    left: auto;
-    right: clamp(14px, 2.4vw, 30px);
-  }
-}
-
-/* -- Stage ---------------------------------------------------------------- */
+/* -- Stage ----------------------------------------------------------------- */
 
 .library {
   position: relative;
 }
 
-.library[data-scene='live'] {
-  /* Set by the scene once it knows how tall the unit is. */
-  height: calc(100vh + var(--shelf-travel, 0vh));
+.library__stage {
+  position: relative;
 }
 
-.library__stage {
+.library__canvas,
+.library__pager,
+.library__card {
   display: none;
 }
 
-.library[data-scene='live'] .library__stage {
-  display: block;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-  /* The semantic shelf is what was on screen a frame ago. Fading in over it
-     reads as the shelf resolving rather than as the page changing its mind. */
-  animation: library-stage-in 380ms cubic-bezier(0, 0, 0.2, 1);
+/* With scripts, the room holds the first screen from the start, in the
+   pre-dawn dark the scene opens on, so the canvas fades up out of it rather
+   than replacing a list. Without them, the list below is the page. */
+@media (scripting: enabled) {
+  .library:not([data-scene='off']) .library__stage {
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+    background: var(--ui-night);
+  }
+
+  /* `display: none`, not clipped: a clipped list still counts as rendered, so
+     its lazy covers would all fetch and compete with the scene for the boot. */
+  .library:not([data-scene]) .library__semantic {
+    display: none;
+  }
 }
 
-@keyframes library-stage-in {
-  from { opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .library[data-scene='live'] .library__stage { animation: none; }
-}
-
-.library__canvas {
+.library[data-scene='live'] .library__canvas {
   display: block;
   width: 100%;
   height: 100%;
-  /* Sideways drags belong to the shelf, which walks the camera along the unit.
-     Vertical ones stay a page scroll: that already drives the camera, with the
-     browser's own momentum behind it. */
+  /* Sideways swipes turn the page; vertical ones stay a page scroll. */
   touch-action: pan-y;
+  animation: library-fade 600ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-/* -- Hint and selection card ---------------------------------------------- */
-
-.library__card-link:focus-visible,
-.library__card-close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 2px;
-}
-
-.library__hint {
+/* Shade under the nav and behind the filter column, so white type holds up
+   against a bright sky without a bar laid across it. */
+.library[data-scene='live'] .library__stage::before,
+.library[data-scene='live'] .library__stage::after {
+  content: '';
   position: absolute;
-  left: 50%;
-  bottom: 26px;
-  transform: translateX(-50%);
-  margin: 0;
-  padding: 7px 14px;
-  border-radius: 99px;
-  background: rgb(244 241 232 / 0.82);
-  font-family: var(--mono);
-  font-size: var(--t-micro);
-  letter-spacing: var(--ls-eyebrow);
-  text-transform: uppercase;
-  color: rgb(60 48 32 / 0.72);
   pointer-events: none;
 }
 
-/* Sized to its text, not to the viewport. Tying the width to 46vw made the
-   card half the screen at every size, which on a phone left a column narrow
-   enough to break titles over five lines. */
-.library__card {
-  position: absolute;
-  right: clamp(24px, 5vw, 72px);
-  bottom: clamp(24px, 5vh, 64px);
-  width: max-content;
-  max-width: min(560px, calc(100vw - 2 * clamp(24px, 5vw, 72px)));
-  padding: 22px 24px 20px;
-  background: var(--paper);
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  box-shadow: 0 18px 44px rgb(40 30 16 / 0.22);
-  animation: library-card-in 260ms cubic-bezier(0, 0, 0.2, 1);
+.library[data-scene='live'] .library__stage::before {
+  inset: 0 0 auto;
+  height: 150px;
+  background: linear-gradient(180deg, rgb(5 15 22 / .42), transparent);
 }
 
-/* Narrow enough that a card floating in one corner reads as debris: give it
-   both edges and let it sit across the foot of the screen. */
-@media (max-width: 640px) {
-  .library__card {
-    left: clamp(24px, 5vw, 72px);
-    width: auto;
-    max-width: none;
-  }
+.library[data-scene='live'] .library__stage::after {
+  inset: 0 auto 0 0;
+  width: min(360px, 40vw);
+  background: linear-gradient(90deg, rgb(5 15 22 / .34), transparent);
 }
 
-.library__card-kind {
-  margin: 0 0 10px;
-  font-family: var(--mono);
-  font-size: var(--t-micro);
-  letter-spacing: var(--ls-eyebrow);
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.library__card-title {
-  margin: 0 0 6px;
-  font-family: var(--display);
-  font-variation-settings: 'opsz' 48;
-  font-weight: 450;
-  font-size: var(--t-h3);
-  line-height: var(--lh-tight);
-  letter-spacing: var(--ls-h3);
-}
-
-.library__card-credit {
-  margin: 0;
-  font-size: var(--t-ui);
-  color: var(--ink-soft);
-}
-
-.library__card-excerpt {
-  margin: 12px 0 0;
-  font-size: var(--t-ui);
-  line-height: var(--lh-snug);
-  color: var(--ink-soft);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
-  overflow: hidden;
-}
-
-/*
- * Both elements below set display, which beats the hidden attribute's
- * display:none from the UA sheet. Hiding them in script did nothing, so an
- * album or a book kept showing whichever game note was rendered last.
- * Attribute plus class outranks the class alone, so no !important is needed.
- */
-.library__card-excerpt[hidden],
-.library__card-link[hidden] {
-  display: none;
-}
-
-.library__card-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 16px;
-  font-size: var(--t-meta-lg);
-  font-weight: 500;
-  color: var(--accent);
-  text-decoration: none;
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-}
-
-.library__card-link::after {
-  content: '\2192';
-}
-
-.library__card-close {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 16px 0 0 16px;
-  padding: 0;
-  background: none;
-  border: 0;
-  font-family: inherit;
-  font-size: var(--t-meta);
-  color: var(--ink-faint);
-  cursor: pointer;
-}
-
-.library__kbd {
-  font-family: var(--mono);
-  font-size: var(--t-micro);
-  padding: 2px 5px;
-  border: 1px solid currentColor;
-  border-radius: 3px;
-  opacity: 0.7;
-}
-
-@keyframes library-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-}
-
-/* -- Semantic shelf: phones, no-WebGL, and the keyboard path --------------- */
-
-.library__semantic {
-  padding: clamp(28px, 6vw, 64px) 0 96px;
-}
-
-/* Held back on devices getting the scene, so the reader never sees this design
-   and the 3D one in the same visit. Its covers are lazy, so keeping it clipped
-   also keeps ~90 image requests off the boot. */
-[data-shelf-pending] .library__semantic {
-  /* `display: none`, not the clipped treatment used once the scene is live: a
-     clipped shelf still counts as rendered, so its ~85 lazy covers all fetch
-     and compete with the scene for the boot. This stops them dead. */
-  display: none;
-}
-
-/* Plaster, full height, rather than a short page that jumps when the scene
-   sets its own. Same colour the shelf sits in, so the canvas fades up out of
-   it instead of replacing it. */
-[data-shelf-pending] .library {
-  min-height: 100vh;
-}
-
-/* With the canvas live this stays reachable by keyboard but out of the way. */
+/* With the canvas live, the list stays reachable by keyboard but out of sight. */
 .library[data-scene='live'] .library__semantic {
   position: absolute;
   width: 1px;
@@ -353,37 +117,337 @@ html:has(> .library-page) {
   white-space: nowrap;
 }
 
-.shelf {
+@keyframes library-fade {
+  from { opacity: 0; }
+}
+
+/* -- Filter column ----------------------------------------------------------- */
+
+.library__rail {
   position: relative;
-  margin: 0 0 clamp(28px, 5vw, 52px);
-  padding: 20px 0 0;
-  background:
-    linear-gradient(180deg, var(--birch) 0 10px, transparent 10px),
-    linear-gradient(180deg, transparent calc(100% - 14px), var(--birch) calc(100% - 14px) 100%);
-  border-left: 12px solid var(--birch-shade);
-  border-right: 12px solid var(--birch-shade);
+  z-index: 2;
+  width: calc(100% - 2 * var(--site-gutter));
+  max-width: var(--site-width);
+  margin: 0 auto;
+  padding: 110px 0 0;
+}
+
+.library__rail ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library__rail a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ui-muted);
+  font: 500 15px / 1.2 var(--sans);
+  text-decoration: none;
+  transition: color .16s ease;
+}
+
+.library__rail a:hover,
+.library__rail a[aria-current='true'] {
+  color: var(--ui-ink);
+}
+
+.library__rail a[aria-current='true'] {
+  color: var(--ui-pink);
+}
+
+/* In the room the filters stand in a column down the dark wall, on a hairline
+   that lights pink beside the one showing, as in the nav's underline. */
+.library[data-scene='live'] .library__rail {
+  position: absolute;
+  top: 50%;
+  left: max(var(--site-gutter), calc((100% - var(--site-width)) / 2));
+  width: auto;
+  margin: 0;
+  padding: 0;
+  translate: 0 -46%;
+  animation: library-fade 900ms 1.6s cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+.library[data-scene='live'] .library__rail ul {
+  flex-direction: column;
+  gap: 2px;
+  border-left: 1px solid rgb(244 247 251 / .26);
+}
+
+.library[data-scene='live'] .library__rail a {
+  min-height: 42px;
+  padding-left: 26px;
+  color: rgb(244 247 251 / .84);
+  font-size: 16px;
+  text-shadow: 0 1px 12px rgb(5 15 22 / .5);
+}
+
+.library[data-scene='live'] .library__rail a:hover {
+  color: var(--ui-ink);
+}
+
+.library[data-scene='live'] .library__rail a[aria-current='true'] {
+  color: var(--ui-pink);
+}
+
+.library[data-scene='live'] .library__rail a[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  left: -1.5px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--ui-pink);
+  box-shadow: 0 0 6px var(--ui-pink), 0 0 14px rgb(246 87 172 / .7);
+}
+
+.library[data-scene='live'] .library__rail a[aria-current='true']::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--ui-pink);
+  box-shadow: 0 0 8px var(--ui-pink);
+}
+
+.library__rail a:focus-visible {
+  outline: 2px solid var(--ui-cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Phones: the column becomes a row under the nav, so the ribbon keeps the width. */
+@media (max-width: 760px) {
+  .library[data-scene='live'] .library__rail {
+    top: 74px;
+    right: 0;
+    left: 0;
+    translate: none;
+  }
+
+  .library[data-scene='live'] .library__rail ul {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 20px;
+    padding: 0 var(--site-gutter);
+    border-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .library[data-scene='live'] .library__rail li {
+    flex: 0 0 auto;
+  }
+
+  .library[data-scene='live'] .library__rail a {
+    padding-left: 0;
+    font-size: 15px;
+  }
+
+  .library[data-scene='live'] .library__rail a[aria-current='true']::after {
+    display: none;
+  }
+
+  .library[data-scene='live'] .library__rail a[aria-current='true']::before {
+    inset: auto 0 6px;
+    width: auto;
+    height: 2px;
+  }
+
+  .library[data-scene='live'] .library__stage::after {
+    display: none;
+  }
+}
+
+/* -- Pager and card ------------------------------------------------------------ */
+
+/* Above the Verso bar, where the eye already goes for what to do next. */
+.library[data-scene='live'] .library__pager:not([hidden]) {
+  display: flex;
+  position: absolute;
+  left: 50%;
+  bottom: 124px;
+  z-index: 3;
+  align-items: center;
+  gap: 10px;
+  translate: -50% 0;
+  animation: library-fade 900ms 2.2s cubic-bezier(0, 0, 0.2, 1) both;
+}
+
+.library__pages {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Square-ish pills, so 1 and 19 are the same size and the row does not jump. */
+.library__pages .pill,
+.library__pager-step {
+  justify-content: center;
+  min-width: 34px;
+  min-height: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.library__pager-step .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.library__pager-step:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.library__pager-gap {
+  min-width: 18px;
+  color: var(--ui-ink);
+  text-align: center;
+  text-shadow: 0 1px 8px rgb(5 15 22 / .6);
+}
+
+/* Sized to its text, not to the viewport, sitting low on the right while the
+   picked item is held up on the left. */
+.library[data-scene='live'] .library__card:not([hidden]) {
+  display: block;
+  position: absolute;
+  right: max(var(--site-gutter), calc((100% - var(--site-width)) / 2));
+  /* Clear of the Verso bar, which floats along the foot of every page. */
+  bottom: 124px;
+  z-index: 3;
+  width: min(420px, calc(100% - 2 * var(--site-gutter)));
+  padding: 22px 24px 18px;
+  border: 1px solid var(--ui-rule);
+  border-radius: var(--ui-radius);
+  background: color-mix(in srgb, var(--ui-surface) 84%, transparent);
+  backdrop-filter: blur(14px);
+  color: var(--ui-ink);
+  animation: library-card-in 260ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.library__card-kind {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ui-pink);
+}
+
+.library__card-title {
+  margin: 0 0 6px;
+  font-family: var(--headline);
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1.08;
+}
+
+.library__card-credit {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ui-muted);
+}
+
+.library__card-excerpt {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ui-muted);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+/* These set display, which beats the hidden attribute's UA display:none. */
+.library__card-credit[hidden],
+.library__card-excerpt[hidden],
+.library__card [data-card-link][hidden] {
+  display: none;
+}
+
+.library__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 22px;
+  margin-top: 18px;
+}
+
+.library__kbd {
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  opacity: .7;
+}
+
+@keyframes library-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Phones: across the foot of the screen, clear of the Verso composer. */
+@media (max-width: 640px) {
+  .library[data-scene='live'] .library__card:not([hidden]) {
+    right: var(--site-gutter);
+    left: var(--site-gutter);
+    bottom: calc(env(safe-area-inset-bottom) + 92px);
+    width: auto;
+  }
+
+  .library[data-scene='live'] .library__pager:not([hidden]) {
+    bottom: calc(env(safe-area-inset-bottom) + 92px);
+  }
+}
+
+/* -- Semantic list: no script, no WebGL, and the keyboard path --------------- */
+
+.library__semantic {
+  width: calc(100% - 2 * var(--site-gutter));
+  max-width: var(--site-width);
+  margin: 0 auto;
+  padding: 36px 0 96px;
+}
+
+.shelf {
+  margin: 0 0 48px;
 }
 
 .shelf__label {
-  margin: 0 0 14px;
-  padding: 5px 12px;
-  width: fit-content;
-  margin-inline: auto;
-  background: #1b2026;
-  color: #efe7d8;
+  margin: 0 0 18px;
   font-family: var(--mono);
-  font-size: var(--t-micro);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  border-radius: 2px;
+  color: var(--ui-muted);
 }
 
 .shelf__rail {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   margin: 0;
-  padding: 0 16px 24px;
+  padding: 0 0 12px;
   list-style: none;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -401,13 +465,13 @@ html:has(> .library-page) {
   flex-direction: column;
   gap: 10px;
   width: 148px;
-  text-decoration: none;
   color: inherit;
+  text-decoration: none;
   border-radius: 4px;
 }
 
 .shelf__item:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--ui-cyan);
   outline-offset: 4px;
 }
 
@@ -416,10 +480,9 @@ html:has(> .library-page) {
   display: grid;
   place-items: center;
   aspect-ratio: 2 / 3;
-  background: var(--cloth, var(--paper-warm));
-  border-radius: 2px;
   overflow: hidden;
-  box-shadow: 0 6px 16px rgb(40 30 16 / 0.24);
+  border-radius: 3px;
+  background: var(--cloth, var(--ui-raised));
 }
 
 .shelf__item--album .shelf__art {
@@ -427,14 +490,18 @@ html:has(> .library-page) {
 }
 
 /* Box art comes in whatever shape the publisher cut it, and wide art carries
-   its title edge to edge. Shown whole rather than cropped to a jacket. */
+   its title edge to edge. Shown whole rather than cropped. */
 .shelf__item--game .shelf__art {
   aspect-ratio: 3 / 4;
-  background: var(--ink);
+  background: var(--ui-raised);
 }
 
 .shelf__item--game .shelf__art img {
   object-fit: contain;
+}
+
+.shelf__item:is(.shelf__item--article, .shelf__item--note, .shelf__item--case) .shelf__art {
+  aspect-ratio: 4 / 3;
 }
 
 .shelf__art img {
@@ -444,10 +511,9 @@ html:has(> .library-page) {
 }
 
 .shelf__art-fallback {
-  font-family: var(--display);
-  font-variation-settings: 'opsz' 72;
+  font-family: var(--headline);
   font-size: 44px;
-  color: rgb(255 248 236 / 0.85);
+  color: rgb(244 247 251 / .85);
 }
 
 .shelf__text {
@@ -458,34 +524,29 @@ html:has(> .library-page) {
 }
 
 .shelf__title {
-  font-size: var(--t-meta-lg);
+  font-size: 14px;
   font-weight: 500;
-  line-height: var(--lh-snug);
+  line-height: 1.35;
 }
 
 .shelf__credit {
-  font-size: var(--t-meta);
-  color: var(--ink-faint);
+  font-size: 12px;
+  color: var(--ui-muted);
 }
 
 .shelf__item:hover .shelf__title {
-  color: var(--accent);
+  color: var(--ui-cyan);
 }
 
 @media (min-width: 861px) {
   .shelf__rail {
     flex-wrap: wrap;
     overflow-x: visible;
-    justify-content: center;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .library__card {
+  .library[data-scene='live'] :is(.library__canvas, .library__rail, .library__pager, .library__card:not([hidden])) {
     animation: none;
-  }
-
-  .shelf__rail {
-    scroll-behavior: auto;
   }
 }

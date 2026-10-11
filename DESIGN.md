@@ -51,7 +51,7 @@ components:
 
 The site is dark only.
 The light theme was removed in October 2026, and nothing should reintroduce it.
-The exception is `/library`, a separate document pinned to the light palette because its birch and plaster are baked into textures.
+`/library` is dark chrome over a bright room: the nav, filters and pager are the site's own, and the room behind them is a sunlit image.
 
 The look is a night-time editorial page lit by neon.
 The page is near-black.
@@ -217,13 +217,18 @@ The look lives in `src/styles/badge.css`: a dark pill with a thin cool-to-magent
 A pressed toggle (`aria-pressed="true"`) becomes a solid white pill.
 There is no spinning edge and no halo, because badges are not actions.
 
-### Library shelf overlay (`/library`)
+### Library room (`/library`)
 
-The shelf is its own surface: a full-bleed document with no masthead or footer, pinned to the light palette because the birch and plaster are baked into the textures. Only three pieces of flat UI sit over the scene, and all three are pills so they read as labels resting on the room rather than a layer laid across it.
+The library is one screen: the home nav fixed over a Three.js room, with the footer below it.
+The room is a plate, `public/images/library/backdrop.webp`: concrete, a Miami sunset over the water and a wet stone floor, made with gpt-image-2 from the design mock with its objects and interface taken out.
+Books, albums, game cases and the site's own pieces (printed as numbered folios) float in front of it on a shallow arc, a page at a time.
+The page opens in pre-dawn dark (`--ui-night`) and the plate grades up to the morning while the first page flies in from the right.
 
-- **Hint pill.** Bottom centre, mono 10px uppercase, `rgb(244 241 232 / 0.82)`, 99px radius. Says how to move; disappears once something is selected.
-- **Back to the site.** Top left, same mono treatment at `rgb(244 241 232 / 0.28)` with a 7px backdrop blur, so the grain reads through it. Comes to `0.7` and full ink on hover and focus. It is the only navigation on the page. Hidden while the notebook is open and filling the window, since the site showing there carries its own nav.
-- **Selection card.** Bottom right, ash-paper on a 1px rule, 4px radius. Sized to its own text (`width: max-content`), never to a share of the viewport — an earlier `46vw` made it a half-width column that broke titles over five lines on a phone. Below 640px it takes both edges and sits across the foot of the screen. The notebook variant inverts to quiet-forest.
+- **Filter column.** Left, over the dark wall: Plus Jakarta Sans 16px on a 1px hairline, the current filter in `--ui-pink` with a glowing segment on the line and a dot, like the nav's underline. Below 760px it becomes a row under the nav.
+- **Pager.** Above the Verso bar, centred. Badge pills built by script, since the page count depends on how many objects fit across the screen; the current page takes the solid white `pill-strong` look. Hidden when everything fits on one page.
+- **Selection card.** Bottom right, clear of the Verso bar: `--ui-surface` at 84% with a backdrop blur, 1px `--ui-rule`, the kind in mono pink, the title in the headline face, a primary Button for the link and a text Button to close. Below 640px it takes both edges.
+
+Motion: a page arrives from the right, leading edge first, each object turned edge-on and straightening as it lands, then floats until it is picked. Changing the filter or the page sends the current page off to the left as the next arrives. Going back a page runs the same motion the other way.
 
 ### Operator surface (Telegram)
 
@@ -270,9 +275,10 @@ Single breakpoint: `720px`. Below it, multi-column layouts collapse to single co
 - Content containers remain centered at all viewport widths.
 - Navigation condenses but retains the pill-shaped item treatment.
 
-**The shelf is the exception, and responds to aspect rather than width.** `/library` is a camera looking at a room, so it cannot reflow. Framing follows the viewport's proportions: the camera is placed to fit the unit's height, and is allowed to pull back for its width only up to a ceiling. Past that ceiling — which is where a portrait phone lands — the width is no longer fitted at all, and the shelf is walked sideways by dragging instead. Without the ceiling a 390×844 screen put the camera 52.8 units back against a desktop's 13.9, which is the whole unit on screen at once and nothing on it legible.
-
-This is the one surface that scrolls horizontally, and it does so by drag rather than by overflow: the canvas takes `touch-action: pan-y`, so sideways drags pan the camera while vertical ones stay an ordinary page scroll. On a desktop the width already fits, the pan limit computes to zero, and dragging does nothing.
+**The library responds to aspect rather than width.** `/library` is a camera looking at a room, so it cannot reflow.
+The camera holds its distance until the screen is too narrow to show a usable stretch of the arc, then pulls back up to a ceiling, which is where a portrait phone lands.
+Pages are packed to what fits across the lane, so a phone shows two objects a page and a desktop six or seven.
+A sideways swipe or trackpad gesture turns the page; the canvas takes `touch-action: pan-y`, so vertical swipes stay an ordinary page scroll.
 
 Items opened up close are framed by height and then pushed back if the frame is too narrow to take their width, or a book fills a portrait screen edge to edge.
 
@@ -310,7 +316,7 @@ The six-panel reference supplied by the user is the current direction for Work, 
 - The brand mark is the **user-supplied layered blue glass artwork with a warm orange center**, replacing the JB letters. `BrandMark.astro` uses an optimized WebP; PNG and self-contained SVG favicons use the same artwork. The main header renders it at 80 × 65px with a two-line name / “Solutions Architect” lockup; phones use 64 × 52px without the wordmark.
 - Dark is fixed in server-rendered HTML and persists through Astro page transitions. Remove theme controls; ignore old browser theme preferences.
 - About is a simple header link. The Library entry belongs **under the résumé / contact actions on About**, with the label “Explore my library.” Do not add an About header dropdown.
-- Library remains the existing interactive Three.js shelf, including its physical birch-and-plaster room, keyboard selection, phone panning, and semantic fallback. Library links use a full document navigation because the scene owns its document.
+- Library is the Three.js room, with keyboard selection, paging and its semantic fallback. Library links use a full document navigation, so the scene starts on a fresh document.
 - Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
 - Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Each piece has a generated ink illustration of a literal subject from its argument, off-white etched line on one of four mid-tone blue grounds with a single cyan element, rather than a project screenshot or an AI metaphor.
 - Verso uses the existing persisted ChatDock embedded in a two-column page. Prompt buttons only prefill the composer. Existing name entry, streaming, conversation state, and handoff behavior remain intact. Do not display a microphone unless voice actually exists.

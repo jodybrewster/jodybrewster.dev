@@ -1,87 +1,106 @@
 ---
 import { scriptJson } from '../lib/script-json';
 /**
- * The /library shelf.
+ * The /library scene and its fallback.
  *
- * Astro renders a complete, linked, image-bearing shelf here. Three.js then
- * progressively enhances it on pointer devices with room for the scene. The
- * markup below is the whole experience on phones, without WebGL, and for
- * assistive technology, so it is never a stub.
+ * Astro renders a complete, linked, image-bearing list of everything here.
+ * Three.js then lifts it into the floating arc. The list is the whole
+ * experience without JavaScript or WebGL and for assistive technology, so it
+ * is never a stub, and the filter column works on both.
  */
-import type { ShelfAlbum, ShelfBook, ShelfGame, ShelfItem } from '../lib/shelf/media';
+import Badge from './Badge.astro';
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+import { FILTERS } from '../lib/shelf/arc';
+import type { ShelfPayloadData } from '../lib/shelf/payload';
+import type { ShelfItem } from '../lib/shelf/media';
 
 interface Props {
-  albums: ShelfAlbum[];
-  books: ShelfBook[];
-  games: ShelfGame[];
-  listeningLabel: string;
-  libraryLabel: string;
-  gamesLabel: string;
+  payload: ShelfPayloadData;
 }
 
-const { albums, books, games, listeningLabel, libraryLabel, gamesLabel } = Astro.props;
+const { payload } = Astro.props;
+const { albums, books, games, articles, notes, cases } = payload;
 
-const shelves = [
-  { key: 'listening', label: listeningLabel, items: albums as ShelfItem[] },
-  { key: 'games', label: gamesLabel, items: games },
-  { key: 'library', label: libraryLabel, items: books },
-].filter(shelf => shelf.items.length > 0);
+const sections = [
+  { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
+  { kind: 'game', label: payload.gamesLabel, items: games },
+  { kind: 'album', label: payload.listeningLabel, items: albums },
+  { kind: 'article', label: 'WRITING · ESSAYS AND RESEARCH', items: articles },
+  { kind: 'note', label: 'LAB NOTES', items: notes },
+  { kind: 'case', label: 'CASE STUDIES', items: cases },
+].filter(section => section.items.length > 0);
 
-const payload = { albums, books, games, listeningLabel, libraryLabel, gamesLabel };
+const present = new Set(sections.map(section => section.kind));
+const filters = FILTERS.filter(filter => filter.id === 'all' || present.has(filter.id));
 
 function credit(item: ShelfItem): string {
   if (item.kind === 'album') return item.artist;
   if (item.kind === 'book') return item.author;
-  return item.platform;
+  if (item.kind === 'game') return item.platform;
+  return item.label;
+}
+
+function isExternal(item: ShelfItem): boolean {
+  return item.kind === 'album' || item.kind === 'book' || item.kind === 'game';
 }
 ---
 
-<div class="library" data-library>
-  <a class="library__skip" href="#library-end">Skip the shelf</a>
+<div class="library" data-library data-filter="all">
+  <a class="library__skip" href="#library-end">Skip the library</a>
 
   <div class="library__stage" data-library-stage>
     <canvas class="library__canvas" data-library-canvas aria-hidden="true"></canvas>
 
-    <p class="library__hint" data-library-hint>
-      Scroll to walk the shelf. Click to turn something over, arrow keys to step through.
-    </p>
+    <nav class="library__rail" aria-label="Show in the library" data-library-rail>
+      <ul role="list">
+        {filters.map(filter => (
+          <li>
+            <a
+              href={filter.id === 'all' ? '/library' : `/library?show=${filter.id}`}
+              data-library-filter={filter.id}
+              aria-current={filter.id === 'all' ? 'true' : undefined}
+            >{filter.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
 
-    <div
-      class="library__card"
-      data-library-card
-      role="status"
-      aria-live="polite"
-      hidden
-    >
+    <nav class="library__pager" aria-label="Pages" data-library-pager>
+      <Badge as="button" size="sm" class="library__pager-step" data-pager-step="-1" aria-label="Previous page"><Icon name="arrow-left" class="icon" /></Badge>
+      <ol class="library__pages" role="list" data-pager-pages></ol>
+      <Badge as="button" size="sm" class="library__pager-step" data-pager-step="1" aria-label="Next page"><Icon name="arrow-right" class="icon" /></Badge>
+    </nav>
+    <p class="visually-hidden" aria-live="polite" data-pager-status></p>
+
+    <div class="library__card" data-library-card role="status" aria-live="polite" hidden>
       <p class="library__card-kind" data-card-kind></p>
       <h2 class="library__card-title" data-card-title></h2>
       <p class="library__card-credit" data-card-credit></p>
       <p class="library__card-excerpt" data-card-excerpt hidden></p>
-      <a class="library__card-link" data-card-link href="#">Open</a>
-      <button class="library__card-close" data-card-close type="button">
-        Close<span class="library__kbd">esc</span>
-      </button>
+      <div class="library__card-actions">
+        <Button href="#" variant="primary" icon="arrow-right" data-card-link><span data-card-link-label>Open</span></Button>
+        <Button variant="text" data-card-close>Close <span class="library__kbd">esc</span></Button>
+      </div>
     </div>
   </div>
 
   <div class="library__semantic" data-library-semantic>
-    {shelves.map(shelf => (
-      <section class="shelf" aria-labelledby={`shelf-${shelf.key}`}>
-        <h2 class="shelf__label" id={`shelf-${shelf.key}`}>{shelf.label}</h2>
+    {sections.map(section => (
+      <section class="shelf" aria-labelledby={`shelf-${section.kind}`} data-library-kind={section.kind}>
+        <h2 class="shelf__label" id={`shelf-${section.kind}`}>{section.label}</h2>
         <ul class="shelf__rail" role="list">
-          {shelf.items.map(item => (
+          {section.items.map(item => (
             <li class="shelf__slot">
               <a
                 class={`shelf__item shelf__item--${item.kind}`}
                 href={item.url ?? '#'}
                 data-shelf-item={item.id}
-                data-shelf-kind={item.kind}
-                rel="noopener"
-                target="_blank"
+                {...isExternal(item) ? { rel: 'noopener', target: '_blank' } : {}}
               >
                 <span class="shelf__art" style={`--cloth:${item.color}`}>
                   {item.cover ? (
-                    <img src={item.cover} alt="" loading="lazy" decoding="async" width="180" height="180" />
+                    <img src={item.cover} alt="" loading="lazy" decoding="async" width="180" height="240" />
                   ) : (
                     <span class="shelf__art-fallback" aria-hidden="true">{item.title.slice(0, 1)}</span>
                   )}
@@ -107,68 +126,147 @@ function credit(item: ShelfItem): string {
   import { LibraryScene } from '../lib/shelf/scene';
   import type { ShelfPayload } from '../lib/shelf/scene';
   import { ShelfStore } from '../lib/shelf/scene-state';
+  import { isFilter, pagerWindow } from '../lib/shelf/arc';
+  import type { LibraryFilter } from '../lib/shelf/arc';
   import { track } from '../lib/track';
   import type { ShelfItem } from '../lib/shelf/media';
 
-  /** Puts the server-rendered shelf back; the scene is not coming. */
-  function revealFallback() {
-    document.documentElement.removeAttribute('data-shelf-pending');
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  /** `2026-10-01` -> `October 2026`, read by parts so it cannot slip a month behind UTC. */
+  function month(iso: string | undefined): string {
+    const [year, number] = (iso ?? '').split('-');
+    const name = MONTHS[Number(number) - 1];
+    return name && year ? `${name} ${year}` : '';
   }
 
   function boot() {
     const root = document.querySelector<HTMLElement>('[data-library]');
     if (!root || root.dataset.booted === 'true') return;
+    root.dataset.booted = 'true';
 
     const canvas = root.querySelector<HTMLCanvasElement>('[data-library-canvas]');
     const stage = root.querySelector<HTMLElement>('[data-library-stage]');
+    const rail = root.querySelector<HTMLElement>('[data-library-rail]');
     const payloadNode = document.querySelector<HTMLScriptElement>('[data-library-payload]');
-    if (!canvas || !stage || !payloadNode) {
-      revealFallback();
-      return;
+    const filterLinks = [...root.querySelectorAll<HTMLAnchorElement>('[data-library-filter]')];
+    const sections = [...root.querySelectorAll<HTMLElement>('[data-library-kind]')];
+
+    let scene: LibraryScene | null = null;
+
+    /** Shows one kind, in the filter column, the list and the scene alike. */
+    function show(filter: LibraryFilter, remember: boolean) {
+      root!.dataset.filter = filter;
+      for (const link of filterLinks) {
+        if (link.dataset.libraryFilter === filter) link.setAttribute('aria-current', 'true');
+        else link.removeAttribute('aria-current');
+      }
+      for (const section of sections) section.hidden = filter !== 'all' && section.dataset.libraryKind !== filter;
+      scene?.setFilter(filter);
+      if (remember) {
+        const url = new URL(location.href);
+        if (filter === 'all') url.searchParams.delete('show');
+        else url.searchParams.set('show', filter);
+        history.replaceState(history.state, '', url);
+      }
+    }
+
+    for (const link of filterLinks) {
+      link.addEventListener('click', event => {
+        const filter = link.dataset.libraryFilter;
+        if (!isFilter(filter)) return;
+        event.preventDefault();
+        show(filter, true);
+      });
+    }
+
+    const requested = new URLSearchParams(location.search).get('show');
+    const initial: LibraryFilter = isFilter(requested) && filterLinks.some(link => link.dataset.libraryFilter === requested)
+      ? requested
+      : 'all';
+
+    /** The scene is not coming: the list is the library. */
+    function fallBack() {
+      root!.dataset.scene = 'off';
+      show(initial, false);
     }
 
     let payload: ShelfPayload;
     try {
-      payload = JSON.parse(payloadNode.textContent ?? '{}') as ShelfPayload;
+      payload = JSON.parse(payloadNode?.textContent ?? '{}') as ShelfPayload;
     } catch {
-      console.warn('[library] shelf payload was unreadable, keeping the semantic shelf.');
-      revealFallback();
+      console.warn('[library] payload was unreadable, keeping the list.');
+      fallBack();
       return;
     }
-    if (!payload.books?.length && !payload.albums?.length) {
-      revealFallback();
+    if (!canvas || !stage) {
+      fallBack();
       return;
     }
 
-    // The shelf used to stop here on anything narrow or touch-driven, because
-    // fitting the whole unit across a phone shrank it to an unreadable diagram.
-    // The camera now frames a phone at the same distance as a desktop and hands
-    // the width to dragging, so the scene is worth having on both. Devices
-    // without WebGL still fall back, below.
+    const pager = root.querySelector<HTMLElement>('[data-library-pager]');
+    const pagerPages = root.querySelector<HTMLOListElement>('[data-pager-pages]');
+    const pagerStatus = root.querySelector<HTMLElement>('[data-pager-status]');
+    const steps = [...root.querySelectorAll<HTMLButtonElement>('[data-pager-step]')];
+
+    /**
+     * Redraws the pager. Its numbers depend on how many items fit across the
+     * screen, so they are built here rather than in the markup. Each is a
+     * Badge: the pill classes are the component's own, and the page in view
+     * takes its solid white look.
+     */
+    function renderPager(page: number, count: number) {
+      if (!pager || !pagerPages) return;
+      pager.hidden = count < 2;
+      steps.forEach(step => {
+        const next = page + Number(step.dataset.pagerStep);
+        step.disabled = next < 0 || next >= count;
+      });
+      pagerPages.replaceChildren(...pagerWindow(page, count).map(n => {
+        const li = document.createElement('li');
+        if (n === null) {
+          li.className = 'library__pager-gap';
+          li.textContent = '…';
+          li.setAttribute('aria-hidden', 'true');
+          return li;
+        }
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = n === page ? 'pill pill-sm pill-strong' : 'pill pill-sm';
+        button.textContent = String(n + 1);
+        button.setAttribute('aria-label', `Page ${n + 1} of ${count}`);
+        if (n === page) button.setAttribute('aria-current', 'page');
+        button.addEventListener('click', () => scene?.goToPage(n));
+        li.append(button);
+        return li;
+      }));
+      if (pagerStatus) pagerStatus.textContent = count > 1 ? `Page ${page + 1} of ${count}` : '';
+    }
+
+    for (const step of steps) {
+      step.addEventListener('click', () => {
+        if (scene) scene.goToPage(scene.page + Number(step.dataset.pagerStep));
+      });
+    }
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const store = new ShelfStore();
-    const scene = LibraryScene.create({ canvas, stage, scroller: root, payload, store, reducedMotion });
+    scene = LibraryScene.create({ canvas, stage, rail, payload, store, reducedMotion, filter: initial, onPage: renderPager });
     if (!scene) {
-      revealFallback();
+      fallBack();
       return;
     }
-
-    // The scene owns the view now; the plaster hold has done its job.
-    root.dataset.booted = 'true';
     root.dataset.scene = 'live';
-    revealFallback();
+    show(initial, false);
 
     if (import.meta.env.DEV) {
       (window as unknown as { __libraryScene?: unknown }).__libraryScene = scene;
     }
 
-    // Shelf order, top to bottom: albums, then games, then books. Arrow keys
-    // walk this list.
-    const inOrder = [...payload.albums, ...payload.games, ...payload.books];
-    const order = inOrder.map(item => item.id);
     const byId = new Map<string, ShelfItem>();
-    for (const item of inOrder) byId.set(item.id, item);
+    for (const item of [...payload.albums, ...payload.books, ...payload.games, ...payload.articles, ...payload.notes, ...payload.cases]) {
+      byId.set(item.id, item);
+    }
 
     const card = root.querySelector<HTMLElement>('[data-library-card]')!;
     const kindEl = card.querySelector<HTMLElement>('[data-card-kind]')!;
@@ -176,50 +274,77 @@ function credit(item: ShelfItem): string {
     const creditEl = card.querySelector<HTMLElement>('[data-card-credit]')!;
     const excerptEl = card.querySelector<HTMLElement>('[data-card-excerpt]')!;
     const linkEl = card.querySelector<HTMLAnchorElement>('[data-card-link]')!;
+    const linkLabel = linkEl.querySelector<HTMLElement>('[data-card-link-label]')!;
     const closeEl = card.querySelector<HTMLButtonElement>('[data-card-close]')!;
-    const hint = root.querySelector<HTMLElement>('[data-library-hint]');
 
     function renderCard(id: string | null) {
       const item = id ? byId.get(id) : undefined;
       if (!item) {
         card.hidden = true;
-        if (hint) hint.hidden = false;
         return;
       }
-
-      if (hint) hint.hidden = true;
       card.hidden = false;
       card.dataset.kind = item.kind;
 
-      // Cleared rather than only hidden: the card is one element reused for
-      // every item, so text left behind is text the next item inherits.
-      if (item.kind === 'album') {
-        kindEl.textContent = 'Listening';
-        creditEl.textContent = item.artist;
-        excerptEl.hidden = true;
-        excerptEl.textContent = '';
-        linkEl.textContent = 'Open in Spotify';
-      } else if (item.kind === 'book') {
-        kindEl.textContent = item.edition ? `Library / ${item.edition} edition` : 'Library';
-        creditEl.textContent = item.author;
-        excerptEl.hidden = true;
-        excerptEl.textContent = '';
-        linkEl.textContent = 'View catalog entry';
-      } else {
-        kindEl.textContent = 'Played this month';
-        creditEl.textContent = item.platform;
-        excerptEl.hidden = !item.note;
-        excerptEl.textContent = item.note ?? '';
-        linkEl.textContent = 'Official page';
+      // Every field is set on every open: the card is one element reused for
+      // everything, so text left behind is text the next item inherits.
+      let kind = '';
+      let credit = '';
+      let excerpt = '';
+      let action = '';
+      switch (item.kind) {
+        case 'album':
+          kind = 'Listening';
+          credit = item.artist;
+          action = 'Open in Spotify';
+          break;
+        case 'book':
+          kind = item.edition ? `Reading / ${item.edition} edition` : 'Reading';
+          credit = item.author;
+          action = 'View catalog entry';
+          break;
+        case 'game':
+          kind = 'Played this month';
+          credit = item.platform;
+          excerpt = item.note ?? '';
+          action = 'Official page';
+          break;
+        case 'article':
+          kind = item.label;
+          credit = month(item.date);
+          excerpt = item.summary ?? '';
+          action = 'Read it';
+          break;
+        case 'note':
+          kind = `Lab note / ${item.label}`;
+          credit = month(item.date);
+          excerpt = item.summary ?? '';
+          action = 'Read the note';
+          break;
+        case 'case':
+          kind = item.label;
+          excerpt = item.summary ?? '';
+          action = item.label === 'Case study' ? 'Read the case study' : 'See the work';
+          break;
       }
 
+      kindEl.textContent = kind;
       titleEl.textContent = item.title;
-
+      creditEl.textContent = credit;
+      creditEl.hidden = !credit;
+      excerptEl.textContent = excerpt;
+      excerptEl.hidden = !excerpt;
+      linkLabel.textContent = action;
       linkEl.hidden = !item.url;
       if (item.url) {
         linkEl.href = item.url;
-        linkEl.target = '_blank';
-        linkEl.rel = 'noopener';
+        if (item.kind === 'album' || item.kind === 'book' || item.kind === 'game') {
+          linkEl.target = '_blank';
+          linkEl.rel = 'noopener';
+        } else {
+          linkEl.removeAttribute('target');
+          linkEl.removeAttribute('rel');
+        }
       }
     }
 
@@ -229,11 +354,11 @@ function credit(item: ShelfItem): string {
       if (item) track('shelf_open', { kind: item.kind, title: item.title });
     });
 
-    // The rendered anchors stay the keyboard path into the scene. With the
-    // canvas live they drive selection; the card carries the real link.
+    // The list's links stay the keyboard path into the scene. With the canvas
+    // live they drive selection; the card carries the real link.
     for (const anchor of root.querySelectorAll<HTMLAnchorElement>('[data-shelf-item]')) {
       const id = anchor.dataset.shelfItem!;
-      anchor.addEventListener('focus', () => scene.focus(id));
+      anchor.addEventListener('focus', () => scene!.focus(id));
       anchor.addEventListener('click', event => {
         event.preventDefault();
         store.dispatch({ type: 'activate', id });
@@ -242,8 +367,9 @@ function credit(item: ShelfItem): string {
 
     closeEl.addEventListener('click', () => store.dispatch({ type: 'dismiss' }));
 
-    /** Steps the selection along the shelf from wherever it currently is. */
+    /** Steps the selection from wherever it is, turning the page when it runs off one. */
     function stepSelection(delta: number) {
+      const order = scene!.order;
       const current = store.state.active ?? store.state.hovered;
       const at = current ? order.indexOf(current) : -1;
       const next = at === -1
@@ -253,42 +379,41 @@ function credit(item: ShelfItem): string {
       // toggle the open item shut, which is not what an arrow key should do.
       if (next === at) return;
       const id = order[next];
-      if (id) store.dispatch({ type: 'activate', id });
+      if (!id) return;
+      scene!.reveal(id);
+      store.dispatch({ type: 'activate', id });
     }
 
     function isTyping(target: EventTarget | null): boolean {
       const el = target as HTMLElement | null;
       if (!el) return false;
-      const tag = el.tagName;
-      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+      return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
     }
 
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
-
       if (event.key === 'Escape' && store.state.active) {
         event.preventDefault();
         store.dispatch({ type: 'dismiss' });
-        return;
-      }
-      if (event.key === 'ArrowRight') {
+      } else if (event.key === 'ArrowRight') {
         event.preventDefault();
         stepSelection(1);
-        return;
-      }
-      if (event.key === 'ArrowLeft') {
+      } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         stepSelection(-1);
+      } else if (event.key === 'PageDown' || event.key === 'PageUp') {
+        event.preventDefault();
+        scene!.goToPage(scene!.page + (event.key === 'PageDown' ? 1 : -1));
       }
     };
     document.addEventListener('keydown', onKey);
 
-    // Astro's view transitions swap the document; drop GPU resources first.
+    // Leaving through the client router swaps the document; drop the GPU first.
     document.addEventListener(
       'astro:before-swap',
       () => {
         document.removeEventListener('keydown', onKey);
-        scene.dispose();
+        scene?.dispose();
       },
       { once: true },
     );

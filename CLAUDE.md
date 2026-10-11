@@ -74,13 +74,13 @@ Content lives in two places:
 
 ### Pages
 
-Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the shelf), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/now`, `/privacy`. Verso, the chat, is a popup on every page (not a route; `/chat` and `/ask` redirect home). It calls `src/pages/api/chat.ts`, which uses Gemini + Upstash Vector for RAG over the site's own content.
+Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the library room), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/now`, `/privacy`. Verso, the chat, is a popup on every page (not a route; `/chat` and `/ask` redirect home). It calls `src/pages/api/chat.ts`, which uses Gemini + Upstash Vector for RAG over the site's own content.
 
 The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. The images are ink illustrations generated from the subjects, grounds and framing in `content/article-images.json` by `scripts/article-images.ts`, which holds the fixed house style; the `article-image` skill walks through making one for a new piece. A piece missing from the manifest gets one of the fallback illustrations, picked from its slug. Beside the body, wide screens show three or four pull quotes per piece from `content/pull-quotes.json`, kept by hand because synced frontmatter would be overwritten; `src/lib/pull-quotes.ts` drops any quote that no longer appears verbatim in the article, using the same check as Verso's `open_page`.
 
 `/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
 
-The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
+The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a Studio page whose first screen is a Three.js room, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
 
 
 ### Verso (the chat)
@@ -115,28 +115,30 @@ Gotchas: conversation history is read server-side from Redis and never accepted 
 
 `@jodybrewster/gemini-live` is vendored: `vendor/jodybrewster-gemini-live-<version>.tgz`, packed from `main` of the gemini-live-nextjs repo and installed with `file:`, so Vercel installs it with no registry or token. The browser code imports `./voice` (the session, the Live client and audio); the server entries (`./server`, `./server/limits`, `./server/switches`, `./server/headers`) are for API routes and build config only. To update it, pack the bundle there (`npm pack` in `packages/gemini-live-bundle` after a build), replace the tarball here, point `package.json` at it and run `npm install`. That repo's site contract mirrors `src/lib/live/voice.ts` and `voice-dock.ts` byte for byte, so it is updated alongside.
 
-### The /library shelf
+### The /library room
 
-A Three.js shelving unit at `/library`, built from `content/library.json` (93 books), `content/listening.json` (the rolling album snapshot) and `content/games.json` (the games Jody played in the past month).
+A Three.js room at `/library`: books (`content/library.json`), albums (`content/listening.json`, the rolling snapshot), games (`content/games.json`) and the site's own writing, lab notes and case studies float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column (All, Books, Games, Music, Articles, Notes, Case Studies) and `?show=<kind>` choose what is shown; the pager above the Verso bar turns pages.
 
-- `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
+- `src/lib/shelf/payload.ts` builds the data: the three media files plus the `writing`, `research`, `notes` collections and `workProjects()` (`src/lib/work-projects.ts`, the same list /work shows, so the two never disagree).
+- `src/lib/shelf/media.ts` normalizes everything into `ShelfItem`s with stable ids, the site's own pieces as `ShelfFolio`s. Pure, never throws, drops bad rows individually.
+- `src/lib/shelf/arc.ts` is the pure layout: the filters, the order "All" deals the kinds in, pagination, the pager's numbers and the arc pose.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
-- `src/lib/shelf/textures.ts` draws wood, spines, plaques and the game cases (plastic, platform band, spine) on canvas. Only real jackets, album art and box art come from files.
-- `src/lib/shelf/scene.ts` owns the renderer, procedural geometry, raycasting, and the scroll-driven camera.
-- `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing shelf in HTML. Three.js progressively enhances it; that markup is the whole experience without WebGL and for assistive tech.
+- `src/lib/shelf/textures.ts` draws the folio covers, spines and game cases on canvas. Real jackets, album art, box art and the pieces' own images come from files and are redrawn no larger than 640px.
+- `src/lib/shelf/scene.ts` owns the renderer, the backdrop, the objects, picking, paging and the flights.
+- `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing list in HTML, with the filter column working on it too. Three.js progressively enhances it; that markup is the whole experience without WebGL or scripts and for assistive tech.
 
-The middle shelf holds game cases, cover-out, at real size against the jewel cases: a Switch case is 10.5 x 17 cm in red plastic, a PS5 case 13.5 x 17 cm in blue. The case is drawn; only the cover art is a file. `content/games.json` is kept by hand: title, platform, optional `note` (shown on the card), optional `url` to the game's official page, and `coverSource`, the Wikipedia file page the art comes from. `npm run games` downloads each cover once into `public/media/games/` and writes `cover` back; the cached files are committed like the book jackets and nothing in the build fetches them. Art wider than the case front is shown whole over a blurred bleed rather than cropped, because box art titles tend to run edge to edge. Picking a case opens the same close-up and card as a book or album.
+The room is one image, `public/images/library/backdrop.webp`, made with gpt-image-2 from the design mock with its objects and interface removed. It is drawn as a cover-fitted backdrop inside WebGL so the opening can grade it from pre-dawn to morning. The floor is a `Reflector` that sees only the objects (the backdrop is hidden and the target cleared to transparent while it renders), so their reflections land on the plate's own wet floor. The camera height and tilt are set so the plate's horizon and that floor agree at desktop proportions; moving the camera means checking the reflections again.
 
-`.library__back` is the page's only navigation - the shelf has no masthead. It is `position: fixed` with `z-index: 50` over the stage.
+Motion: a page flies in from the right, leading edge first, and floats until something is picked. A new filter or page sends the current one off to the left as the next arrives; going back runs the other way. Arrow keys step the selection and turn the page when they run off it; PageUp and PageDown turn pages; a sideways swipe or trackpad gesture does too. With reduced motion everything is placed instantly.
 
-The scene runs at every width, including phones. It used to bail below 861px or on a coarse pointer, because fitting the unit's full width across a narrow viewport pushed the camera back far enough to show every shelf at once and make none of them legible. `#resize` now caps how far the width may push the camera (`MAX_WIDTH_FIT`) so a phone stands at roughly the desktop distance, and the width it can no longer show is reached by dragging: the canvas takes `touch-action: pan-y`, so sideways drags pan the camera and vertical ones stay a page scroll with the browser's own momentum. Close-ups are framed by height and then pulled back if the frame is too narrow for the item's width, or a book fills a portrait screen edge to edge.
+Game cases are drawn at their real proportions (a Switch case narrower than a PS5 one) in their plastic; only the cover art is a file. `content/games.json` is kept by hand: title, platform, optional `note` (shown on the card), optional `url` to the game's official page, and `coverSource`, the Wikipedia file page the art comes from. `npm run games` downloads each cover once into `public/media/games/` and writes `cover` back; the cached files are committed like the book jackets and nothing in the build fetches them.
 
-Gotchas: book covers load only when a book is opened (89 jackets at once is too much texture memory), while the five game covers face out and load up front; a drag past `DRAG_SLOP` must not also register as a click on whatever it ended over; and the page must stay on the light palette because the birch and plaster are baked into the textures. Devices without WebGL still get the semantic shelf.
+Gotchas: art loads only for the page in view and the next one, and at most `FACE_BUDGET` faces are held at once, oldest released first; the opening waits on the plate and the first page's art (up to `ART_WAIT_MS`) so nothing flies in blank; a swipe must not also register as a click on whatever it ended over. Pages are packed to `PAGE_FILL` of the lane because the arc's ends come forward and grow in perspective. Automation browsers often report the tab hidden, which stops requestAnimationFrame and image decoding there; review the scene with headless Playwright instead. Devices without WebGL still get the semantic list.
 
 ### Design system
 
 The site is dark only.
-The light theme is gone; `/library` is the one document that stays on its own light palette.
+The light theme is gone; `/library` keeps the dark chrome over a bright image of a room.
 
 - `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.
 - `src/components/Button.astro` is the only button, with `primary`, `secondary` and `text` variants. Its look is `src/styles/buttons.css`. Never hand-write a button class in a page.
@@ -171,7 +173,7 @@ Copy `.env.example` to `.env` and fill in keys to use these features locally.
 Google Analytics 4, property `G-4DLGJN6CZ5`, loaded directly rather than through a tag manager.
 A container was tried first and removed: one tag and one person who would ever change it does not justify 100KB and a Google UI standing between the repo and a single measurement ID.
 The id is public by design, so it sits in `src/lib/analytics.ts` rather than the environment; `analyticsEnabled` gates it on `import.meta.env.PROD`, so the dev server never reports traffic.
-`Analytics.astro` goes in the head of each of the two HTML documents - `Base.astro` and `library.astro` - since the shelf does not use the shared layout.
+`Analytics.astro` goes in the head of `Base.astro`, which every page uses.
 
 Page views are sent by hand. `Base.astro` uses `<ClientRouter />`, so every navigation after the first is a soft one and gtag's automatic page view would fire once per session rather than once per page.
 `send_page_view: false` turns that off; one call covers the landing page and an `astro:after-swap` listener covers the rest, reading title and URL after the swap rather than before.

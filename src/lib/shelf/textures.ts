@@ -1,10 +1,10 @@
 /**
- * Canvas-drawn textures for the shelf.
+ * Canvas-drawn textures for the /library scene.
  *
  * Everything the scene shows is generated here except real album art, book
- * jackets and game box art, which load from the local cache in public/media.
- * Drawing the wood, spines, plaques and game cases keeps the page free of
- * binary texture downloads and lets every surface inherit the site's palette.
+ * jackets, game box art and the site's own article and case study images,
+ * which load from this origin. Drawing the folios, spines, cases and concrete
+ * keeps the page free of binary texture downloads.
  *
  * Browser only: each function touches document/canvas.
  */
@@ -13,16 +13,14 @@ import {
   CanvasTexture,
   LinearFilter,
   LinearMipmapLinearFilter,
-  RepeatWrapping,
   SRGBColorSpace,
-  Texture,
-  TextureLoader,
 } from 'three';
-import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame } from './media';
-import { seededUnit } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFolio, ShelfGame } from './media';
+import { hash, seededUnit } from './media';
 
 const DISPLAY = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
-const SANS = '"Inter", -apple-system, system-ui, sans-serif';
+const HEADLINE = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
+const SANS = '"Plus Jakarta Sans", -apple-system, system-ui, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 
 const INK = '#14181d';
@@ -126,161 +124,6 @@ function truncate(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
 }
 
 /* -------------------------------------------------------------------------- */
-/* Wood                                                                        */
-/* -------------------------------------------------------------------------- */
-
-/* -- Procedural noise, shared by the wood and the wallpaper ---------------- */
-
-function hash2(x: number, y: number): number {
-  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453123;
-  return n - Math.floor(n);
-}
-
-function valueNoise(x: number, y: number): number {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const a = hash2(xi, yi);
-  const b = hash2(xi + 1, yi);
-  const c = hash2(xi, yi + 1);
-  const d = hash2(xi + 1, yi + 1);
-  return a * (1 - u) * (1 - v) + b * u * (1 - v) + c * (1 - u) * v + d * u * v;
-}
-
-function fbm(x: number, y: number, octaves: number): number {
-  let sum = 0;
-  let amp = 0.5;
-  let freq = 1;
-  for (let i = 0; i < octaves; i += 1) {
-    sum += valueNoise(x * freq, y * freq) * amp;
-    freq *= 2;
-    amp *= 0.5;
-  }
-  return sum;
-}
-
-/**
- * Pale birch. Grain runs along the canvas X axis; callers rotate UVs for the
- * vertical members so the grain follows the length of each board.
- */
-export function woodTexture(seed: string, repeatX = 1, repeatY = 1): CanvasTexture {
-  const { element, ctx } = canvas(1024, 256);
-  const random = noise(seed);
-
-  const base = ctx.createLinearGradient(0, 0, 0, 256);
-  base.addColorStop(0, '#e9d5b0');
-  base.addColorStop(0.45, '#e2caa1');
-  base.addColorStop(1, '#d8bd92');
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, 1024, 256);
-
-  // Long grain lines with a slow vertical wander.
-  for (let i = 0; i < 90; i += 1) {
-    const y = random() * 256;
-    const amplitude = 1 + random() * 5;
-    const period = 180 + random() * 420;
-    const phase = random() * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    for (let x = 0; x <= 1024; x += 8) {
-      ctx.lineTo(x, y + Math.sin(x / period + phase) * amplitude);
-    }
-    ctx.strokeStyle = `rgba(146, 108, 62, ${0.03 + random() * 0.09})`;
-    ctx.lineWidth = 0.6 + random() * 1.8;
-    ctx.stroke();
-  }
-
-  // A couple of soft knots so the boards are not perfectly uniform.
-  for (let i = 0; i < 3; i += 1) {
-    const cx = random() * 1024;
-    const cy = random() * 256;
-    const radius = 10 + random() * 26;
-    const knot = ctx.createRadialGradient(cx, cy, 1, cx, cy, radius);
-    knot.addColorStop(0, 'rgba(132, 94, 52, 0.28)');
-    knot.addColorStop(1, 'rgba(132, 94, 52, 0)');
-    ctx.fillStyle = knot;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, radius * 1.9, radius, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  const texture = toTexture(element, 8);
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  texture.repeat.set(repeatX, repeatY);
-  return texture;
-}
-
-/**
- * Blue wallpaper for the wall behind the unit: tonal stripes with a small
- * repeating lattice motif. Deliberately low contrast so it reads as a room
- * rather than competing with the album art.
- */
-export function wallpaperTexture(): CanvasTexture {
-  const size = 512;
-  const { element, ctx } = canvas(size, size);
-
-  ctx.fillStyle = '#33506a';
-  ctx.fillRect(0, 0, size, size);
-
-  // Paper grain, laid down first so the pattern sits on top of it.
-  const grain = ctx.createImageData(size, size);
-  for (let y = 0; y < size; y += 1) {
-    for (let x = 0; x < size; x += 1) {
-      const n = fbm(x / 26, y / 26, 3);
-      const i = (y * size + x) * 4;
-      const v = Math.round(255 * (0.5 + n * 0.5));
-      grain.data[i] = v;
-      grain.data[i + 1] = v;
-      grain.data[i + 2] = v;
-      grain.data[i + 3] = 26;
-    }
-  }
-  ctx.putImageData(grain, 0, 0);
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = 'rgba(51, 80, 106, 0.86)';
-  ctx.fillRect(0, 0, size, size);
-
-  // Tonal stripes.
-  for (let x = 0; x < size; x += 64) {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.030)';
-    ctx.fillRect(x, 0, 32, size);
-  }
-
-  // Lattice motif, repeated on a half-drop so the tile seam does not read.
-  const cell = size / 4;
-  ctx.strokeStyle = 'rgba(206, 224, 236, 0.16)';
-  ctx.fillStyle = 'rgba(206, 224, 236, 0.10)';
-  ctx.lineWidth = 1.6;
-  for (let row = 0; row < 4; row += 1) {
-    for (let col = 0; col < 5; col += 1) {
-      const cx = col * cell + (row % 2 ? 0 : cell / 2);
-      const cy = row * cell + cell / 2;
-      const r = cell * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - r);
-      ctx.quadraticCurveTo(cx + r * 0.62, cy - r * 0.62, cx + r, cy);
-      ctx.quadraticCurveTo(cx + r * 0.62, cy + r * 0.62, cx, cy + r);
-      ctx.quadraticCurveTo(cx - r * 0.62, cy + r * 0.62, cx - r, cy);
-      ctx.quadraticCurveTo(cx - r * 0.62, cy - r * 0.62, cx, cy - r);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r * 0.16, r * 0.16, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-
-  const texture = toTexture(element, 8);
-  texture.wrapS = RepeatWrapping;
-  texture.wrapT = RepeatWrapping;
-  return texture;
-}
-
-/* -------------------------------------------------------------------------- */
 /* Book spines                                                                 */
 /* -------------------------------------------------------------------------- */
 
@@ -304,22 +147,14 @@ function hex(r: number, g: number, b: number): string {
 }
 
 /**
- * Reads a cached jacket and returns the colours its spine should be printed in.
+ * The colours a book's spine should be printed in, read off its jacket.
  *
- * Decoded into a 24x36 scratch canvas and thrown away immediately: this exists
- * to avoid holding 80-odd full-size cover textures in GPU memory just to know
- * what colour each book is. Same-origin only, or the canvas taints and
- * getImageData throws.
+ * Sampled through a 24x36 scratch canvas, so it costs nothing to keep. The
+ * image must be same-origin, or the canvas taints and getImageData throws;
+ * that returns null rather than a guess.
  */
-export async function sampleCoverPalette(url: string): Promise<SpinePalette | null> {
-  if (!url.startsWith('/')) return null;
+export function paletteFromImage(image: HTMLImageElement): SpinePalette | null {
   try {
-    const image = new Image();
-    image.decoding = 'async';
-    image.fetchPriority = 'low';
-    image.src = url;
-    await image.decode();
-
     const w = 24;
     const h = 36;
     const { ctx } = canvas(w, h);
@@ -796,33 +631,168 @@ export function gameSpineTexture(game: ShelfGame, aspect: number): CanvasTexture
 }
 
 /* -------------------------------------------------------------------------- */
-/* Plaques                                                                     */
+/* Folios                                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** Small dark shelf-edge plaque, e.g. "LISTENING - JULY 2026". The canvas is
- *  cut to the real plaque aspect so the mono type is never stretched. */
-export function plaqueTexture(label: string, aspect: number): CanvasTexture {
-  const width = 1024;
-  const height = Math.round(Math.max(48, Math.min(256, width / aspect)));
+/**
+ * Card stock for the site's own pieces, in Miami's daytime colours: flamingo,
+ * pool teal, Deco cream, cobalt and the lilac of the sky at six. Each pairs
+ * with the ink that reads on it.
+ */
+const FOLIO_STOCK = [
+  { paper: '#efe6d6', ink: '#262838', accent: '#c94f74' },
+  { paper: '#34479c', ink: '#f6efe4', accent: '#ffc9a8' },
+  { paper: '#6c9ad3', ink: '#f8f3ec', accent: '#24315f' },
+  { paper: '#3c4168', ink: '#f4ece2', accent: '#f2a3bb' },
+  { paper: '#e8d1b0', ink: '#2a2632', accent: '#3f8e8b' },
+  { paper: '#cc4f78', ink: '#fff3ee', accent: '#ffd6a6' },
+  { paper: '#3e8d8a', ink: '#f3fbf8', accent: '#ffd8c2' },
+  { paper: '#d9d5e5', ink: '#272a3c', accent: '#6c5fb0' },
+] as const;
+
+export type FolioStock = (typeof FOLIO_STOCK)[number];
+
+/** The stock a piece is printed on. Chosen off its id, so it never changes colour between visits. */
+export function folioStock(folio: ShelfFolio): FolioStock {
+  return FOLIO_STOCK[hash(folio.id) % FOLIO_STOCK.length];
+}
+
+const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/**
+ * The cover of a folio: a numbered booklet with the piece's title set large at
+ * the foot, its kind and date across the head, and its picture between them.
+ * Article illustrations are ink drawings, so they are printed into the stock
+ * with multiply, the way ink sits on coloured paper. Case study screenshots are
+ * tipped in as a framed plate instead. Lab notes have no picture and get the
+ * ruled page of a notebook.
+ */
+export function folioTexture(
+  folio: ShelfFolio,
+  aspect: number,
+  number: number,
+  image?: HTMLImageElement | null,
+): CanvasTexture {
+  const width = 640;
+  const height = Math.round(width / aspect);
   const { element, ctx } = canvas(width, height);
+  const stock = folioStock(folio);
+  const random = noise(`${folio.id}-stock`);
 
-  ctx.fillStyle = '#1b2026';
+  ctx.fillStyle = stock.paper;
   ctx.fillRect(0, 0, width, height);
 
-  const sheen = ctx.createLinearGradient(0, 0, 0, height);
-  sheen.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
-  sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
-  sheen.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
-  ctx.fillStyle = sheen;
-  ctx.fillRect(0, 0, width, height);
+  // Faceted light across the stock, as if the card had been folded and pressed
+  // flat again. Kept faint: it should read as surface, not pattern.
+  for (let i = 0; i < 5; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(random() * width, 0);
+    ctx.lineTo(width, random() * height);
+    ctx.lineTo(random() * width * 0.6, height);
+    ctx.closePath();
+    ctx.fillStyle = random() > 0.5 ? 'rgba(255, 255, 255, 0.07)' : 'rgba(20, 16, 40, 0.06)';
+    ctx.fill();
+  }
+  for (let i = 0; i < 7000; i += 1) {
+    ctx.fillStyle = `rgba(${random() > 0.5 ? '255, 255, 255' : '0, 0, 0'}, ${random() * 0.05})`;
+    ctx.fillRect(random() * width, random() * height, 1.5, 1.5);
+  }
 
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#efe7d8';
+  const margin = width * 0.085;
+  const inner = width - margin * 2;
+
+  // Head: kind on the left, month on the right.
+  ctx.fillStyle = stock.ink;
+  ctx.globalAlpha = 0.74;
+  ctx.textBaseline = 'alphabetic';
   ctx.letterSpacing = '4px';
-  const size = fitText(ctx, label, width * 0.9, height * 0.62, 18, value => `500 ${value}px ${MONO}`);
-  ctx.font = `500 ${size}px ${MONO}`;
-  ctx.fillText(label, width / 2, height / 2 + size * 0.04);
+  ctx.font = `500 ${Math.round(width * 0.03)}px ${MONO}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(folio.label.toUpperCase(), margin, margin + width * 0.03);
+  if (folio.date) {
+    const [year, month] = folio.date.split('-');
+    ctx.textAlign = 'right';
+    ctx.fillText(`${MONTH_SHORT[Number(month) - 1] ?? ''} ${year}`, width - margin, margin + width * 0.03);
+  }
+  ctx.letterSpacing = '0px';
+  ctx.globalAlpha = 1;
+
+  // Picture band.
+  const top = margin + width * 0.09;
+  const bandHeight = height * 0.42;
+  if (image && folio.kind === 'article') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin, top, inner, bandHeight);
+    ctx.clip();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.filter = 'grayscale(1) contrast(1.15)';
+    const fill = Math.max(inner / image.naturalWidth, bandHeight / image.naturalHeight);
+    const dw = image.naturalWidth * fill;
+    const dh = image.naturalHeight * fill;
+    ctx.drawImage(image, margin + (inner - dw) / 2, top + (bandHeight - dh) / 2, dw, dh);
+    ctx.restore();
+  } else if (image) {
+    const fill = Math.max(inner / image.naturalWidth, bandHeight / image.naturalHeight);
+    const dw = image.naturalWidth * fill;
+    const dh = image.naturalHeight * fill;
+    ctx.save();
+    ctx.shadowColor = 'rgba(10, 8, 30, 0.28)';
+    ctx.shadowBlur = width * 0.03;
+    ctx.shadowOffsetY = width * 0.012;
+    ctx.fillStyle = stock.paper;
+    ctx.fillRect(margin, top, inner, bandHeight);
+    ctx.restore();
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(margin, top, inner, bandHeight);
+    ctx.clip();
+    // Screens are drawn from their top, where the interface's header is.
+    ctx.drawImage(image, margin + (inner - dw) / 2, top, dw, dh);
+    ctx.restore();
+    ctx.strokeStyle = stock.ink;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(margin, top, inner, bandHeight);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.strokeStyle = stock.ink;
+    ctx.globalAlpha = 0.14;
+    ctx.lineWidth = 2;
+    for (let y = top + width * 0.05; y < top + bandHeight; y += width * 0.055) {
+      ctx.beginPath();
+      ctx.moveTo(margin, y);
+      ctx.lineTo(width - margin, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.moveTo(margin + width * 0.07, top);
+    ctx.lineTo(margin + width * 0.07, top + bandHeight);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  // Foot: the number, a short rule, then the title set from the bottom up.
+  const titleSize = fitText(ctx, folio.title.split(' ').reduce((a, b) => (b.length > a.length ? b : a), ''),
+    inner, Math.round(width * 0.105), Math.round(width * 0.06), size => `500 ${size}px ${HEADLINE}`);
+  ctx.font = `500 ${titleSize}px ${HEADLINE}`;
+  const lines = wrapLines(ctx, folio.title, inner, 4);
+  const lineHeight = titleSize * 1.02;
+  const bottom = height - margin;
+  ctx.fillStyle = stock.ink;
+  ctx.textAlign = 'left';
+  let y = bottom - (lines.length - 1) * lineHeight;
+  for (const line of lines) {
+    ctx.fillText(line, margin - titleSize * 0.04, y);
+    y += lineHeight;
+  }
+
+  const numberY = bottom - (lines.length - 1) * lineHeight - titleSize * 1.12;
+  ctx.font = `500 ${Math.round(width * 0.036)}px ${MONO}`;
+  ctx.fillStyle = stock.accent;
+  ctx.fillText(String(number).padStart(2, '0'), margin, numberY);
+  ctx.fillRect(margin + width * 0.075, numberY - width * 0.012, width * 0.08, 3);
 
   return toTexture(element, 8);
 }
@@ -831,27 +801,20 @@ export function plaqueTexture(label: string, aspect: number): CanvasTexture {
 /* External images                                                             */
 /* -------------------------------------------------------------------------- */
 
-const loader = new TextureLoader();
-
 /**
- * Loads a cached cover. Resolves to null instead of rejecting so a missing file
- * degrades to the generated cloth cover rather than breaking the scene.
+ * Real art, redrawn no larger than `maxSize` on its long side.
+ *
+ * A jacket arrives at whatever size the catalog had. Uploading it as is costs
+ * GPU memory the floating scene never shows, since even an opened book covers
+ * at most two thirds of the screen height.
  */
-export function loadCoverTexture(url: string): Promise<Texture | null> {
-  return new Promise(resolve => {
-    loader.load(
-      url,
-      texture => {
-        texture.colorSpace = SRGBColorSpace;
-        texture.anisotropy = 8;
-        texture.minFilter = LinearMipmapLinearFilter;
-        texture.magFilter = LinearFilter;
-        resolve(texture);
-      },
-      undefined,
-      () => resolve(null),
-    );
-  });
+export function artTexture(image: HTMLImageElement, maxSize = 640): CanvasTexture {
+  const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const { element, ctx } = canvas(width, height);
+  ctx.drawImage(image, 0, 0, width, height);
+  return toTexture(element, 8);
 }
 
 /**
@@ -862,6 +825,9 @@ export async function loadImage(url: string): Promise<HTMLImageElement | null> {
   try {
     const image = new Image();
     image.decoding = 'async';
+    // Art from another origin has to come with CORS, or the canvas it is
+    // drawn onto taints and WebGL refuses the upload.
+    if (!url.startsWith('/')) image.crossOrigin = 'anonymous';
     image.src = url;
     await image.decode();
     return image;

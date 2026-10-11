@@ -60,8 +60,8 @@ Analytics on a site whose argument is restraint deserves a stated position rathe
 
 ## Accessibility & Inclusion
 
-WCAG 2.1 AA. The site supports light and dark color schemes via `prefers-color-scheme`, except the library shelf, which is pinned to the light palette because its surfaces are baked into the textures. Semantic HTML throughout. All icon usage should include accessible text equivalents.
+WCAG 2.1 AA. The site is dark only; the library's room is a bright image behind the same dark chrome. Semantic HTML throughout. All icon usage should include accessible text equivalents.
 
-Reduced motion is handled on the shelf: `prefers-reduced-motion` reaches the scene, drops the stage's fade-in and the page's travel, and makes the notebook close instantly rather than animating. It has not been audited on the rest of the site.
+Reduced motion is handled in the library: `prefers-reduced-motion` reaches the scene, which skips the sunrise, the floating and the page flights, and drops the fade-ins on the filters and pager. It has not been audited on the rest of the site.
 
-The shelf is progressive enhancement, not a requirement. Astro renders a complete, linked, image-bearing shelf in HTML first; Three.js replaces it. That markup is the whole experience without WebGL and for assistive technology, so nothing on the shelf is reachable only through the canvas.
+The library's scene is progressive enhancement, not a requirement. Astro renders a complete, linked, image-bearing list in HTML first; Three.js replaces it. That markup is the whole experience without WebGL and for assistive technology, so nothing in the library is reachable only through the canvas.

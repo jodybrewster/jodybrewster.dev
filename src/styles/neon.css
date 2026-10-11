@@ -5,14 +5,14 @@
    the border flashes white: a second pseudo-element masked down to the 1px ring. The live voice button keeps its
    own ::after for the listening ring, so it is left out. The lists use :where() so they add no specificity and each
    button's own rules (its shine strength, the cards' glint layer) win. */
-:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-quick button, #chat-dock .dock-close, .project-card, .career-panel) {
+:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-close, .project-card, .career-panel, .work-card, .about-explore a) {
   --neon-shine: .22;
   --neon-edge: conic-gradient(from var(--edge-spin), rgb(46 230 255 / .6), rgb(166 77 255 / .6), rgb(255 47 208 / .6), rgb(255 210 61 / .6), rgb(46 230 255 / .6));
   position: relative;
   isolation: isolate;
   animation: edge-spin 12s linear infinite;
 }
-:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-quick button, #chat-dock .dock-close, .project-card, .career-panel)::before {
+:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-close, .project-card, .career-panel, .work-card, .about-explore a)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -21,28 +21,107 @@
   background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / var(--neon-shine)) 50%, rgb(255 255 255 / calc(var(--neon-shine) / 4)) 55%, transparent 62%) 130% 0 / 250% 100% no-repeat;
   pointer-events: none;
 }
-:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-quick button, #chat-dock .dock-close, .project-card, .career-panel):hover::before {
+:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-close, .project-card, .career-panel, .work-card, .about-explore a):hover::before {
   background-position: -30% 0;
   transition: background-position .6s cubic-bezier(.3, 0, .2, 1);
 }
-:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-quick button, #chat-dock .dock-close, .project-card, .career-panel):not(#dock-voice[data-state="live"])::after {
+:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-close, .project-card, .career-panel, .work-card, .about-explore a):not(#dock-voice[data-state="live"])::after {
   content: "";
   position: absolute;
   inset: -1px;
   padding: 1px;
   border-radius: inherit;
-  background: linear-gradient(90deg, transparent 35%, rgb(255 255 255 / .8) 70%, #fff);
+  background: linear-gradient(90deg, transparent 30%, rgb(255 255 255 / .85) 52%, #9ef0ff 68%, #ffa8ec 84%, #fff) 100% 0 / 220% 100%;
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   opacity: 0;
   pointer-events: none;
 }
-:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-quick button, #chat-dock .dock-close, .project-card, .career-panel):not(#dock-voice[data-state="live"]):hover::after {
-  animation: neon-edge-flash 1.3s ease-out both;
+:where(.btn:not(.btn-text), .home-verso-button, #chat-dock .input-row button, #chat-dock .dock-close, .project-card, .career-panel, .work-card, .about-explore a):not(#dock-voice[data-state="live"]):hover::after {
+  animation: neon-edge-flash .75s ease-out both;
 }
-@keyframes neon-edge-flash { 0%, 14% { opacity: 0; } 28%, 52% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes neon-edge-flash { 0%, 10% { opacity: 0; background-position: 100% 0; } 24%, 38% { opacity: 1; } 100% { opacity: 0; background-position: 0 0; } }
 /* The glint is pitched to the face it crosses: soft on the dark buttons, stronger on the lit pink one. The cards'
    faces are covered by their preview and copy, so their glint passes over the content instead of behind it. */
-.btn-primary { --neon-shine: .6; }
-.project-card, .career-panel { --neon-shine: .16; }
-.project-card::before { z-index: 1; }
+.btn-primary, .btn[aria-pressed='true'] { --neon-shine: .6; }
+.project-card, .career-panel, .work-card, .about-explore a { --neon-shine: .16; }
+.project-card::before, .work-card::before { z-index: 1; }
+/* The work grid is an .enter-list, whose rise-in animation would replace the edge's spin, so the cards run both. */
+.enter-list > .work-card {
+  animation: enter-rise 520ms var(--ease-out) both, edge-spin 12s linear infinite;
+  animation-delay: calc(var(--enter-delay, 120ms) + min(var(--i, 0), 8) * 50ms), 0s;
+}
+
+/* Plain links. At rest they are ordinary text; on hover the words fill with a sunset gradient that keeps sliding
+   while the pointer is there, and a neon underline draws in from the left. Icons keep the link's color because
+   -webkit-text-fill-color only touches glyphs. The list is :where() so it adds no specificity. Anything with its
+   own treatment (buttons, cards, nav) is left out: the generic paragraph and list rules skip anchors that hold
+   images or headings. */
+:where(
+  .btn-text, .contact-links a, .about-email, footer.foot a, .notebook-links a, .page-meta-link a,
+  .essay-body a, .case-back, .back,
+  main p a:not(.btn):not(:has(img)),
+  main li > a:not(.btn):not(:has(img, h2, h3, h4, p, div))
+) {
+  position: relative;
+  background: linear-gradient(90deg, #ff9651, #f657ac, #b58aff, #00c6e7, #ff9651) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% + .85em);
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #ff9651, #f657ac, #b58aff, #00c6e7);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+    pointer-events: none;
+  }
+  &:hover, &:focus-visible {
+    -webkit-text-fill-color: transparent;
+    animation: link-slide 2.4s linear infinite;
+  }
+  &:hover::after, &:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+/* Links inside running text can wrap lines, so they get the gradient words and keep their own underline. */
+.essay-body a::after, main p a::after, main li > a::after { display: none; }
+
+/* A research entry on the home page is one big link: its title and its "Read the research" row light up together. */
+.notebook-entry h3, .notebook-entry .notebook-read {
+  position: relative;
+  background: linear-gradient(90deg, #ff9651, #f657ac, #b58aff, #00c6e7, #ff9651) 0 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.notebook-entry:hover h3, .notebook-entry:hover .notebook-read,
+.notebook-entry:focus-visible h3, .notebook-entry:focus-visible .notebook-read {
+  -webkit-text-fill-color: transparent;
+  animation: link-slide 2.4s linear infinite;
+}
+.notebook-entry .notebook-read::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + .9em);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #ff9651, #f657ac, #b58aff, #00c6e7);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+  pointer-events: none;
+}
+.notebook-entry:hover .notebook-read::after, .notebook-entry:focus-visible .notebook-read::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+@keyframes link-slide { to { background-position: 150% 0; } }

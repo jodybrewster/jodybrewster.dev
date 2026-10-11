@@ -48,14 +48,14 @@ const filters = [
       <div class="work-office" aria-hidden="true"><img src="/images/studio/office.webp" alt="" width="1536" height="1024" fetchpriority="high" /></div>
       <div class="work-header-copy">
         <p class="studio-eyebrow">Case studies</p>
-        <h1 class="enter-title">Real problems.<br />Real systems.</h1>
+        <h1 class="enter-title">Patient with complexity.<br />Relentless about outcomes.</h1>
         <p class="work-lede">Enterprise platforms, AI-powered products, and modern web systems designed for scale, adoption, and measurable business impact.</p>
       </div>
     </header>
 
     <section class="work-collection" aria-label="Selected projects" data-work-filter>
       <div class="work-filters" role="group" aria-label="Filter projects by topic">
-        {filters.map(filter => <button type="button" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</button>)}
+        {filters.map(filter => <button type="button" class="btn btn-pill" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</button>)}
       </div>
       <p class="work-result-status" aria-live="polite" aria-atomic="true" data-work-status>{projects.length} projects</p>
       <div class="work-grid enter-list" id="work-grid" style="--enter-delay: 200ms">
@@ -116,27 +116,24 @@ const filters = [
 <style>
   .work-main { padding-top: 34px; padding-bottom: 64px; }
   .work-header { position: relative; isolation: isolate; min-height: 285px; display: flex; align-items: center; padding: 26px 0 36px; }
-  .work-header-copy { position: relative; z-index: 1; max-width: 550px; }
+  .work-header-copy { position: relative; z-index: 1; max-width: 800px; }
   .work-header .studio-eyebrow { margin: 0 0 18px; }
   .work-header h1 { margin: 0 0 20px; font: 300 clamp(40px, 4.7vw, 62px)/1.07 var(--headline); letter-spacing: -.01em; }
   .work-lede { color: var(--studio-muted); margin: 0; max-width: 49ch; font-size: 15px; line-height: 1.7; font-weight: 400; }
   .work-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px -48px -28px 28%; overflow: hidden; opacity: .75; mask-image: linear-gradient(to right, transparent, black 38%), linear-gradient(to bottom, transparent, black 15%, black 58%, transparent); mask-composite: intersect; }
   .work-office img { width: 100%; height: 100%; object-fit: cover; object-position: center 46%; }
   .work-filters { display: flex; flex-wrap: wrap; gap: 9px; margin: 9px 0 25px; }
-  .work-filters button { appearance: none; border: 1px solid var(--studio-rule); border-radius: 99px; background: var(--studio-surface); padding: 9px 15px; color: var(--studio-muted); font: 500 12px/1.4 var(--sans); cursor: pointer; transition: border-color 150ms, color 150ms, background 150ms; }
-  .work-filters button:hover { color: var(--studio-ink); border-color: var(--studio-cyan); }
-  .work-filters button[aria-pressed='true'] { background: var(--studio-ink); color: var(--studio-bg); border-color: var(--studio-ink); font-weight: 650; }
   .work-result-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-  .work-card { min-width: 0; border: 1px solid var(--studio-rule); border-radius: 10px; background: var(--studio-surface); overflow: hidden; transition: border-color 150ms, transform 150ms; }
+  .work-card { min-width: 0; border: 1px solid transparent; border-radius: 10px; background: linear-gradient(var(--studio-surface), var(--studio-surface)) padding-box, var(--neon-edge) border-box; transition: transform 150ms; }
   .work-card[hidden] { display: none; }
-  .work-card:hover, .work-card:focus-within { border-color: var(--studio-cyan); transform: translateY(-2px); }
+  .work-card:hover, .work-card:focus-within { transform: translateY(-2px); }
   .work-card-link { border: 0; color: inherit; display: flex; height: 100%; flex-direction: column; text-decoration: none; }
-  .work-card-preview { position: relative; overflow: hidden; height: clamp(175px, 20vw, 240px); background: var(--studio-raised); }
+  .work-card-preview { position: relative; overflow: hidden; border-radius: 9px 9px 0 0; height: clamp(175px, 20vw, 240px); background: var(--studio-raised); }
   .work-card-preview img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 400ms; }
   .work-card:hover .work-card-preview img { transform: scale(1.025); }
   .work-card-labels { position: absolute; left: 13px; top: 13px; display: flex; gap: 6px; }
-  .work-card-kind { padding: 5px 8px; border: 1px solid var(--studio-rule); border-radius: 7px; background: var(--studio-surface); color: var(--studio-muted); font-size: 9px; line-height: 1.3; font-weight: 600; letter-spacing: .04em; }
+  .work-card-kind { padding: 3px 9px; border: 1px solid var(--studio-rule); border-radius: 99px; background: var(--studio-surface); color: var(--studio-muted); font-family: var(--mono); font-size: 10px; line-height: 1.4; font-weight: 500; letter-spacing: .06em; }
   .work-card-kind.is-featured { border-color: var(--studio-cyan); color: var(--studio-cyan); }
   .work-card-info { display: grid; grid-template-columns: 1fr 32px; column-gap: 18px; row-gap: 17px; padding: 20px; flex: 1; align-items: start; }
   .work-card h2 { font: 700 17px/1.35 var(--sans); letter-spacing: -.02em; margin: 0 0 9px; }
@@ -155,7 +152,7 @@ const filters = [
     .work-lede { font-size: 13px; max-width: 39ch; }
     .work-office { inset: -40px -20px 0 10%; opacity: .35; }
     .work-filters { gap: 7px; margin: 10px 0 22px; }
-    .work-filters button { padding: 8px 12px; font-size: 11px; }
+    .work-filters .btn-pill { padding: 7px 12px; font-size: 11px; }
     .work-grid { grid-template-columns: 1fr; gap: 20px; }
     .work-card-preview { height: 205px; }
     .work-card-info { padding: 18px; }
@@ -163,7 +160,7 @@ const filters = [
     .work-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .work-card, .work-card-preview img, .work-filters button { transition: none; }
+    .work-card, .work-card-preview img, .work-filters .btn-pill { transition: none; }
     .work-card:hover, .work-card:focus-within, .work-card:hover .work-card-preview img { transform: none; }
   }
 </style>

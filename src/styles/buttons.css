@@ -32,33 +32,53 @@
 }
 .btn:active { transform: scale(.97); transition-duration: 80ms; }
 
-/* The fill is twice the button's width: on hover it slides into a Miami sunset and the label splits slightly into
-   cyan and yellow, like a VHS frame. */
-.btn-primary {
-  background: linear-gradient(90deg, #d93fd2, #ff3f9c 30%, #ff5d82 50%, #ff8a5c 72%, #ffb347) padding-box 0 0 / 200% 100%, var(--neon-edge) border-box;
-  box-shadow: -4px 0 12px -2px rgb(255 63 156 / .55), 5px 0 12px -2px rgb(255 196 84 / .55), inset 0 0 10px rgb(255 255 255 / .14);
+/* The fill is twice the button's width: at rest you see the plum-to-coral first half, and on hover it slides toward
+   orange and the label splits slightly into cyan and yellow, like a VHS frame. The edge is a warm neon tube, so the
+   spinning gradient is pink through coral and gold instead of the cool default. */
+.btn-primary,
+.btn[aria-pressed='true'] {
+  --neon-edge: conic-gradient(from var(--edge-spin), #ff7ad9, #ff9a86, #ffc27a, #ff9a86, #ff7ad9);
+  --btn-fill: linear-gradient(90deg, #6f2a8c 0%, #ac2e82 25%, #e0584f 50%, #f08a4b 78%, #ffb347 100%);
+  border-width: 1.5px !important;
+  background: var(--btn-fill) padding-box 0 0 / 200% 100%, var(--neon-edge) border-box;
+  box-shadow: 0 0 0 1px rgb(255 190 215 / .35), 0 0 10px rgb(255 80 150 / .55), 0 0 24px rgb(255 110 90 / .3), inset 0 0 10px rgb(255 150 190 / .3);
   color: #fff;
   transition: background-position .5s cubic-bezier(.2, .8, .2, 1), box-shadow .3s, text-shadow .3s, transform .18s;
 }
-.btn-primary:hover {
-  background: linear-gradient(90deg, #d93fd2, #ff3f9c 30%, #ff5d82 50%, #ff8a5c 72%, #ffb347) padding-box 55% 0 / 200% 100%, var(--neon-edge) border-box;
+.btn-primary:hover,
+.btn[aria-pressed='true']:hover {
+  background: var(--btn-fill) padding-box 55% 0 / 200% 100%, var(--neon-edge) border-box;
   color: #fff;
-  box-shadow: -4px 0 18px -2px rgb(255 63 156 / .75), 6px 0 20px -2px rgb(255 196 84 / .8), inset 0 0 12px rgb(255 255 255 / .2);
+  box-shadow: 0 0 0 1px rgb(255 200 220 / .5), 0 0 14px rgb(255 80 150 / .7), 0 0 30px rgb(255 120 80 / .4), inset 0 0 12px rgb(255 170 200 / .38);
   text-shadow: -1px 0 rgb(0 229 255 / .4), 1px 0 rgb(255 224 102 / .4);
 }
 
 .btn-text {
+  --link-gradient: linear-gradient(90deg, #ff9651, #f657ac, #b58aff, #00c6e7, #ff9651) 0 0 / 300% 100%;
   gap: 8px;
   min-height: 40px;
   padding: 0;
   border: 0 !important;
   border-radius: 0;
-  background: none;
+  /* The words are painted by this gradient on hover (see the plain-link rules in neon.css), so it must be the
+     element's own background; a `none` here would leave the transparent text with nothing behind it. */
+  background: var(--link-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
   box-shadow: none;
   color: var(--ui-muted);
   font-weight: 400;
 }
-.btn-text:hover { color: var(--ui-cyan); background: none; box-shadow: none; transform: none; }
+.btn-text:hover { color: var(--ui-cyan); background: var(--link-gradient); -webkit-background-clip: text; background-clip: text; box-shadow: none; transform: none; }
 .btn-text:active { transform: none; }
 
 .btn .icon { width: 16px; height: 16px; }
+
+/* Pills (filters and toggles) are badge-sized, so they keep the spinning edge but carry no halo of their own. A
+   pressed pill still takes the primary colors. */
+.btn.btn-pill { min-height: 38px; padding: 8px 16px; border-radius: 99px; font-size: 12px; }
+.btn.btn-pill,
+.btn.btn-pill:hover,
+.btn.btn-pill[aria-pressed='true'],
+.btn.btn-pill[aria-pressed='true']:hover { box-shadow: none; }
+.btn.btn-pill::after { display: none; }

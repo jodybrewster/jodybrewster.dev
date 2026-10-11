@@ -94,11 +94,11 @@ const links = [
     white-space: nowrap;
     transition: color .16s ease;
   }
-  .home-links a:hover { color: var(--home-cyan, #00c6e7); }
+  .home-links a:hover { color: #fff; }
   /* The underline draws in from the left under the pointer and retracts to the right, and stays under the current page. */
   @media (min-width: 1051px) {
     .home-links a { position: relative; }
-    .home-links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 8px; height: 1px; background: var(--home-cyan, #00c6e7); transform: scaleX(0); transform-origin: right; transition: transform 320ms var(--ease-out); }
+    .home-links a::after { content: ''; position: absolute; left: 0; right: 0; bottom: 8px; height: 2px; border-radius: 2px; background: #ff4fb6; box-shadow: 0 0 4px #ff2fa6, 0 0 10px #ff2fa6, 0 0 22px rgb(255 47 166 / .7), 0 -2px 18px rgb(255 47 166 / .35); transform: scaleX(0); transform-origin: right; transition: transform 320ms var(--ease-out); }
     .home-links a:hover::after, .home-links a[aria-current="page"]::after { transform: scaleX(1); transform-origin: left; }
   }
   .home-nav-actions {
@@ -204,7 +204,7 @@ const links = [
     .home-links[data-open="true"] { visibility: visible; opacity: 1; transform: none; pointer-events: auto; transition: opacity 220ms var(--ease-out), transform 260ms var(--ease-out), visibility 0s; }
     .home-links a { min-height: 46px; padding: 0 14px; border-radius: 6px; }
     .home-links a:hover { background: rgb(167 202 230 / .07); }
-    .home-links a[aria-current="page"] { color: var(--home-cyan, #00c6e7); }
+    .home-links a[aria-current="page"] { color: #fff; }
     .home-menu-toggle { display: inline-flex; flex-direction: column; gap: 6px; }
     .home-menu-toggle span {
       width: 20px;

@@ -100,7 +100,8 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .brand-list li:hover { transform: translateY(-2px); }
 .brand-list li:hover .brand-logo { background: var(--home-ink); }
 .brand-logo { transition: background-color 240ms var(--ease-out); display: block; background: currentColor; -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; }
-.brand-lennar .brand-logo { --logo: url(/images/brand/logos/lennar.svg); width: 132px; aspect-ratio: 102 / 10; }
+.brand-toyota .brand-logo { --logo: url(/images/brand/logos/toyota.svg); width: 62px; aspect-ratio: 24 / 16.3; }
+.brand-cocacola .brand-logo { --logo: url(/images/brand/logos/cocacola.svg); width: 118px; aspect-ratio: 24 / 7.53; }
 .brand-carnival .brand-logo { --logo: url(/images/brand/logos/carnival.svg); width: 132px; aspect-ratio: 1168 / 284; }
 .brand-disney .brand-logo { --logo: url(/images/brand/logos/disney.svg); width: 96px; aspect-ratio: 700 / 294.4; }
 .brand-gm .brand-logo { --logo: url(/images/brand/logos/gm.svg); width: 38px; aspect-ratio: 1; }
@@ -210,7 +211,9 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .btn { font-size: 12px; padding-inline: 13px; }
   .experience-strip { padding-block: 6px 26px; gap: 20px; }
   .brand-list { justify-content: space-between; gap: 12px; }
-  .brand-lennar .brand-logo, .brand-carnival .brand-logo { width: clamp(64px, 21vw, 96px); }
+  .brand-carnival .brand-logo { width: clamp(64px, 21vw, 96px); }
+  .brand-toyota .brand-logo { width: clamp(34px, 11vw, 48px); }
+  .brand-cocacola .brand-logo { width: clamp(58px, 19vw, 84px); }
   .brand-disney .brand-logo { width: clamp(52px, 16vw, 72px); }
   .brand-gm .brand-logo { width: clamp(24px, 7.5vw, 30px); }
   .experience-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }

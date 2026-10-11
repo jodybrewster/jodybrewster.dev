@@ -2,9 +2,9 @@
  * Canvas-drawn textures for the /library scene.
  *
  * Everything the scene shows is generated here except real album art, book
- * jackets, game box art and the site's own article and case study images,
- * which load from this origin. Drawing the folios, spines, cases and concrete
- * keeps the page free of binary texture downloads.
+ * jackets and game box art, which load from the local cache in public/media.
+ * Drawing the spines and game cases keeps the page free of binary texture
+ * downloads.
  *
  * Browser only: each function touches document/canvas.
  */
@@ -15,11 +15,10 @@ import {
   LinearMipmapLinearFilter,
   SRGBColorSpace,
 } from 'three';
-import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFolio, ShelfGame } from './media';
-import { hash, seededUnit } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame } from './media';
+import { seededUnit } from './media';
 
 const DISPLAY = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
-const HEADLINE = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
 const SANS = '"Plus Jakarta Sans", -apple-system, system-ui, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
 
@@ -626,173 +625,6 @@ export function gameSpineTexture(game: ShelfGame, aspect: number): CanvasTexture
   ctx.font = `600 ${size}px ${SANS}`;
   ctx.fillText(truncate(ctx, game.title, run), 0, 0);
   ctx.restore();
-
-  return toTexture(element, 8);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Folios                                                                      */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Card stock for the site's own pieces, in Miami's daytime colours: flamingo,
- * pool teal, Deco cream, cobalt and the lilac of the sky at six. Each pairs
- * with the ink that reads on it.
- */
-const FOLIO_STOCK = [
-  { paper: '#efe6d6', ink: '#262838', accent: '#c94f74' },
-  { paper: '#34479c', ink: '#f6efe4', accent: '#ffc9a8' },
-  { paper: '#6c9ad3', ink: '#f8f3ec', accent: '#24315f' },
-  { paper: '#3c4168', ink: '#f4ece2', accent: '#f2a3bb' },
-  { paper: '#e8d1b0', ink: '#2a2632', accent: '#3f8e8b' },
-  { paper: '#cc4f78', ink: '#fff3ee', accent: '#ffd6a6' },
-  { paper: '#3e8d8a', ink: '#f3fbf8', accent: '#ffd8c2' },
-  { paper: '#d9d5e5', ink: '#272a3c', accent: '#6c5fb0' },
-] as const;
-
-export type FolioStock = (typeof FOLIO_STOCK)[number];
-
-/** The stock a piece is printed on. Chosen off its id, so it never changes colour between visits. */
-export function folioStock(folio: ShelfFolio): FolioStock {
-  return FOLIO_STOCK[hash(folio.id) % FOLIO_STOCK.length];
-}
-
-const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-
-/**
- * The cover of a folio: a numbered booklet with the piece's title set large at
- * the foot, its kind and date across the head, and its picture between them.
- * Article illustrations are ink drawings, so they are printed into the stock
- * with multiply, the way ink sits on coloured paper. Case study screenshots are
- * tipped in as a framed plate instead. Lab notes have no picture and get the
- * ruled page of a notebook.
- */
-export function folioTexture(
-  folio: ShelfFolio,
-  aspect: number,
-  number: number,
-  image?: HTMLImageElement | null,
-): CanvasTexture {
-  const width = 640;
-  const height = Math.round(width / aspect);
-  const { element, ctx } = canvas(width, height);
-  const stock = folioStock(folio);
-  const random = noise(`${folio.id}-stock`);
-
-  ctx.fillStyle = stock.paper;
-  ctx.fillRect(0, 0, width, height);
-
-  // Faceted light across the stock, as if the card had been folded and pressed
-  // flat again. Kept faint: it should read as surface, not pattern.
-  for (let i = 0; i < 5; i += 1) {
-    ctx.beginPath();
-    ctx.moveTo(random() * width, 0);
-    ctx.lineTo(width, random() * height);
-    ctx.lineTo(random() * width * 0.6, height);
-    ctx.closePath();
-    ctx.fillStyle = random() > 0.5 ? 'rgba(255, 255, 255, 0.07)' : 'rgba(20, 16, 40, 0.06)';
-    ctx.fill();
-  }
-  for (let i = 0; i < 7000; i += 1) {
-    ctx.fillStyle = `rgba(${random() > 0.5 ? '255, 255, 255' : '0, 0, 0'}, ${random() * 0.05})`;
-    ctx.fillRect(random() * width, random() * height, 1.5, 1.5);
-  }
-
-  const margin = width * 0.085;
-  const inner = width - margin * 2;
-
-  // Head: kind on the left, month on the right.
-  ctx.fillStyle = stock.ink;
-  ctx.globalAlpha = 0.74;
-  ctx.textBaseline = 'alphabetic';
-  ctx.letterSpacing = '4px';
-  ctx.font = `500 ${Math.round(width * 0.03)}px ${MONO}`;
-  ctx.textAlign = 'left';
-  ctx.fillText(folio.label.toUpperCase(), margin, margin + width * 0.03);
-  if (folio.date) {
-    const [year, month] = folio.date.split('-');
-    ctx.textAlign = 'right';
-    ctx.fillText(`${MONTH_SHORT[Number(month) - 1] ?? ''} ${year}`, width - margin, margin + width * 0.03);
-  }
-  ctx.letterSpacing = '0px';
-  ctx.globalAlpha = 1;
-
-  // Picture band.
-  const top = margin + width * 0.09;
-  const bandHeight = height * 0.42;
-  if (image && folio.kind === 'article') {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(margin, top, inner, bandHeight);
-    ctx.clip();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.filter = 'grayscale(1) contrast(1.15)';
-    const fill = Math.max(inner / image.naturalWidth, bandHeight / image.naturalHeight);
-    const dw = image.naturalWidth * fill;
-    const dh = image.naturalHeight * fill;
-    ctx.drawImage(image, margin + (inner - dw) / 2, top + (bandHeight - dh) / 2, dw, dh);
-    ctx.restore();
-  } else if (image) {
-    const fill = Math.max(inner / image.naturalWidth, bandHeight / image.naturalHeight);
-    const dw = image.naturalWidth * fill;
-    const dh = image.naturalHeight * fill;
-    ctx.save();
-    ctx.shadowColor = 'rgba(10, 8, 30, 0.28)';
-    ctx.shadowBlur = width * 0.03;
-    ctx.shadowOffsetY = width * 0.012;
-    ctx.fillStyle = stock.paper;
-    ctx.fillRect(margin, top, inner, bandHeight);
-    ctx.restore();
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(margin, top, inner, bandHeight);
-    ctx.clip();
-    // Screens are drawn from their top, where the interface's header is.
-    ctx.drawImage(image, margin + (inner - dw) / 2, top, dw, dh);
-    ctx.restore();
-    ctx.strokeStyle = stock.ink;
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(margin, top, inner, bandHeight);
-    ctx.globalAlpha = 1;
-  } else {
-    ctx.strokeStyle = stock.ink;
-    ctx.globalAlpha = 0.14;
-    ctx.lineWidth = 2;
-    for (let y = top + width * 0.05; y < top + bandHeight; y += width * 0.055) {
-      ctx.beginPath();
-      ctx.moveTo(margin, y);
-      ctx.lineTo(width - margin, y);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 0.3;
-    ctx.beginPath();
-    ctx.moveTo(margin + width * 0.07, top);
-    ctx.lineTo(margin + width * 0.07, top + bandHeight);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-  }
-
-  // Foot: the number, a short rule, then the title set from the bottom up.
-  const titleSize = fitText(ctx, folio.title.split(' ').reduce((a, b) => (b.length > a.length ? b : a), ''),
-    inner, Math.round(width * 0.105), Math.round(width * 0.06), size => `500 ${size}px ${HEADLINE}`);
-  ctx.font = `500 ${titleSize}px ${HEADLINE}`;
-  const lines = wrapLines(ctx, folio.title, inner, 4);
-  const lineHeight = titleSize * 1.02;
-  const bottom = height - margin;
-  ctx.fillStyle = stock.ink;
-  ctx.textAlign = 'left';
-  let y = bottom - (lines.length - 1) * lineHeight;
-  for (const line of lines) {
-    ctx.fillText(line, margin - titleSize * 0.04, y);
-    y += lineHeight;
-  }
-
-  const numberY = bottom - (lines.length - 1) * lineHeight - titleSize * 1.12;
-  ctx.font = `500 ${Math.round(width * 0.036)}px ${MONO}`;
-  ctx.fillStyle = stock.accent;
-  ctx.fillText(String(number).padStart(2, '0'), margin, numberY);
-  ctx.fillRect(margin + width * 0.075, numberY - width * 0.012, width * 0.08, 3);
 
   return toTexture(element, 8);
 }

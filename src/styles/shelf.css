@@ -500,10 +500,6 @@
   object-fit: contain;
 }
 
-.shelf__item:is(.shelf__item--article, .shelf__item--note, .shelf__item--case) .shelf__art {
-  aspect-ratio: 4 / 3;
-}
-
 .shelf__art img {
   width: 100%;
   height: 100%;

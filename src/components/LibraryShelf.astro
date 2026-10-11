@@ -3,7 +3,7 @@ import { scriptJson } from '../lib/script-json';
 /**
  * The /library scene and its fallback.
  *
- * Astro renders a complete, linked, image-bearing list of everything here.
+ * Astro renders a complete, linked, image-bearing list of the shelf here.
  * Three.js then lifts it into the floating arc. The list is the whole
  * experience without JavaScript or WebGL and for assistive technology, so it
  * is never a stub, and the filter column works on both.
@@ -11,7 +11,7 @@ import { scriptJson } from '../lib/script-json';
 import Badge from './Badge.astro';
 import Button from './Button.astro';
 import Icon from './Icon.astro';
-import { FILTERS } from '../lib/shelf/arc';
+import { DEFAULT_FILTER, FILTERS } from '../lib/shelf/arc';
 import type { ShelfPayloadData } from '../lib/shelf/payload';
 import type { ShelfItem } from '../lib/shelf/media';
 
@@ -20,33 +20,25 @@ interface Props {
 }
 
 const { payload } = Astro.props;
-const { albums, books, games, articles, notes, cases } = payload;
+const { albums, books, games } = payload;
 
 const sections = [
   { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
   { kind: 'game', label: payload.gamesLabel, items: games },
   { kind: 'album', label: payload.listeningLabel, items: albums },
-  { kind: 'article', label: 'WRITING · ESSAYS AND RESEARCH', items: articles },
-  { kind: 'note', label: 'LAB NOTES', items: notes },
-  { kind: 'case', label: 'CASE STUDIES', items: cases },
 ].filter(section => section.items.length > 0);
 
 const present = new Set(sections.map(section => section.kind));
-const filters = FILTERS.filter(filter => filter.id === 'all' || present.has(filter.id));
+const filters = FILTERS.filter(filter => present.has(filter.id));
 
 function credit(item: ShelfItem): string {
   if (item.kind === 'album') return item.artist;
   if (item.kind === 'book') return item.author;
-  if (item.kind === 'game') return item.platform;
-  return item.label;
-}
-
-function isExternal(item: ShelfItem): boolean {
-  return item.kind === 'album' || item.kind === 'book' || item.kind === 'game';
+  return item.platform;
 }
 ---
 
-<div class="library" data-library data-filter="all">
+<div class="library" data-library data-filter={DEFAULT_FILTER}>
   <a class="library__skip" href="#library-end">Skip the library</a>
 
   <div class="library__stage" data-library-stage>
@@ -57,9 +49,9 @@ function isExternal(item: ShelfItem): boolean {
         {filters.map(filter => (
           <li>
             <a
-              href={filter.id === 'all' ? '/library' : `/library?show=${filter.id}`}
+              href={filter.id === DEFAULT_FILTER ? '/library' : `/library?show=${filter.id}`}
               data-library-filter={filter.id}
-              aria-current={filter.id === 'all' ? 'true' : undefined}
+              aria-current={filter.id === DEFAULT_FILTER ? 'true' : undefined}
             >{filter.label}</a>
           </li>
         ))}
@@ -96,7 +88,8 @@ function isExternal(item: ShelfItem): boolean {
                 class={`shelf__item shelf__item--${item.kind}`}
                 href={item.url ?? '#'}
                 data-shelf-item={item.id}
-                {...isExternal(item) ? { rel: 'noopener', target: '_blank' } : {}}
+                rel="noopener"
+                target="_blank"
               >
                 <span class="shelf__art" style={`--cloth:${item.color}`}>
                   {item.cover ? (
@@ -126,19 +119,10 @@ function isExternal(item: ShelfItem): boolean {
   import { LibraryScene } from '../lib/shelf/scene';
   import type { ShelfPayload } from '../lib/shelf/scene';
   import { ShelfStore } from '../lib/shelf/scene-state';
-  import { isFilter, pagerWindow } from '../lib/shelf/arc';
+  import { DEFAULT_FILTER, isFilter, pagerWindow } from '../lib/shelf/arc';
   import type { LibraryFilter } from '../lib/shelf/arc';
   import { track } from '../lib/track';
   import type { ShelfItem } from '../lib/shelf/media';
-
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-  /** `2026-10-01` -> `October 2026`, read by parts so it cannot slip a month behind UTC. */
-  function month(iso: string | undefined): string {
-    const [year, number] = (iso ?? '').split('-');
-    const name = MONTHS[Number(number) - 1];
-    return name && year ? `${name} ${year}` : '';
-  }
 
   function boot() {
     const root = document.querySelector<HTMLElement>('[data-library]');
@@ -161,11 +145,11 @@ function isExternal(item: ShelfItem): boolean {
         if (link.dataset.libraryFilter === filter) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
       }
-      for (const section of sections) section.hidden = filter !== 'all' && section.dataset.libraryKind !== filter;
+      for (const section of sections) section.hidden = section.dataset.libraryKind !== filter;
       scene?.setFilter(filter);
       if (remember) {
         const url = new URL(location.href);
-        if (filter === 'all') url.searchParams.delete('show');
+        if (filter === DEFAULT_FILTER) url.searchParams.delete('show');
         else url.searchParams.set('show', filter);
         history.replaceState(history.state, '', url);
       }
@@ -183,7 +167,7 @@ function isExternal(item: ShelfItem): boolean {
     const requested = new URLSearchParams(location.search).get('show');
     const initial: LibraryFilter = isFilter(requested) && filterLinks.some(link => link.dataset.libraryFilter === requested)
       ? requested
-      : 'all';
+      : DEFAULT_FILTER;
 
     /** The scene is not coming: the list is the library. */
     function fallBack() {
@@ -264,7 +248,7 @@ function isExternal(item: ShelfItem): boolean {
     }
 
     const byId = new Map<string, ShelfItem>();
-    for (const item of [...payload.albums, ...payload.books, ...payload.games, ...payload.articles, ...payload.notes, ...payload.cases]) {
+    for (const item of [...payload.albums, ...payload.books, ...payload.games]) {
       byId.set(item.id, item);
     }
 
@@ -309,23 +293,6 @@ function isExternal(item: ShelfItem): boolean {
           excerpt = item.note ?? '';
           action = 'Official page';
           break;
-        case 'article':
-          kind = item.label;
-          credit = month(item.date);
-          excerpt = item.summary ?? '';
-          action = 'Read it';
-          break;
-        case 'note':
-          kind = `Lab note / ${item.label}`;
-          credit = month(item.date);
-          excerpt = item.summary ?? '';
-          action = 'Read the note';
-          break;
-        case 'case':
-          kind = item.label;
-          excerpt = item.summary ?? '';
-          action = item.label === 'Case study' ? 'Read the case study' : 'See the work';
-          break;
       }
 
       kindEl.textContent = kind;
@@ -338,13 +305,8 @@ function isExternal(item: ShelfItem): boolean {
       linkEl.hidden = !item.url;
       if (item.url) {
         linkEl.href = item.url;
-        if (item.kind === 'album' || item.kind === 'book' || item.kind === 'game') {
-          linkEl.target = '_blank';
-          linkEl.rel = 'noopener';
-        } else {
-          linkEl.removeAttribute('target');
-          linkEl.removeAttribute('rel');
-        }
+        linkEl.target = '_blank';
+        linkEl.rel = 'noopener';
       }
     }
 

@@ -117,13 +117,13 @@ Gotchas: conversation history is read server-side from Redis and never accepted 
 
 ### The /library room
 
-A Three.js room at `/library`: books (`content/library.json`), albums (`content/listening.json`, the rolling snapshot), games (`content/games.json`) and the site's own writing, lab notes and case studies float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column (All, Books, Games, Music, Articles, Notes, Case Studies) and `?show=<kind>` choose what is shown; the pager above the Verso bar turns pages.
+A Three.js room at `/library`, linked from the main menu: books (`content/library.json`), albums (`content/listening.json`, the rolling snapshot) and games (`content/games.json`) float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column (Books, Games, Music) and `?show=<kind>` choose what is shown, Books by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work, and the library is only Jody's taste.
 
-- `src/lib/shelf/payload.ts` builds the data: the three media files plus the `writing`, `research`, `notes` collections and `workProjects()` (`src/lib/work-projects.ts`, the same list /work shows, so the two never disagree).
-- `src/lib/shelf/media.ts` normalizes everything into `ShelfItem`s with stable ids, the site's own pieces as `ShelfFolio`s. Pure, never throws, drops bad rows individually.
-- `src/lib/shelf/arc.ts` is the pure layout: the filters, the order "All" deals the kinds in, pagination, the pager's numbers and the arc pose.
+- `src/lib/shelf/payload.ts` builds the data from the three media files.
+- `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
+- `src/lib/shelf/arc.ts` is the pure layout: the filters, pagination, the pager's numbers and the arc pose.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
-- `src/lib/shelf/textures.ts` draws the folio covers, spines and game cases on canvas. Real jackets, album art, box art and the pieces' own images come from files and are redrawn no larger than 640px.
+- `src/lib/shelf/textures.ts` draws spines and game cases on canvas. Real jackets, album art and box art come from files and are redrawn no larger than 640px.
 - `src/lib/shelf/scene.ts` owns the renderer, the backdrop, the objects, picking, paging and the flights.
 - `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing list in HTML, with the filter column working on it too. Three.js progressively enhances it; that markup is the whole experience without WebGL or scripts and for assistive tech.
 

@@ -5,9 +5,7 @@ import {
   monthLabel,
   normalizeAlbums,
   normalizeBooks,
-  normalizeFolios,
   normalizeGames,
-  plainExcerpt,
 } from './media';
 
 describe('normalizeBooks', () => {
@@ -211,67 +209,5 @@ describe('fallbackColor', () => {
   it('spreads a realistic library across more than one color', () => {
     const titles = ['Deep Work', 'Grit', 'Mindset', 'Scrum', 'Hooked', 'Antifragile', 'Noise', 'Range'];
     expect(new Set(titles.map(fallbackColor)).size).toBeGreaterThan(1);
-  });
-});
-
-describe('normalizeFolios', () => {
-  it('keeps site paths and drops rows that would leave the site', () => {
-    const folios = normalizeFolios('article', [
-      { title: 'Evals Are the New PRD', url: '/writing/evals-are-the-new-prd', label: 'Essay', date: '2026-10-01' },
-      { title: 'Off site', url: 'https://example.com/x' },
-      { title: 'Protocol relative', url: '//example.com/x' },
-      { title: '', url: '/writing/untitled' },
-      null,
-      'junk',
-    ] as unknown[]);
-    expect(folios).toHaveLength(1);
-    expect(folios[0]).toMatchObject({
-      id: 'article-evals-are-the-new-prd',
-      kind: 'article',
-      index: 0,
-      label: 'Essay',
-      url: '/writing/evals-are-the-new-prd',
-      date: '2026-10-01',
-    });
-  });
-
-  it('reads Date objects from the content collections as days', () => {
-    const [note] = normalizeFolios('note', [
-      { title: 'A note', url: '/notes/a-note', date: new Date('2026-07-28T00:00:00Z') },
-    ]);
-    expect(note.date).toBe('2026-07-28');
-  });
-
-  it('keeps only site-absolute covers', () => {
-    const folios = normalizeFolios('case', [
-      { title: 'Local', url: '/work/local', cover: '/images/work/local.png' },
-      { title: 'Remote', url: '/work/remote', cover: 'https://cdn.example.com/x.png' },
-    ]);
-    expect(folios.map(folio => folio.cover)).toEqual(['/images/work/local.png', undefined]);
-  });
-
-  it('gives each kind its own id space', () => {
-    const [article] = normalizeFolios('article', [{ title: 'Same', url: '/writing/same' }]);
-    const [note] = normalizeFolios('note', [{ title: 'Same', url: '/notes/same' }]);
-    expect(article.id).not.toBe(note.id);
-  });
-});
-
-describe('plainExcerpt', () => {
-  it('returns the first paragraph of prose with link text kept', () => {
-    const body = [
-      '# Heading',
-      '',
-      'Made [pro-dev-skillset](https://github.com/x) public today, see [[some-note|the note]] and [[other]].',
-      '',
-      'Second paragraph.',
-    ].join('\n');
-    expect(plainExcerpt(body)).toBe('Made pro-dev-skillset public today, see the note and other.');
-  });
-
-  it('skips code and emphasis markers and never throws on junk', () => {
-    expect(plainExcerpt('```js\nx()\n```\n\nIt is **done**.')).toBe('It is done.');
-    expect(plainExcerpt(undefined)).toBe('');
-    expect(plainExcerpt(42)).toBe('');
   });
 });

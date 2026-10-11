@@ -1,6 +1,6 @@
 /**
- * The /library scene: everything Jody reads, plays, listens to and writes,
- * floating a page at a time in front of a Miami morning.
+ * The /library scene: what Jody reads, plays and listens to, floating a page
+ * at a time in front of a Miami morning.
  *
  * Owns the renderer, the backdrop, the objects, picking, paging and the move
  * that brings a picked item up to the reader. A page flies in from the right
@@ -42,9 +42,9 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 // shader compilation land once the room is already on screen. Types only here.
 import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import type { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { arcPose, arrange, pageOf, paginate } from './arc';
+import { arcPose, arrange, DEFAULT_FILTER, pageOf, paginate } from './arc';
 import type { LibraryFilter, Page } from './arc';
-import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFolio, ShelfGame, ShelfItem } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame, ShelfItem } from './media';
 import { seededUnit } from './media';
 import type { ShelfStore } from './scene-state';
 import {
@@ -52,8 +52,6 @@ import {
   artTexture,
   casePlastic,
   fallbackCoverTexture,
-  folioStock,
-  folioTexture,
   fontsReady,
   gameCoverTexture,
   gameSpineTexture,
@@ -67,9 +65,6 @@ export interface ShelfPayload {
   albums: ShelfAlbum[];
   books: ShelfBook[];
   games: ShelfGame[];
-  articles: ShelfFolio[];
-  notes: ShelfFolio[];
-  cases: ShelfFolio[];
 }
 
 export interface LibrarySceneOptions {
@@ -114,7 +109,6 @@ const ARC_Y = 0.55;
 const BOOK_HEIGHT = 1.78;
 const BOOK_ASPECT = 0.66;
 const ALBUM_SIZE = 1.42;
-const FOLIO = { width: 1.24, height: 1.76, depth: 0.12 };
 const GAME_CASES: Record<GameSystem, { width: number; height: number; depth: number }> = {
   switch: { width: 1.1, height: 1.78, depth: 0.12 },
   ps5: { width: 1.41, height: 1.78, depth: 0.15 },
@@ -139,9 +133,6 @@ const PRESENTATION: Record<ShelfItem['kind'], { fill: number; tilt: [number, num
   album: { fill: 0.46, tilt: [0.05, 0.14, 0.015], spinTurns: 1 },
   book: { fill: 0.6, tilt: [0.07, 0.46, 0.04], spinTurns: 0 },
   game: { fill: 0.58, tilt: [0.05, 0.3, 0.02], spinTurns: 0 },
-  article: { fill: 0.6, tilt: [0.06, 0.24, 0.03], spinTurns: 0 },
-  note: { fill: 0.6, tilt: [0.06, 0.24, 0.03], spinTurns: 0 },
-  case: { fill: 0.6, tilt: [0.06, 0.24, 0.03], spinTurns: 0 },
 };
 /** The picked item sits left of centre, clear of the card on the right, and a
  *  little high, clear of the pager and the Verso bar along the foot. */
@@ -204,8 +195,6 @@ interface ItemView {
   spinElapsed: number;
   phase: number;
   jitter: { pitch: number; yaw: number; roll: number };
-  /** Number printed on a folio: its place within its own kind. */
-  number: number;
   art: 'none' | 'loading' | 'ready';
   /** Frame the item was last on screen, for evicting old art. */
   seen: number;
@@ -329,7 +318,7 @@ export class LibraryScene {
 
   #views = new Map<string, ItemView>();
   #order: ShelfItem[] = [];
-  #filter: LibraryFilter = 'all';
+  #filter: LibraryFilter = DEFAULT_FILTER;
   #pages: Page[] = [];
   #page = 0;
 
@@ -418,7 +407,7 @@ export class LibraryScene {
 
     this.#buildRoom();
     this.#buildItems();
-    this.#filter = this.#options.filter ?? 'all';
+    this.#filter = this.#options.filter ?? DEFAULT_FILTER;
     this.#order = arrange([...this.#views.values()].map(view => view.item), this.#filter);
 
     this.#resize();
@@ -561,14 +550,7 @@ export class LibraryScene {
       edges.dispose();
     });
 
-    const all: ShelfItem[] = [
-      ...payload.cases,
-      ...payload.articles,
-      ...payload.books,
-      ...payload.albums,
-      ...payload.games,
-      ...payload.notes,
-    ];
+    const all: ShelfItem[] = [...payload.books, ...payload.albums, ...payload.games];
     for (const item of all) this.#views.set(item.id, this.#buildItem(item));
   }
 
@@ -578,10 +560,8 @@ export class LibraryScene {
         return this.#buildBook(item);
       case 'album':
         return this.#buildAlbum(item);
-      case 'game':
-        return this.#buildGame(item);
       default:
-        return this.#buildFolio(item);
+        return this.#buildGame(item);
     }
   }
 
@@ -610,7 +590,6 @@ export class LibraryScene {
         yaw: jitter(`${item.id}-yaw`, -0.14, 0.14),
         roll: jitter(`${item.id}-roll`, -0.2, 0.2),
       },
-      number: item.index + 1,
       art: 'none',
       seen: 0,
       release,
@@ -703,29 +682,6 @@ export class LibraryScene {
     return this.#view(game, mesh, width, height, face, [face, spine], release);
   }
 
-  #buildFolio(folio: ShelfFolio): ItemView {
-    const { width, height, depth } = FOLIO;
-    const stock = folioStock(folio);
-    const paper = new Color(stock.paper);
-    const edge = new MeshStandardMaterial({ color: paper.clone().multiplyScalar(0.86), roughness: 0.9 });
-    const face = new MeshStandardMaterial({ color: paper, roughness: 0.74 });
-    const back = new MeshStandardMaterial({ color: paper, roughness: 0.8 });
-    const mesh = new Mesh(new BoxGeometry(width, height, depth), [edge, edge, edge, edge, face, back]);
-    const release = () => {
-      face.map?.dispose();
-      face.map = null;
-      face.color.copy(paper);
-      face.needsUpdate = true;
-    };
-    this.#cleanup.push(() => {
-      release();
-      face.dispose();
-      back.dispose();
-      edge.dispose();
-    });
-    return this.#view(folio, mesh, width, height, face, [face], release);
-  }
-
   /* ---------------------------------------------------------------------- */
   /* Art                                                                     */
   /* ---------------------------------------------------------------------- */
@@ -743,7 +699,8 @@ export class LibraryScene {
 
     const apply = (paint: (image: HTMLImageElement | null) => void) => async () => {
       const image = item.cover ? await loadImage(item.cover) : null;
-      if (item.kind !== 'book' && item.kind !== 'album' && item.kind !== 'game') await fontsReady();
+      // Spines and case bands are set in the webfonts.
+      await fontsReady();
       // Released or torn down while loading: nothing to print onto.
       if (this.#disposed || view.art !== 'loading') return;
       paint(image);
@@ -778,17 +735,10 @@ export class LibraryScene {
             back.map = albumBackTexture(item);
             back.needsUpdate = true;
           });
-        case 'game':
-          return apply(image => {
-            if (!image) return;
-            view.face.map?.dispose();
-            view.face.map = gameCoverTexture(item, view.width / view.height, image);
-            view.face.needsUpdate = true;
-          });
         default:
           return apply(image => {
-            view.face.map = folioTexture(item, view.width / view.height, view.number, image);
-            view.face.color.set(0xffffff);
+            view.face.map?.dispose();
+            view.face.map = gameCoverTexture(item, view.width / view.height, image);
             view.face.needsUpdate = true;
           });
       }

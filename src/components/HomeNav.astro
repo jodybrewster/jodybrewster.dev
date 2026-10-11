@@ -5,12 +5,14 @@ import BrandMark from './BrandMark.astro';
 const pathname = Astro.url.pathname;
 const activeSection = pathname.startsWith('/work') || pathname.startsWith('/portfolio') ? '/work'
   : pathname.startsWith('/writing') || pathname.startsWith('/research') ? '/writing'
-  : pathname === '/about' ? '/about' : '';
+  : pathname === '/about' ? '/about'
+  : pathname === '/library' ? '/library' : '';
 
 const links = [
   { href: '/work', label: 'Work' },
   { href: '/about', label: 'About' },
   { href: '/writing', label: 'Writing' },
+  { href: '/library', label: 'Library' },
   { href: '/about#contact', label: 'Contact' },
 ];
 ---
@@ -23,7 +25,11 @@ const links = [
 
   <nav class="home-links" id="home-primary-nav" aria-label="Main navigation">
     {links.map(({ href, label }) => (
-      <a href={href} aria-current={href === activeSection ? 'page' : undefined}>{label}</a>
+      <a
+        href={href}
+        aria-current={href === activeSection ? 'page' : undefined}
+        {...href === '/library' ? { 'data-astro-reload': true } : {}}
+      >{label}</a>
     ))}
   </nav>
 

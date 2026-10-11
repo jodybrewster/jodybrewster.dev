@@ -221,7 +221,7 @@ There is no spinning edge and no halo, because badges are not actions.
 
 The library is one screen: the home nav fixed over a Three.js room, with the footer below it.
 The room is a plate, `public/images/library/backdrop.webp`: concrete, a Miami sunset over the water and a wet stone floor, made with gpt-image-2 from the design mock with its objects and interface taken out.
-Books, albums, game cases and the site's own pieces (printed as numbered folios) float in front of it on a shallow arc, a page at a time.
+Books, albums and game cases float in front of it on a shallow arc, one kind and one page at a time.
 The page opens in pre-dawn dark (`--ui-night`) and the plate grades up to the morning while the first page flies in from the right.
 
 - **Filter column.** Left, over the dark wall: Plus Jakarta Sans 16px on a 1px hairline, the current filter in `--ui-pink` with a glowing segment on the line and a dot, like the nav's underline. Below 760px it becomes a row under the nav.
@@ -315,7 +315,8 @@ The six-panel reference supplied by the user is the current direction for Work, 
 - Main headlines use **Barlow Semi Condensed**, weight 300, with weight 400 for smaller case-study and Verso titles. The user requested a thin, modern, DIN-like face. Body copy, cards, and navigation remain Plus Jakarta Sans. Headline tracking is approximately −.01em.
 - The brand mark is the **user-supplied layered blue glass artwork with a warm orange center**, replacing the JB letters. `BrandMark.astro` uses an optimized WebP; PNG and self-contained SVG favicons use the same artwork. The main header renders it at 80 × 65px with a two-line name / “Solutions Architect” lockup; phones use 64 × 52px without the wordmark.
 - Dark is fixed in server-rendered HTML and persists through Astro page transitions. Remove theme controls; ignore old browser theme preferences.
-- About is a simple header link. The Library entry belongs **under the résumé / contact actions on About**, with the label “Explore my library.” Do not add an About header dropdown.
+- About is a simple header link. Do not add an About header dropdown.
+- Library is a header link, between Writing and Contact. About keeps its "Explore my library" link under the résumé and contact actions as a second way in.
 - Library is the Three.js room, with keyboard selection, paging and its semantic fallback. Library links use a full document navigation, so the scene starts on a fresh document.
 - Work filters operate on six real projects. Detailed case studies preserve their source content and use architecture steps grounded in the actual briefs. Do not add fictional metrics, stacks, video controls, or projects to match decorative reference content.
 - Writing and Research share searchable, filterable cards with real published entries and dates. Research authorship disclosure remains visible. Each piece has a generated ink illustration of a literal subject from its argument, off-white etched line on one of four mid-tone blue grounds with a single cyan element, rather than a project screenshot or an AI metaphor.

@@ -10,56 +10,28 @@
 
 import type { MediaKind, ShelfItem } from './media';
 
-export type LibraryFilter = 'all' | MediaKind;
+/** What the library shows: one kind at a time. */
+export type LibraryFilter = MediaKind;
 
 export const FILTERS: ReadonlyArray<{ id: LibraryFilter; label: string }> = [
-  { id: 'all', label: 'All' },
   { id: 'book', label: 'Books' },
   { id: 'game', label: 'Games' },
   { id: 'album', label: 'Music' },
-  { id: 'article', label: 'Articles' },
-  { id: 'note', label: 'Notes' },
-  { id: 'case', label: 'Case Studies' },
 ];
+
+/** The filter /library opens on when the address names none. */
+export const DEFAULT_FILTER: LibraryFilter = 'book';
 
 export function isFilter(value: unknown): value is LibraryFilter {
   return FILTERS.some(filter => filter.id === value);
 }
 
-/**
- * The order "All" deals the kinds in. Work and writing lead because they say
- * the most about how Jody works; the reading pile, the largest by far, runs
- * on alone once the others are dealt out.
- */
-const DEAL_ORDER: readonly MediaKind[] = ['case', 'article', 'book', 'album', 'game', 'note'];
-
-/**
- * The items a filter shows, in ribbon order. A single kind keeps its own
- * curated order. "All" deals one of each kind in turn, so the opening screen
- * holds a bit of everything instead of the first twenty books.
- */
+/** The items a filter shows, in their own curated order. */
 export function arrange(items: readonly ShelfItem[], filter: LibraryFilter): ShelfItem[] {
-  if (filter !== 'all') return items.filter(item => item.kind === filter);
-
-  const queues = DEAL_ORDER.map(kind => items.filter(item => item.kind === kind));
-  const dealt: ShelfItem[] = [];
-  for (let round = 0; dealt.length < items.length; round += 1) {
-    let took = false;
-    for (const queue of queues) {
-      const item = queue[round];
-      if (item) {
-        dealt.push(item);
-        took = true;
-      }
-    }
-    // Only kinds outside DEAL_ORDER could be left, and there are none; this
-    // keeps a future kind from hanging the loop instead of being dropped.
-    if (!took) break;
-  }
-  return dealt;
+  return items.filter(item => item.kind === filter);
 }
 
-/** Centres along the ribbon for items of the given widths, `gap` apart. */
+/** Centres along a row for items of the given widths, `gap` apart. */
 export function layoutTrack(widths: readonly number[], gap: number): { centres: number[]; length: number } {
   const centres: number[] = [];
   let at = 0;

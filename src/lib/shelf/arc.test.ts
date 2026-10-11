@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ARC, arcPose, arrange, isFilter, layoutTrack, pageOf, pagerWindow, paginate } from './arc';
-import { normalizeAlbums, normalizeBooks, normalizeFolios, normalizeGames } from './media';
+import { normalizeAlbums, normalizeBooks, normalizeGames } from './media';
 
 const books = normalizeBooks([
   { title: 'Book One', author: 'A' },
@@ -9,41 +9,20 @@ const books = normalizeBooks([
 ]);
 const albums = normalizeAlbums([{ name: 'Album One', artist: 'X' }]);
 const games = normalizeGames([{ title: 'Game One', platform: 'Nintendo Switch' }]);
-const cases = normalizeFolios('case', [
-  { title: 'Case One', url: '/work/one' },
-  { title: 'Case Two', url: '/work/two' },
-]);
-const items = [...books, ...albums, ...games, ...cases];
+const items = [...books, ...albums, ...games];
 
 describe('arrange', () => {
-  it('deals one of each kind in turn for All, work first', () => {
-    expect(arrange(items, 'all').map(item => item.title)).toEqual([
-      'Case One',
-      'Book One',
-      'Album One',
-      'Game One',
-      'Case Two',
-      'Book Two',
-      'Book Three',
-    ]);
-  });
-
-  it('keeps every item exactly once', () => {
-    const dealt = arrange(items, 'all');
-    expect(dealt).toHaveLength(items.length);
-    expect(new Set(dealt.map(item => item.id)).size).toBe(items.length);
-  });
-
-  it('keeps curated order within a single kind', () => {
+  it('shows one kind in its curated order', () => {
     expect(arrange(items, 'book').map(item => item.title)).toEqual(['Book One', 'Book Two', 'Book Three']);
-    expect(arrange(items, 'note')).toEqual([]);
+    expect(arrange(items, 'game').map(item => item.title)).toEqual(['Game One']);
   });
 });
 
 describe('isFilter', () => {
   it('accepts the sidebar filters only', () => {
-    expect(isFilter('all')).toBe(true);
-    expect(isFilter('case')).toBe(true);
+    expect(isFilter('book')).toBe(true);
+    expect(isFilter('album')).toBe(true);
+    expect(isFilter('all')).toBe(false);
     expect(isFilter('podcast')).toBe(false);
     expect(isFilter(undefined)).toBe(false);
   });

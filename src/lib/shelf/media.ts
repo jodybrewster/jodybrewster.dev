@@ -1,16 +1,13 @@
 /**
- * Media normalization for the /library scene.
+ * Media normalization for the /library shelf.
  *
  * Everything here is pure and framework-free: Astro calls it at build time to
- * serialize the payload, and the Three.js scene consumes the same output at
- * runtime. Bad rows are dropped individually and nothing ever throws, so one
- * malformed record can never take the scene down.
+ * serialize the shelf payload, and the Three.js scene consumes the same output
+ * at runtime. Bad rows are dropped individually and nothing ever throws, so one
+ * malformed record can never take the shelf down.
  */
 
-/** The site's own pieces, printed as folios: writing, lab notes, case studies. */
-export type FolioKind = 'article' | 'note' | 'case';
-
-export type MediaKind = 'album' | 'book' | 'game' | FolioKind;
+export type MediaKind = 'album' | 'book' | 'game';
 
 interface ShelfItemBase {
   id: string;
@@ -56,21 +53,7 @@ export interface ShelfGame extends ShelfItemBase {
   cover?: string;
 }
 
-export interface ShelfFolio extends ShelfItemBase {
-  kind: FolioKind;
-  title: string;
-  /** What sort of piece it is, as the site names it: Essay, Research, Seedling, Case study. */
-  label: string;
-  summary?: string;
-  /** Site path of the piece itself. */
-  url: string;
-  /** Lead image, site-absolute. */
-  cover?: string;
-  /** `YYYY-MM-DD`, when the piece is dated. */
-  date?: string;
-}
-
-export type ShelfItem = ShelfAlbum | ShelfBook | ShelfGame | ShelfFolio;
+export type ShelfItem = ShelfAlbum | ShelfBook | ShelfGame;
 
 /** Muted book-cloth tones. Saturated enough to read as bound cloth, quiet
  *  enough to sit beside ash paper and the one forest green. */
@@ -154,18 +137,6 @@ function localAsset(value: unknown): string | undefined {
   if (!raw) return undefined;
   if (raw.startsWith('/')) return raw;
   return /^https?:\/\//i.test(raw) ? raw : undefined;
-}
-
-/** A path on this site. Protocol-relative `//host` would leave it. */
-function sitePath(value: unknown): string | undefined {
-  const raw = text(value);
-  return raw.startsWith('/') && !raw.startsWith('//') ? raw : undefined;
-}
-
-function isoDay(value: unknown): string | undefined {
-  if (value instanceof Date) return Number.isNaN(value.getTime()) ? undefined : value.toISOString().slice(0, 10);
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(text(value));
-  return match?.[1];
 }
 
 function record(value: unknown): Record<string, unknown> | undefined {
@@ -297,63 +268,4 @@ export function normalizeGames(rows: readonly unknown[]): ShelfGame[] {
   }
 
   return games;
-}
-
-/**
- * The site's own pieces. Rows come from the content collections, already
- * validated by their schemas, but they get the same treatment as the media:
- * anything without a title or a path on this site is dropped.
- */
-export function normalizeFolios(kind: FolioKind, rows: readonly unknown[]): ShelfFolio[] {
-  if (!Array.isArray(rows)) return [];
-  const taken = new Set<string>();
-  const folios: ShelfFolio[] = [];
-
-  for (const row of rows) {
-    const raw = record(row);
-    if (!raw) continue;
-    const title = tidy(raw.title, 160);
-    const url = sitePath(raw.url);
-    if (!title || !url) continue;
-
-    const slug = slugify(url.split('/').filter(Boolean).pop() ?? title);
-    if (!slug) continue;
-
-    folios.push({
-      id: uniqueId(`${kind}-${slug}`, taken),
-      kind,
-      index: folios.length,
-      title,
-      label: text(raw.label) || 'Piece',
-      summary: tidy(raw.summary, NOTE_MAX) || undefined,
-      url,
-      cover: sitePath(raw.cover),
-      date: isoDay(raw.date),
-      color: fallbackColor(`${kind}|${title}`),
-    });
-  }
-
-  return folios;
-}
-
-/**
- * The opening of a Markdown body as plain prose, for a piece with no
- * description of its own. Drops headings and code, keeps link and wiki-link
- * text, and stops at the first paragraph break past a sentence or two.
- */
-export function plainExcerpt(markdown: unknown, max = NOTE_MAX): string {
-  const body = text(markdown)
-    .replace(/^---[\s\S]*?\n---\n?/, '')
-    .replace(/```[\s\S]*?```/g, ' ');
-  const paragraphs = body
-    .split(/\n\s*\n/)
-    .map(paragraph => paragraph.trim())
-    .filter(paragraph => paragraph && !/^(#|>|\||!\[|<)/.test(paragraph));
-  const prose = (paragraphs[0] ?? '')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
-    .replace(/\[\[([^\]]+)\]\]/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[*_`~]/g, '');
-  return tidy(prose, max);
 }

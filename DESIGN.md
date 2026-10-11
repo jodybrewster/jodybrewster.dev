@@ -1,135 +1,103 @@
 ---
 name: jodybrewster.dev
-description: Personal site for Jody Brewster — writing, notes, and work briefs on agentic interface design.
+description: Personal site for Jody Brewster. Dark, neon-edged editorial pages for writing, notes, work briefs and a chat.
 colors:
-  quiet-forest: "#2d5d4f"
-  forest-mist: "#cfdcd6"
-  deep-ink: "#14181d"
-  settled-ink: "#3d444d"
-  receding-ink: "#828a93"
-  ash-paper: "#f1f2f0"
-  warm-ash: "#e6e8e4"
-  ash-rule: "#cbcec9"
+  bg: "#050f16"
+  surface: "#0a1721"
+  raised: "#172633"
+  rule: "#263b4c"
+  ink: "#f4f7fb"
+  muted: "#bbcee3"
+  cyan: "#00c6e7"
+  orange: "#ff9651"
+  purple: "#b58aff"
+  pink: "#f657ac"
+  green: "#31da67"
 typography:
-  display:
-    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
-    fontWeight: 400
-    lineHeight: 1.05
-    letterSpacing: "-0.025em"
-    fontVariation: "\"opsz\" 60"
   headline:
-    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
-    fontWeight: 450
-    fontSize: "clamp(40px, 5.5vw, 60px)"
-    lineHeight: 1.08
-    letterSpacing: "-0.022em"
-    fontVariation: "\"opsz\" 60"
-  title:
-    fontFamily: "Source Serif 4, 'Iowan Old Style', Georgia, serif"
-    fontWeight: 450
-    fontSize: "28px"
-    lineHeight: 1.2
-    letterSpacing: "-0.012em"
+    fontFamily: "Barlow Semi Condensed, Arial Narrow, sans-serif"
+    fontWeight: 300
+    lineHeight: 1.06
+    letterSpacing: "-0.01em"
   body:
-    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+    fontFamily: "Plus Jakarta Sans, -apple-system, BlinkMacSystemFont, system-ui, sans-serif"
     fontSize: "16px"
-    fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "JetBrains Mono, ui-monospace, 'SF Mono', Menlo, monospace"
+    fontFamily: "JetBrains Mono, ui-monospace, Menlo, monospace"
     fontSize: "11px"
     fontWeight: 500
     letterSpacing: "0.06em"
 rounded:
-  sm: "4px"
+  button: "9px"
+  card: "10px"
   pill: "99px"
-spacing:
-  xs: "8px"
-  sm: "16px"
-  md: "32px"
-  lg: "56px"
-  xl: "72px"
-motion:
-  duration:
-    fast: "150ms"
-    base: "250ms"
-    slow: "400ms"
-  easing:
-    enter: "cubic-bezier(0.0, 0.0, 0.2, 1)"
-    exit: "cubic-bezier(0.4, 0.0, 1, 1)"
-    standard: "cubic-bezier(0.4, 0.0, 0.2, 1)"
 components:
-  nav-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.settled-ink}"
-    rounded: "{rounded.pill}"
-    padding: "6px 12px"
-  nav-item-active:
-    backgroundColor: "{colors.forest-mist}"
-    textColor: "{colors.quiet-forest}"
-    rounded: "{rounded.pill}"
-    padding: "6px 12px"
   button-primary:
-    backgroundColor: "{colors.quiet-forest}"
-    textColor: "{colors.ash-paper}"
-    rounded: "{rounded.sm}"
-    padding: "12px 18px"
-  note-card:
-    backgroundColor: "{colors.warm-ash}"
-    textColor: "{colors.deep-ink}"
-    rounded: "{rounded.sm}"
-    padding: "20px 22px"
-  probe-button:
-    backgroundColor: "transparent"
-    textColor: "{colors.deep-ink}"
-    rounded: "{rounded.sm}"
-    padding: "14px 16px"
-  chat-input:
-    backgroundColor: "{colors.ash-paper}"
-    textColor: "{colors.deep-ink}"
-    rounded: "{rounded.sm}"
-    padding: "14px"
+    backgroundColor: "{colors.pink}"
+    textColor: "#ffffff"
+    rounded: "{rounded.button}"
+    padding: "11px 20px"
+  button-secondary:
+    backgroundColor: "{colors.bg}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.button}"
+    padding: "11px 20px"
 ---
 
 # Design System: jodybrewster.dev
 
 ## 1. Overview
 
-**Creative North Star: "The Quiet Practitioner"**
+The site is dark only.
+The light theme was removed in October 2026, and nothing should reintroduce it.
+The exception is `/library`, a separate document pinned to the light palette because its birch and plaster are baked into textures.
 
-The design communicates expertise by not announcing it. Source Serif 4 at full optical weight does the heavy lifting; color appears rarely enough to carry meaning when it does; layout exists only to get the reader to the text and out of the way once they are there. There are no decorative motifs, no gratuitous shadows, no visual moves made for their own sake. The craft is in what is absent.
+The look is a night-time editorial page lit by neon.
+The page is near-black.
+Color arrives as light: a spinning fluorescent edge on every button and card, a glow on icons, one pink script word in the home headline.
+Type stays plain and quiet so the light has something to sit on.
 
-The palette is near-monochromatic: warm ash tones, gradated ink, and one quiet forest green that appears at most twice per screen. Three voices handle the full register: Source Serif 4 for ideas, Plus Jakarta Sans for interface, JetBrains Mono for system metadata. They do not cross-dress. The states visible in the UI (seedling, budding, evergreen; draft, published; brief numbers) are part of the design, not incidental labels.
+Three voices handle the type.
+Barlow Semi Condensed at weight 300 carries headlines.
+Plus Jakarta Sans carries interface and body copy.
+JetBrains Mono carries labels and system metadata.
+Mr Dafoe appears once, for the home headline's closing word.
+Source Serif 4 remains only on the older long-form surfaces that still read from `global.css`.
 
-The site also argues by doing. It exposes MCP endpoints, agent-readable markdown URLs, and a RAG-powered chat interface as first-class surfaces. Design decisions on those surfaces are held to the same standard as the typography.
+The site argues by doing.
+It exposes MCP endpoints, agent-readable markdown URLs and a retrieval-backed chat as first-class surfaces.
+Those surfaces get the same care as the writing pages.
 
-**Key Characteristics:**
-- Typography-led: Source Serif 4 at optical scale is the primary design element on every long-form page
-- Near-monochromatic: forest green is the only saturated color; it appears sparingly
-- Three-register type system: display serif (ideas), UI sans (interface), system mono (metadata)
-- Flat by default: depth via tonal layering (warm-ash over ash-paper), not shadow
-- States as design: content maturity labels, brief numbers, and the Now page are aesthetic choices, not tooling artifacts
-- Demonstrates its subject: agent-readable endpoints and MCP tools are treated with the same design rigor as the writing pages
+**Where things live**
+- `src/styles/tokens.css` is the only place a color is defined. New code uses `--ui-*`; `--home-*` and `--studio-*` are aliases of them.
+- `src/components/Button.astro` is the only button. Its look is `src/styles/buttons.css`.
+- `src/styles/neon.css` is the spinning edge, the glint and the white edge flash. Anything that should light up is added to its selector list or given the `.neon-card` pattern.
+- Do not add a new button, link style or color in a page stylesheet. Add a variant to the component instead.
 
-## 2. Colors: The Ash-and-Forest Palette
+## 2. Colors
 
-A near-monochromatic warm-neutral field with one saturated accent. The field does the reading work; the accent does the pointing.
+One near-black field with one family of neon accents.
+The field does the reading work and the accents do the pointing.
 
-### Primary
-- **Quiet Forest** (`#2d5d4f`): The sole saturated color. Active nav state, links, section labels, focus rings, accent moments in type. Used at a density of roughly one appearance per screenful. Its rarity is the argument.
-- **Forest Mist** (`#cfdcd6`): Muted accent; selected and active state backgrounds, focus rings (via `box-shadow`). Never used as a surface at scale.
+### Field
+- **bg** (`#050f16`): page background.
+- **surface** (`#0a1721`): cards, panels and the fill inside a neon edge.
+- **raised** (`#172633`): tags, wells and hover fills.
+- **rule** (`#263b4c`): hairlines and dividers, 1px.
 
-### Neutral
-- **Deep Ink** (`#14181d`): Primary text. Not black: the cool-neutral tint toward the forest hue keeps it from reading as harsh.
-- **Settled Ink** (`#3d444d`): Secondary text, nav labels, subheadings, descriptive copy. The workhorse reading color.
-- **Receding Ink** (`#828a93`): Metadata, timestamps, captions, faint labels. Everything that should fade without disappearing.
-- **Ash Paper** (`#f1f2f0`): Page background. Warm-leaning off-white; never pure white.
-- **Warm Ash** (`#e6e8e4`): Secondary surface. Card backgrounds, code blocks, diagram containers, warm-section fills. The primary tool for tonal depth.
-- **Ash Rule** (`#cbcec9`): Borders and dividers. Used at 1px; this weight is not exceeded for decorative purposes.
+### Text
+- **ink** (`#f4f7fb`): primary text.
+- **muted** (`#bbcee3`): secondary text, metadata, captions and text links.
 
-*Dark mode mirrors the same roles with inverted lightness: ink tokens lighten, paper tokens darken, accent lightens to `#6fb39f` to maintain contrast.*
+### Neon
+- **cyan** (`#00c6e7`): the default accent. Links on hover, focus rings, the current-page marker.
+- **orange** (`#ff9651`), **purple** (`#b58aff`), **pink** (`#f657ac`): the other three legs of the gradient. Each capability or principle icon takes one.
+- **green** (`#31da67`): availability and live status only.
 
-**The One Note Rule.** Quiet Forest appears on one element at a time. It is a highlighter, not a paint bucket. If it appears on a link AND a label AND an icon in the same viewport, one of those uses is wrong.
+The spinning edge is a conic gradient through cyan, violet, magenta and yellow at 60% opacity, turning once every 12 seconds.
+It is the same on every button and card so the site reads as one system.
+Hover speeds nothing up except the chat bar, which spins faster under the pointer.
 
 ## 3. Typography
 
@@ -168,6 +136,11 @@ The system is flat by default. Depth is communicated through tonal layering (war
 **The Flat-By-Default Rule.** A surface that is not being interacted with has no shadow. Shadows exist only as a response to hover or focus, never as ambient decoration. If a card looks more "designed" because of its shadow, the shadow is wrong.
 
 ## 5. Components
+
+Several subsections below were written before the dark reskin and still use the old color names.
+Read them with this mapping: ash-paper is bg, warm-ash is surface or raised, ash-rule is rule, deep-ink is ink, settled-ink and receding-ink are muted, and quiet-forest and forest-mist are cyan.
+Their layout, spacing and behavior still apply; only the colors changed.
+The Buttons subsection is current.
 
 ### Navigation
 
@@ -225,8 +198,15 @@ Border: 1px ash-rule. Radius: 4px. Top accent bar: `::before` pseudo-element, 2p
 
 ### Buttons
 
-- **Primary** (send, submit): quiet-forest background, ash-paper text, 3–4px radius, Plus Jakarta Sans 13px wght 500. Hover: deep-ink background.
-- **Ghost / secondary**: transparent background, rule border, current text color. Hover: accent border and text, warm-ash background, translateY(-1px).
+Always `<Button>`; never a hand-written anchor with a button class.
+Props: `href` (omit for a real `<button>`), `variant`, `icon` (a trailing icon from the sprite).
+
+- **primary**: the one action a page wants. A pink-to-orange gradient face; on hover the fill slides to a sunset and the label splits slightly into cyan and yellow.
+- **secondary** (default): a dark face inside the spinning edge.
+- **text**: a muted link with an arrow and no edge. Turns cyan on hover.
+
+Every non-text button, the chat bar's buttons and the case-study cards also get the hover glint and a white flash on the right edge as it leaves.
+The glint is stronger on the pink face and softer on dark faces.
 
 ### Library shelf overlay (`/library`)
 
@@ -256,15 +236,15 @@ Four rules hold across every bot message.
 - **Do** set `font-variation-settings: "opsz"` on every Source Serif 4 element, tuned to the rendered size and never above 60 (hero: 60, essay body: 14, brief headline: 60, display: 60).
 - **Do** use warm-ash as the alternative surface for all card, sidebar, and inset contexts rather than introducing new background colors.
 - **Do** treat the system state labels (seedling/budding/evergreen, brief numbers, the Now page) as design elements — they should be visible and styled, not hidden or minimized.
-- **Do** keep quiet-forest to one prominent use per viewport. Its rarity is the signal.
+- **Do** keep the accent edge identical everywhere: one gradient, one speed, so the neon reads as a system and not as decoration.
 - **Do** express hover and focus through translateY and border-color shifts before reaching for shadows or color floods.
 - **Do** cap body line length at 64–75ch on all reading surfaces.
 - **Do** style the agent-readable endpoints and MCP surfaces with the same typographic care as writing pages; they are part of the argument the site makes.
 
 ### Don't:
-- **Don't** use `background-clip: text` with a gradient. Single solid color only; use weight or size for emphasis.
+- **Don't** put a gradient on more than one line of text per page. The closing line of a hero headline may carry it; nothing else.
 - **Don't** use glassmorphism, backdrop-filter blurs, or translucent cards for decoration. The system is opaque and tonal.
-- **Don't** use neon accents, dark-mode purple or blue glow effects, or the AI startup visual vocabulary. The site thinks clearly about AI; it does not perform proximity to it.
+- **Don't** add glows that are not the system's: no new colors, no glow on body text, nothing that pulses without a reason.
 - **Don't** build a generic portfolio template: no headshot hero, no tech-stack badge grid, no project thumbnail card grid, no "About me" with a bullet credential list.
 - **Don't** use SaaS landing page patterns: no gradient hero, no big-number metric with glowing accent, no feature icon-heading-text card grid, no sticky CTA.
 - **Don't** use `border-left` or `border-right` greater than 1px as a colored decorative stripe on cards or list items. The metric-row component uses a 2px left border as a data affordance, not decoration; don't generalize it.
@@ -291,7 +271,7 @@ Items opened up close are framed by height and then pushed back if the frame is 
 
 Pre-written single-sentence constraints encoding the highest-stakes rules. Use these verbatim when generating or reviewing UI for this site:
 
-- "Use Quiet Forest (`#2d5d4f`) on at most one element per viewport — its rarity is the signal."
+- "Use cyan as the single default accent and let the spinning edge carry the rest."
 - "Every Source Serif 4 element must carry `font-variation-settings: 'opsz' <n>` where n matches the render size, capped at 60. A display element without explicit opsz is a visual mistake."
 - "Depth is tonal (warm-ash `#e6e8e4` over ash-paper `#f1f2f0`), not shadowed. A surface at rest has no box-shadow."
 - "JetBrains Mono for timestamps, section labels, badges, and code. Source Serif 4 for ideas. Plus Jakarta Sans for interface. They do not cross roles."

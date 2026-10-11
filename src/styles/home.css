@@ -1,32 +1,6 @@
 /* Homepage tokens extracted from index.html. */
 /* Homepage reference palette — shared with src/styles/home.css. */
-.home-page {
-  --headline: "Barlow Semi Condensed", "Arial Narrow", var(--sans);
-  --home-bg: #050f16;
-  --home-surface: #0a1721;
-  --home-raised: #172633;
-  --home-rule: #263b4c;
-  --home-ink: #f4f7fb;
-  --home-muted: #bbcee3;
-  --home-cyan: #00c6e7;
-  --home-orange: #ff9651;
-  --home-purple: #b58aff;
-  --home-pink: #f657ac;
-  --home-green: #31da67;
-  --home-radius: 10px;
-}
-[data-theme="light"] .home-page {
-  --home-bg: #eef3f7;
-  --home-surface: #ffffff;
-  --home-raised: #e0e9f0;
-  --home-rule: #c6d5e0;
-  --home-ink: #112634;
-  --home-muted: #455f72;
-  --home-cyan: #007b93;
-  --home-orange: #b34b12;
-  --home-purple: #7351b4;
-  --home-pink: #b92676;
-}
+/* Palette: styles/tokens.css. */
 
 /* The homepage is a distinct surface; editorial routes keep their own palette. */
 .home-page {
@@ -81,7 +55,8 @@ html[data-soft-nav] .face-gag { animation-delay: .4s; }
 html:not([data-soft-nav]) .home-backdrop img { animation: home-focus-in 1500ms cubic-bezier(.16, 1, .3, 1) both; }
 html:not([data-soft-nav]) .hero-eyebrow { animation: enter-fade 700ms 100ms var(--ease-out) both; }
 html:not([data-soft-nav]) .hero-word > span { animation: home-word-in 900ms cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(220ms + var(--w) * 55ms); }
-html:not([data-soft-nav]) .hero-word-accent > span { animation-name: home-word-in, home-word-glow; animation-duration: 900ms, 1400ms; animation-delay: calc(360ms + var(--w) * 55ms); }
+html:not([data-soft-nav]) .hero-word-accent > span { animation: home-neon-on 1100ms 620ms steps(1, end) both; }
+html:not([data-soft-nav]) .hero-swash { animation: home-swash-in 520ms 1100ms cubic-bezier(.3, 0, .2, 1) both; }
 html:not([data-soft-nav]) .hero-description { animation: home-rise-in 700ms 780ms var(--ease-out) both; }
 html:not([data-soft-nav]) .hero-actions { animation: home-rise-in 700ms 880ms var(--ease-out) both; }
 html:not([data-soft-nav]) .experience-brands h2,
@@ -99,18 +74,19 @@ html:not([data-soft-nav]) .capability { animation: home-rise-in 600ms var(--ease
 html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) both; }
 @keyframes home-focus-in { from { opacity: .35; filter: blur(14px); transform: scale(1.06); } }
 @keyframes home-word-in { from { transform: translateY(108%); } }
-@keyframes home-word-glow { from { filter: drop-shadow(0 0 18px rgb(246 87 172 / .55)); } }
+/* A sign switching on: dark, two stutters, then lit. */
+@keyframes home-neon-on { 0% { opacity: 0; } 18% { opacity: .9; } 26% { opacity: .15; } 40% { opacity: 1; } 46% { opacity: .35; } 54%, 100% { opacity: 1; } }
+@keyframes home-swash-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 @keyframes home-rise-in { from { opacity: 0; transform: translateY(12px); } }
 .hero-eyebrow { color: #c8e2f5; font-size: 10px; white-space: nowrap; letter-spacing: .23em; }
 .hero-eyebrow span { margin-inline: 8px; }
 .home-hero h1 { margin: 13px 0 16px; font-family: var(--headline); font-size: clamp(44px, 3.65vw, 58px); font-weight: 300; line-height: 1.035; letter-spacing: -.01em; }
+/* The last word is a neon sign hung across the line above it: pink script, cyan brush stroke underneath. The hero
+   always sits on the dark photo, so the neon keeps its dark-theme colors in both themes. */
+.home-hero .hero-word-accent { --neon-pink: #ff2fa6; position: relative; overflow: visible; margin: -.3em 0 -.06em 1.9em; padding: 0 .2em .05em; font-family: "Mr Dafoe", cursive; font-size: 1.5em; font-weight: 400; line-height: 1; letter-spacing: 0; color: var(--neon-pink); transform: rotate(-8deg); transform-origin: left bottom; }
+.hero-swash { position: absolute; left: -.05em; right: -.35em; bottom: -.02em; width: auto; height: .34em; fill: #4ff3ff; transform: rotate(5deg); pointer-events: none; }
 .hero-description { color: #c4d9eb; max-width: 600px; font-size: 16px; line-height: 1.46; letter-spacing: .005em; margin: 0 0 14px; text-wrap: pretty; }
 .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.home-button { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 44px; padding: 10px 17px; border: 1px solid #6b7c89 !important; border-radius: 7px; background: rgb(5 15 22 / .58); color: #f4f7fb; font-size: 13px; line-height: 1.3; font-weight: 600; transition: background .18s, border-color .18s, transform .18s; }
-.home-button:hover { color: #f4f7fb; border-color: #00c6e7 !important; background: #132a38; transform: translateY(-2px); }
-.home-button:active, .circle-arrow:active { transform: scale(.97); transition-duration: 80ms; }
-.home-button-primary { background: #f4f7fb; color: #09151e; border-color: #f4f7fb !important; }
-.home-button-primary:hover { background: #d7edf5; color: #09151e; }
 .availability-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #31da67; flex-shrink: 0; }
 .hero-actions .availability-dot { align-self: flex-start; width: 6px; height: 6px; margin: 0 -6px 0 -3px; }
 .circle-arrow { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 35px; height: 35px; border: 0; border-radius: 50%; background: #f4f7fb; color: #06111a; transition: transform .18s, background .18s; }
@@ -133,12 +109,10 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .experience-facts dd { margin: 1px 0 0; color: var(--home-muted); font-size: 11px; line-height: 1.5; white-space: nowrap; }
 .featured-work { padding: 0 0 21px; scroll-margin-top: 22px; }
 .home-section-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 0 7px; }
-.home-text-link { display: inline-flex; gap: 8px; align-items: center; color: var(--home-muted); font-size: 12px; min-height: 32px; }
-.home-text-link:hover { color: var(--home-cyan); }
 .project-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
-.project-card { min-width: 0; overflow: hidden; border: 1px solid var(--home-rule) !important; border-radius: var(--home-radius); background: var(--home-surface); color: var(--home-ink); transition: transform .2s, border-color .2s; }
-.project-card:hover { color: var(--home-ink); transform: translateY(-3px); border-color: var(--home-cyan) !important; }
-.project-preview { position: relative; aspect-ratio: 4 / 1; overflow: hidden; background: #0b1826; border-bottom: 1px solid var(--home-rule); }
+.project-card { min-width: 0; border: 1px solid transparent !important; border-radius: var(--home-radius); background: linear-gradient(var(--home-surface), var(--home-surface)) padding-box, var(--neon-edge) border-box; color: var(--home-ink); transition: transform .2s, border-color .2s; }
+.project-card:hover { color: var(--home-ink); transform: translateY(-3px); }
+.project-preview { position: relative; aspect-ratio: 4 / 1; overflow: hidden; border-radius: calc(var(--home-radius) - 1px) calc(var(--home-radius) - 1px) 0 0; background: #0b1826; border-bottom: 1px solid var(--home-rule); }
 .project-preview img { display: block; width: 100%; height: auto; transition: transform .3s; }
 .project-card:hover .project-preview img { transform: scale(1.025); }
 .project-analytics .project-preview img { margin-top: -5%; }
@@ -158,6 +132,9 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .capability:last-child { padding-right: 0; }
 .capability-icon { display: grid; place-items: center; width: 40px; height: 40px; color: var(--capability-color); flex-shrink: 0; }
 .capability-icon .icon { width: 34px; height: 34px; stroke-width: 1.6; }
+/* Neon tubing: a near-white core inside a halo of the capability's color. Glow needs the dark field, so light
+   theme keeps the flat stroke. */
+.capability-icon { color: color-mix(in srgb, var(--capability-color) 80%, #fff); filter: drop-shadow(0 0 1px var(--capability-color)) drop-shadow(0 0 4px color-mix(in srgb, var(--capability-color) 55%, transparent)); }
 .capability-orange { --capability-color: var(--home-orange); }
 .capability-cyan { --capability-color: var(--home-cyan); }
 .capability-purple { --capability-color: var(--home-purple); }
@@ -179,8 +156,6 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .home-page .chat-dock .dock-title { color: var(--home-ink); }
 .home-page .chat-dock .dock-close { width: 36px; height: 36px; }
 .home-page .chat-dock input { min-width: 0; font-size: 14px; }
-[data-theme="light"] .home-page .home-hero { color: #f4f7fb; }
-[data-theme="light"] .home-page .home-backdrop::after { background: linear-gradient(0deg, #eef3f7 0%, transparent 15%), linear-gradient(90deg, rgb(5 15 22 / .4), transparent 60%); }
 @media (min-width: 1650px) { .home-hero { min-height: 475px; padding-top: 24px; } .home-backdrop { height: 565px; } .hero-description { margin-bottom: 22px; } }
 @media (max-width: 1200px) {
   .home-hero { min-height: 475px; }
@@ -230,10 +205,11 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .hero-eyebrow { font-size: 9px; line-height: 1.8; letter-spacing: .15em; white-space: normal; max-width: 360px; }
   .hero-eyebrow span { margin-inline: 3px; }
   .home-hero h1 { font-size: clamp(36px, 7.2vw, 49px); margin-top: 16px; line-height: 1.08; }
+  .home-hero .hero-word-accent { margin: .04em 0 .08em .4em; font-size: 1.45em; }
   .hero-description { font-size: 14px; line-height: 1.65; max-width: 500px; margin-bottom: 20px; }
   .hero-actions { gap: 10px; max-width: none; }
   .hero-actions > a { flex: 1; padding-inline: 8px; min-width: 0; }
-  .home-button { font-size: 12px; padding-inline: 13px; }
+  .btn { font-size: 12px; padding-inline: 13px; }
   .experience-strip { padding-block: 6px 26px; gap: 20px; }
   .brand-list { justify-content: space-between; gap: 12px; }
   .brand-lennar .brand-logo, .brand-carnival .brand-logo { width: clamp(64px, 21vw, 96px); }
@@ -264,16 +240,11 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .home-notebook { padding-block: 34px 24px; }
   .notebook-heading { align-items: start; gap: 20px; }
   .notebook-heading h2 { font-size: 23px; }
-  .notebook-heading .home-text-link { white-space: nowrap; font-size: 11px; }
+  .notebook-heading .btn-text { white-space: nowrap; font-size: 11px; }
   .notebook-grid { grid-template-columns: 1fr; gap: 0; }
   .notebook-entry h3 { font-size: 16px; margin-bottom: 10px; }
   .notebook-links { gap: 8px 22px; }
   .home-page .foot { padding-bottom: 24px; }
-  [data-theme="light"] .home-page .home-backdrop { background: #050f16; height: 100%; }
-  [data-theme="light"] .home-page .home-backdrop img { position: absolute; height: 440px; }
-  [data-theme="light"] .home-page .home-backdrop::after { background: linear-gradient(0deg, #eef3f7, transparent 95%); }
-  [data-theme="light"] .home-page .home-hero { padding-bottom: 28px; background: #050f16; box-shadow: 0 0 0 20px #050f16; }
-  [data-theme="light"] .home-page .home-backdrop { height: 440px; }
 }
 @media (max-width: 374px) {
   .home-hero h1 { font-size: 32px; }

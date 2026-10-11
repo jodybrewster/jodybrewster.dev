@@ -29,7 +29,7 @@ This is also why the anti-references in `PRODUCT.md` are what they are. The gene
 
 **Verify before inventing.** If uncertain about a file path, function signature, library version, or API, use Read/Grep/search first. Say "I don't know" rather than fabricating. Never invent imports, function names, or citation sources.
 
-**Before any UI change, read `DESIGN.md`.** Use only the tokens, fonts, spacing, and components defined there. Do not introduce hex values, font families, or radius values outside the system.
+**Before any UI change, read `DESIGN.md`.** Use only the tokens, fonts, spacing, and components defined there (`tokens.css`, `Button.astro`). Do not introduce hex values, font families, or radius values outside the system.
 
 ## Commands
 
@@ -82,7 +82,6 @@ The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/note
 
 The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a separate surface from the rest of the site: its own full-bleed document with no global `Nav`/`Footer`, pinned to the light palette, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
 
-The `src/pages/` subdirectories exist but are mostly empty — pages are actively being built out from the `index.html` prototype.
 
 ### Verso (the chat)
 
@@ -136,9 +135,17 @@ Gotchas: book covers load only when a book is opened (89 jackets at once is too 
 
 ### Design system
 
-`index.html` is a **living prototype** for the full Astro build, not a throwaway file. Design tokens are extracted from it into `src/styles/global.css` (marked with `/* Extracted from prototype index.html — do not manually edit design tokens */`). When updating the visual design, update `index.html` first and re-extract to `global.css`.
+The site is dark only.
+The light theme is gone; `/library` is the one document that stays on its own light palette.
 
-Fonts: **Source Serif 4** (display/editorial serif, opsz 8-60, wght 200-900), **Plus Jakarta Sans** (body/UI sans, wght 200-800, base weight 200), **JetBrains Mono** (mono). Accent color: `#2d5d4f` (forest green).
+- `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.
+- `src/components/Button.astro` is the only button, with `primary`, `secondary` and `text` variants. Its look is `src/styles/buttons.css`. Never hand-write a button class in a page.
+- `src/styles/neon.css` adds the spinning conic edge, the hover glint and the white edge flash to buttons, the chat bar and the case-study cards.
+- `DESIGN.md` is the written system and is current for the colors, type and buttons. Read it before any UI change.
+
+Fonts: **Barlow Semi Condensed** (headlines), **Plus Jakarta Sans** (body and UI), **JetBrains Mono** (labels), **Mr Dafoe** (the home headline's closing word).
+`global.css` still carries the older Source Serif 4 type ramp for long-form pages; keep `font-variation-settings: "opsz" <value>` on it (the axis stops at 60).
+Accent color is cyan `#00c6e7`.
 
 Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via `remark-wiki-link`.
 
@@ -185,7 +192,7 @@ A visitor can ask for a conversation to be deleted (never sent to them: nobody c
 
 ## Common Pitfalls
 
-- Design tokens live in `global.css` but are **extracted from `index.html`** — update the prototype first, then re-extract. Never manually edit the `/* Extracted from prototype */` block in `global.css`.
+- Add a color to `src/styles/tokens.css`, never to a page stylesheet.
 - Source Serif 4 must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size, which is visually wrong at display scale.
 - The opsz axis stops at 60. Values above it are clamped by the browser, so writing `"opsz" 120` renders identically to `"opsz" 60` and just misleads the next reader. The ramp was originally built against Fraunces, which went to 144; every value was capped when the face changed.
 - `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.

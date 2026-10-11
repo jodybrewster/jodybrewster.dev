@@ -1,0 +1,21 @@
+---
+// The site's only button. Pass `href` for a link, leave it out for a <button>. Looks live in styles/buttons.css.
+import Icon from './Icon.astro';
+
+interface Props {
+  href?: string;
+  variant?: 'primary' | 'secondary' | 'text';
+  /** Name of a trailing icon from the sprite, e.g. "arrow-right". */
+  icon?: string;
+  class?: string;
+  [attr: string]: unknown;
+}
+
+const { href, variant = 'secondary', icon, class: className, ...attrs } = Astro.props;
+const classes = ['btn', variant === 'primary' && 'btn-primary', variant === 'text' && 'btn-text', className]
+  .filter(Boolean)
+  .join(' ');
+---
+{href !== undefined
+  ? <a href={href} class={classes} {...attrs}><slot />{icon && <Icon name={icon} class="icon" />}</a>
+  : <button type="button" class={classes} {...attrs}><slot />{icon && <Icon name={icon} class="icon" />}</button>}

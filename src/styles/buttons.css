@@ -1,0 +1,64 @@
+/* The site's buttons. Rendered by components/Button.astro, which picks the class; this file is the only place a
+   button's look is defined. neon.css adds the spinning edge, the glint and the white flash to everything here
+   except the text variant.
+
+   primary    the one action a page wants: a pink-to-orange tube
+   secondary  a dark face inside the spinning edge (the default)
+   text       a quiet link with an arrow, no edge */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 11px 20px;
+  border: 1px solid transparent !important;
+  border-radius: 9px;
+  background: linear-gradient(#06111a, #06111a) padding-box, var(--neon-edge) border-box;
+  box-shadow: 0 0 2px #2ee6ff, 0 0 14px rgb(46 230 255 / .6), inset 0 0 10px rgb(46 230 255 / .22);
+  color: var(--ui-ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background .18s, box-shadow .18s, transform .18s;
+}
+.btn:hover {
+  color: var(--ui-ink);
+  background: linear-gradient(#0b1d29, #0b1d29) padding-box, var(--neon-edge) border-box;
+  box-shadow: 0 0 3px #2ee6ff, 0 0 20px rgb(46 230 255 / .75), inset 0 0 12px rgb(46 230 255 / .3);
+  transform: translateY(-2px);
+}
+.btn:active { transform: scale(.97); transition-duration: 80ms; }
+
+/* The fill is twice the button's width: on hover it slides into a Miami sunset and the label splits slightly into
+   cyan and yellow, like a VHS frame. */
+.btn-primary {
+  background: linear-gradient(90deg, #d93fd2, #ff3f9c 30%, #ff5d82 50%, #ff8a5c 72%, #ffb347) padding-box 0 0 / 200% 100%, var(--neon-edge) border-box;
+  box-shadow: -4px 0 12px -2px rgb(255 63 156 / .55), 5px 0 12px -2px rgb(255 196 84 / .55), inset 0 0 10px rgb(255 255 255 / .14);
+  color: #fff;
+  transition: background-position .5s cubic-bezier(.2, .8, .2, 1), box-shadow .3s, text-shadow .3s, transform .18s;
+}
+.btn-primary:hover {
+  background: linear-gradient(90deg, #d93fd2, #ff3f9c 30%, #ff5d82 50%, #ff8a5c 72%, #ffb347) padding-box 55% 0 / 200% 100%, var(--neon-edge) border-box;
+  color: #fff;
+  box-shadow: -4px 0 18px -2px rgb(255 63 156 / .75), 6px 0 20px -2px rgb(255 196 84 / .8), inset 0 0 12px rgb(255 255 255 / .2);
+  text-shadow: -1px 0 rgb(0 229 255 / .4), 1px 0 rgb(255 224 102 / .4);
+}
+
+.btn-text {
+  gap: 8px;
+  min-height: 40px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ui-muted);
+  font-weight: 400;
+}
+.btn-text:hover { color: var(--ui-cyan); background: none; box-shadow: none; transform: none; }
+.btn-text:active { transform: none; }
+
+.btn .icon { width: 16px; height: 16px; }

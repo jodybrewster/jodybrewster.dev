@@ -1,7 +1,10 @@
 ---
 import { scriptJson } from '../lib/script-json';
 import '../styles/global.css';
+import '../styles/tokens.css';
 import '../styles/chat-mobile.css';
+import '../styles/neon.css';
+import '../styles/buttons.css';
 import { ClientRouter } from 'astro:transitions';
 import IconSprite from '../components/IconSprite.astro';
 import Nav from '../components/Nav.astro';
@@ -36,8 +39,8 @@ const { title, description, jsonLd, markdownHref, bodyClass, home = false } = As
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <!-- Headlines: Barlow Semi Condensed. Body/UI: Plus Jakarta Sans. Legacy editorial: Source Serif 4. Mono: JetBrains Mono. -->
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Headlines: Barlow Semi Condensed. Body/UI: Plus Jakarta Sans. Legacy editorial: Source Serif 4. Mono: JetBrains Mono. Home hero script: Mr Dafoe. -->
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&family=Mr+Dafoe&display=swap" rel="stylesheet">
 
   {markdownHref && (
     <link rel="alternate" type="text/markdown" href={markdownHref} />

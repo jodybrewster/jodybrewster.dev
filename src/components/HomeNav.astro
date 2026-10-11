@@ -137,9 +137,9 @@ const links = [
     min-height: 44px;
     margin-left: 5px;
     padding: 0 14px;
-    border: 1px solid #a6bfd7;
+    border: 1px solid transparent;
     border-radius: 999px;
-    background: rgb(3 14 25 / .34);
+    background: linear-gradient(#08131d, #08131d) padding-box, var(--neon-edge) border-box;
     color: #f4f7fb;
     font: 600 15px / 1 var(--sans);
     white-space: nowrap;
@@ -147,8 +147,7 @@ const links = [
     transition: background .16s ease, border-color .16s ease;
   }
   .home-verso-button:hover {
-    border-color: var(--home-cyan, #00c6e7);
-    background: rgb(0 198 231 / .12);
+    background: linear-gradient(#0b2433, #0b2433) padding-box, var(--neon-edge) border-box;
   }
   .home-waveform { width: 28px; height: 28px; color: var(--home-cyan, #00c6e7); }
   .home-status-dot {

@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
 import HomeCaseStudies from '../components/HomeCaseStudies.astro';
 import '../styles/home.css';
+import Button from '../components/Button.astro';
 
 const research = (await getCollection('research', r => r.data.publish))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()).slice(0, 3);
@@ -47,11 +48,11 @@ const jsonLd = {
     <section class="home-hero home-container" aria-labelledby="home-title">
       <div class="hero-copy">
         <p class="home-eyebrow hero-eyebrow">AI Engineering & Product Development</p>
-        <h1 id="home-title" aria-label="I build and ship AI-powered products."><span class="hero-word" style="--w: 0"><span>I</span></span> <span class="hero-word" style="--w: 1"><span>build</span></span> <span class="hero-word" style="--w: 2"><span>and</span></span> <span class="hero-word" style="--w: 3"><span>ship</span></span><br /> <span class="hero-word" style="--w: 4"><span>AI-powered</span></span><br /> <span class="hero-word hero-word-accent" style="--w: 5"><span class="text-gradient">products.</span></span></h1>
+        <h1 id="home-title" aria-label="I build and ship AI-powered products."><span class="hero-word" style="--w: 0"><span>I</span></span> <span class="hero-word" style="--w: 1"><span>build</span></span> <span class="hero-word" style="--w: 2"><span>and</span></span> <span class="hero-word" style="--w: 3"><span>ship</span></span><br /> <span class="hero-word" style="--w: 4"><span>AI-powered</span></span><br /> <span class="hero-word hero-word-accent" style="--w: 5"><span>products.</span><svg class="hero-swash" viewBox="0 0 400 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M6 31C70 25 150 18 250 11c48-3 98-6 146-8 3 0 3 4 0 4-50 4-100 8-150 13C150 28 76 34 12 37c-6 1-11-5-6-6Z" /></svg></span></h1>
         <p class="hero-description">From intelligent chat experiences to scalable web and mobile applications, I turn ideas into real products that people use.</p>
         <div class="hero-actions">
-          <a href="#featured-work" class="home-button home-button-primary">View Featured Work <Icon name="arrow-right" class="icon" /></a>
-          <a href="/jodybrewster_resume_2026.pdf" download class="home-button">Download Résumé <Icon name="file" class="icon" /></a>
+          <Button href="#featured-work" variant="primary" icon="arrow-right">View Featured Work</Button>
+          <Button href="/jodybrewster_resume_2026.pdf" download icon="file">Download Résumé</Button>
         </div>
       </div>
     </section>
@@ -93,7 +94,7 @@ const jsonLd = {
 
 
     <section class="home-notebook home-container" aria-labelledby="notebook-title">
-      <div class="notebook-heading"><div><p class="home-eyebrow">Beyond the build</p><h2 id="notebook-title">A look inside the notebook.</h2></div><a href="/research" class="home-text-link">All research <Icon name="arrow-right" class="icon" /></a></div>
+      <div class="notebook-heading"><div><p class="home-eyebrow">Beyond the build</p><h2 id="notebook-title">A look inside the notebook.</h2></div><Button href="/research" variant="text" icon="arrow-right">All research</Button></div>
       <div class="notebook-grid">
         {research.map(entry => <a href={`/research/${entry.id}`} class="notebook-entry"><span class="home-eyebrow">Research · {entry.data.pubDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })}</span><h3>{entry.data.title}</h3><span class="notebook-read">Read the research <Icon name="arrow-right" class="icon" /></span></a>)}
       </div>

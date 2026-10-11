@@ -1,13 +1,14 @@
 ---
 import Icon from './Icon.astro';
 import { mediaTransitionName } from '../lib/transition-names';
+import Button from './Button.astro';
 const projects = [
   { title: 'AI Analytics Platform', href: '/work/agentic-analytics-platform', description: 'Generative analytics with AI-written briefs, ask-the-data search and a modern Next.js UI.', tags: ['Next.js', 'AI / LLMs', 'Snowflake Cortex', 'Claude Code'], image: '/images/work/agentic-analytics-platform/hero.png', alt: 'Brand Impact Tracker showing daily insights and changes in brand performance.', type: 'analytics' },
   { title: 'Interactive Mapping Platform', href: '/work/lennar-interactive-maps', description: 'Geospatial platform with live availability, lot-level site maps and operational tools.', tags: ['GIS', 'Interactive Maps', 'React', 'Node.js'], image: '/images/portfolio/lennar-interactive-maps/02.png', alt: 'Lennar community map with lot-level availability and home prices.', type: 'maps' },
 ];
 ---
 <section class="featured-work home-container" id="featured-work" aria-labelledby="work-title">
-  <div class="home-section-heading"><h2 class="home-eyebrow" id="work-title">Featured work</h2><a href="/work" class="home-text-link">View all work <Icon name="arrow-right" class="icon" /></a></div>
+  <div class="home-section-heading"><h2 class="home-eyebrow" id="work-title">Featured work</h2><Button href="/work" variant="text" icon="arrow-right">View all work</Button></div>
   <div class="project-grid">
     {projects.map(project => (
       <a href={project.href} class={`project-card project-${project.type}`}>

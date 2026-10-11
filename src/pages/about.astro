@@ -3,10 +3,10 @@ import Studio from '../layouts/Studio.astro';
 import Icon from '../components/Icon.astro';
 import Button from '../components/Button.astro';
 const principles = [
-  {icon:'zap',name:'AI Engineering',detail:'Agents · RAG · Evals',tone:'orange'},
-  {icon:'cube',name:'Product Engineering',detail:'Web · Mobile · APIs',tone:'cyan'},
-  {icon:'database',name:'Systems Thinking',detail:'Architecture · Data · Cloud',tone:'purple'},
-  {icon:'team',name:'Technical Leadership',detail:'Teams · Standards · Delivery',tone:'pink'},
+  {art:'ai',name:'AI Engineering',detail:'Agents · RAG · Gen AI'},
+  {art:'product',name:'Product Engineering',detail:'Web · Mobile · AI/UX'},
+  {art:'strategy',name:'Business & Strategy',detail:'Architecture · Data · Cloud'},
+  {art:'leadership',name:'Technical Leadership',detail:'Teams · Standards · Delivery'},
 ];
 const career = [
   {company:'Perficient',role:'Senior Solutions Architect',dates:'2024 — 2026'},
@@ -23,8 +23,8 @@ const career = [
       <h1 id="about-title" class="enter-title">AI.<br />Architecture.<br /><span class="text-gradient">Adult Supervision.</span></h1>
       <p class="about-lede">I'm Jody Brewster, a hands-on technical leader with 15+ years of experience building web, mobile, data and enterprise software, with a strong focus on AI-powered products and agentic systems.</p>
       <p>I like being close to the code: turning ideas into working products, figuring out where AI actually creates value and building the engineering around it so the result can survive beyond a demo.</p>
-      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class={`principle principle-${p.tone}`} style={`--i: ${i}`}><span><Icon name={p.icon} class="icon" /></span><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
-      <div class="about-actions"><Button href="/jodybrewster_resume_2026.pdf" download variant="primary" icon="file">Download Résumé</Button><Button href="/work" variant="text" icon="arrow-right">See what I'm building</Button></div>
+      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class="principle" style={`--i: ${i}`}><img src={`/images/about/skill-${p.art}.webp`} alt="" width="340" height="340" loading="lazy" /><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
+      <div class="about-actions"><Button href="/jodybrewster_resume_2026.pdf" download variant="primary" icon="file">Download Résumé</Button><Button href="/work" icon="arrow-right">See what I'm building</Button></div>
       <nav class="about-explore" aria-label="More about Jody">
         <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
       </nav>
@@ -50,22 +50,22 @@ const career = [
 h1 { font:300 clamp(40px,4vw,60px)/1.06 var(--headline); letter-spacing:-.01em; margin:0 0 25px; }
 .about-introduction>p:not(.studio-eyebrow) { font-size:16px; line-height:1.7; max-width:550px; color:var(--studio-muted); margin:0 0 19px; text-wrap:pretty; }
 .about-introduction>.about-lede { font-size:17px; }
-.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:22px;max-width:640px;margin:32px 0 36px; }
-.principle span { display:grid;place-items:center;width:50px;height:50px;border:1px solid var(--principle-color);color:color-mix(in srgb,var(--principle-color) 80%,#fff);border-radius:50%;background:color-mix(in srgb,var(--principle-color) 9%,transparent);box-shadow:0 0 9px color-mix(in srgb,var(--principle-color) 40%,transparent),inset 0 0 8px color-mix(in srgb,var(--principle-color) 18%,transparent); }
-.principle .icon { width:26px;height:26px; }
-.principle p { font-size:12px;line-height:1.6;max-width:150px;margin:11px 0 0;font-weight:600; }
-.principle small { display:block;margin-top:3px;color:var(--studio-muted);font-size:11px;font-weight:400; }
-.principle-orange {--principle-color:var(--studio-orange)} .principle-cyan {--principle-color:var(--studio-cyan)} .principle-purple {--principle-color:var(--studio-purple)} .principle-pink {--principle-color:var(--studio-pink)}
+.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:640px;margin:44px 0 30px; }
+.principle { text-align:center; }
+.principle img { display:block;width:100%;max-width:100px;height:auto;margin:0 auto; }
+.principle p { font-size:14px;line-height:1.5;margin:6px auto 0;font-weight:600; }
+.principle small { display:block;margin-top:4px;color:var(--studio-muted);font-size:12px;font-weight:400; }
 .about-actions { display:flex;align-items:center;gap:28px; }
-.about-explore { max-width:550px;margin-top:35px;padding-top:24px;border-top:1px solid var(--studio-rule); }
-.about-explore a { display:flex;align-items:center;gap:15px;width:fit-content;text-decoration:none; }
-.about-library-icon { display:grid;place-items:center;width:39px;height:43px;color:var(--studio-cyan); }
-.about-library-icon svg { width:28px;height:28px; }
+.about-explore { max-width:550px;margin-top:35px; }
+.about-explore a { display:flex;align-items:center;gap:18px;width:100%;padding:18px 22px;border:1px solid transparent;border-radius:12px;background:linear-gradient(var(--studio-surface),var(--studio-surface)) padding-box,var(--neon-edge) border-box;text-decoration:none;transition:transform .18s; }
+.about-explore a:hover { transform:translateY(-2px); }
+.about-library-icon { display:grid;place-items:center;width:50px;height:50px;flex-shrink:0;border:1px solid var(--studio-cyan);border-radius:50%;background:color-mix(in srgb,var(--studio-cyan) 9%,transparent);color:color-mix(in srgb,var(--studio-cyan) 80%,#fff); }
+.about-library-icon svg { width:26px;height:26px; }
 .about-explore strong { display:block;font-size:14px;font-weight:600; }
 .about-explore small { display:block;margin-top:6px;color:var(--studio-muted);font-size:12px;line-height:1.6; }
-.about-explore a>.icon { margin-left:8px;flex-shrink:0;transition:transform .16s; }
-.about-explore a:hover>.icon { transform:translateX(4px); }
-@media(prefers-reduced-motion:reduce){.about-explore a>.icon{transition:none}}
+.about-explore a>:global(.icon) { margin-left:auto;flex-shrink:0;transition:transform .16s; }
+.about-explore a:hover>:global(.icon) { transform:translateX(4px); }
+@media(prefers-reduced-motion:reduce){.about-explore a>:global(.icon){transition:none}}
 .career-panel { position:absolute;top:305px;right:0;width:310px;padding:25px 28px 20px;border:1px solid transparent;border-radius:12px;background:linear-gradient(var(--studio-surface),var(--studio-surface)) padding-box,var(--neon-edge) border-box; }
 .career-panel h2 { font-size:10px; margin-bottom:24px; }
 .career-panel ol { list-style:none;padding:0 0 0 19px;margin:0; }

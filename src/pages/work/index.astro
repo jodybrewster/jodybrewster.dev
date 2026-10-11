@@ -49,7 +49,7 @@ const filters = [
 <Studio title="Work & Case Studies — Jody Brewster" description="Enterprise platforms, AI-powered products, and modern web systems. Selected case studies and interface work by Jody Brewster.">
   <main id="main-content" class="work-main studio-container">
     <header class="work-header">
-      <div class="work-office" aria-hidden="true"><img src="/images/studio/office.webp" alt="" width="1536" height="1024" fetchpriority="high" /></div>
+      <div class="work-office" aria-hidden="true"><img src="/images/studio/work-header.webp" alt="" width="2000" height="667" fetchpriority="high" /></div>
       <div class="work-header-copy">
         <p class="studio-eyebrow">Case studies</p>
         <h1 class="enter-title">Patient with complexity.<br />Relentless about outcomes.</h1>
@@ -125,8 +125,9 @@ const filters = [
   .work-header .studio-eyebrow { margin: 0 0 18px; }
   .work-header h1 { margin: 0 0 20px; font: 300 clamp(40px, 4.7vw, 62px)/1.07 var(--headline); letter-spacing: -.01em; }
   .work-lede { color: var(--studio-muted); margin: 0; max-width: 49ch; font-size: 15px; line-height: 1.7; font-weight: 400; }
-  .work-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px -48px -28px 28%; overflow: hidden; opacity: .75; mask-image: linear-gradient(to right, transparent, black 38%), linear-gradient(to bottom, transparent, black 15%, black 58%, transparent); mask-composite: intersect; }
-  .work-office img { width: 100%; height: 100%; object-fit: cover; object-position: center 46%; }
+  .work-office { position: absolute; z-index: -1; pointer-events: none; inset: -90px 0 -20px 28%; overflow: hidden; opacity: 1; mask-image: linear-gradient(to right, transparent, black 34%), linear-gradient(to bottom, transparent, black 10%, black 82%, transparent); mask-composite: intersect; }
+  /* The artwork is fitted whole, so it feathers its own bottom and right edges instead of ending on a hard line. */
+  .work-office img { width: 100%; height: 100%; object-fit: contain; object-position: right center; mask-image: linear-gradient(to bottom, black 68%, transparent), linear-gradient(to left, black 90%, transparent); mask-composite: intersect; }
   .work-filters { display: flex; flex-wrap: wrap; gap: 9px; margin: 9px 0 25px; }
   .work-result-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .work-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }

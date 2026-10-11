@@ -65,6 +65,10 @@ const portfolio = defineCollection({
       alt: z.string(),
       caption: z.string().optional(),
     })).default([]),
+    credits: z.array(z.object({
+      role: z.string(),
+      name: z.string(),
+    })).default([]),
   }),
 });
 

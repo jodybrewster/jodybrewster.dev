@@ -2,9 +2,21 @@
 import { getCollection } from 'astro:content';
 import Studio from '../../layouts/Studio.astro';
 import PageHeader from '../../components/PageHeader.astro';
+import PreAIBadge from '../../components/PreAIBadge.astro';
 
 const projects = (await getCollection('portfolio'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Work that no longer exists anywhere to show, kept by hand.
+const lost = [
+  'Toyota Matrix',
+  'Fiat Abarth driving simulator site',
+  "Coca-Cola's YouTube and FIFA World Cup site",
+  'Guinness',
+  "Smiley's",
+  "Coca-Cola's Celebration sites",
+  'Vitaminwater',
+];
 
 function formatDate(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -29,6 +41,7 @@ function formatDate(d: Date) {
               <img src={p.data.cover} alt="" loading="lazy" />
             </span>
             <span class="body">
+              <span class="badge"><PreAIBadge /></span>
               <span class="title">{p.data.title}</span>
               <span class="dek">{p.data.description}</span>
               <span class="meta">
@@ -40,6 +53,15 @@ function formatDate(d: Date) {
         </li>
       ))}
     </ul>
+
+    <section class="lost" aria-labelledby="lost-title">
+      <h2 id="lost-title">Lost over the years</h2>
+      <p>A lot of my work has been lost over the years. Some of what's gone:</p>
+      <ul>
+        {lost.map(name => <li>{name}</li>)}
+        <li class="more">and more</li>
+      </ul>
+    </section>
   </main>
 </Studio>
 
@@ -84,6 +106,10 @@ function formatDate(d: Date) {
   .body {
     display: block;
   }
+  .badge {
+    display: block;
+    margin-bottom: 10px;
+  }
   .title {
     display: block;
     font-family: var(--display);
@@ -114,6 +140,47 @@ function formatDate(d: Date) {
     font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .lost {
+    max-width: 64ch;
+    margin: -40px 0 0;
+  }
+  .lost h2 {
+    margin: 0 0 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .lost p {
+    margin: 0 0 14px;
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+  .lost ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .lost li {
+    padding: 4px 11px;
+    border: 1px solid var(--rule);
+    border-radius: 99px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .lost li.more {
+    border-color: transparent;
+    padding-inline: 2px;
     color: var(--ink-faint);
   }
   @media (max-width: 720px) {

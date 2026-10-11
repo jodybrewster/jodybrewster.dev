@@ -1,6 +1,7 @@
 ---
 import { getCollection, getEntry, render } from 'astro:content';
 import Studio from '../../layouts/Studio.astro';
+import PreAIBadge from '../../components/PreAIBadge.astro';
 
 export async function getStaticPaths() {
   const projects = await getCollection('portfolio');
@@ -38,6 +39,7 @@ const jsonLd = {
           <svg class="icon sm"><use href="#i-chev-right"/></svg>
           <span style="color:var(--ink-soft)">{entry.data.title}</span>
         </p>
+        <div style="margin: 6px 0 14px;"><PreAIBadge /></div>
         <h1 class="enter-title">{entry.data.title}</h1>
         <p class="sub">{entry.data.description}</p>
 
@@ -80,6 +82,14 @@ const jsonLd = {
         ))}
       </div>
 
+      {entry.data.credits.length > 0 && (
+        <dl class="folio-credits">
+          {entry.data.credits.map(c => (
+            <div><dt>{c.role}</dt><dd>{c.name}</dd></div>
+          ))}
+        </dl>
+      )}
+
       <div style="margin-top:64px;padding-top:28px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;font-family:var(--sans);font-size:12px;color:var(--ink-faint);font-weight:500;flex-wrap:wrap;gap:14px;">
         <a href="/portfolio" style="border:none;display:inline-flex;align-items:center;gap:6px">
           <svg class="icon sm"><use href="#i-arrow-left"/></svg> All projects
@@ -102,13 +112,42 @@ const jsonLd = {
   .folio-gallery figure {
     margin: 0;
   }
+  /* Shown at most at natural size: a small screenshot stretched to the column goes soft. */
   .folio-gallery img {
     display: block;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     height: auto;
     border: 1px solid var(--rule);
     border-radius: 4px;
     background: var(--paper-warm);
+  }
+  .folio-credits {
+    margin: 56px 0 0;
+    display: grid;
+    gap: 10px;
+    max-width: 68ch;
+  }
+  .folio-credits div {
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) 1fr;
+    gap: 16px;
+  }
+  .folio-credits dt {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding-top: 3px;
+  }
+  .folio-credits dd {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+  @media (max-width: 720px) {
+    .folio-credits div { grid-template-columns: 1fr; gap: 2px; }
   }
   .folio-gallery figcaption {
     margin-top: 10px;

@@ -140,6 +140,7 @@ The light theme is gone; `/library` is the one document that stays on its own li
 
 - `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.
 - `src/components/Button.astro` is the only button, with `primary`, `secondary` and `text` variants. Its look is `src/styles/buttons.css`. Never hand-write a button class in a page.
+- `src/components/Badge.astro` is the only badge, label, tag, chip or filter pill. Its look is `src/styles/badge.css`. Never hand-write a pill in a page.
 - `src/styles/neon.css` adds the spinning conic edge, the hover glint and the white edge flash to buttons, the chat bar and the case-study cards.
 - `DESIGN.md` is the written system and is current for the colors, type and buttons. Read it before any UI change.
 

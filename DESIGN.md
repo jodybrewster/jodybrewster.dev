@@ -208,6 +208,15 @@ Props: `href` (omit for a real `<button>`), `variant`, `icon` (a trailing icon f
 Every non-text button, the chat bar's buttons and the case-study cards also get the hover glint and a white flash on the right edge as it leaves.
 The glint is stronger on the pink face and softer on dark faces.
 
+### Badges
+
+Always `<Badge>`; never a hand-written span, list item or button styled as a pill.
+It covers labels (PreAI, Featured, Case study), tags, chat prompt chips and filter pills.
+Props: `size` (`sm` for labels and tags, `md` for filters and chips), `as="button"` for a control, `href` for a link, and `strong` for a solid white pill.
+The look lives in `src/styles/badge.css`: a dark pill with a thin cool-to-magenta hairline that brightens on hover.
+A pressed toggle (`aria-pressed="true"`) becomes a solid white pill.
+There is no spinning edge and no halo, because badges are not actions.
+
 ### Library shelf overlay (`/library`)
 
 The shelf is its own surface: a full-bleed document with no masthead or footer, pinned to the light palette because the birch and plaster are baked into the textures. Only three pieces of flat UI sit over the scene, and all three are pills so they read as labels resting on the room rather than a layer laid across it.

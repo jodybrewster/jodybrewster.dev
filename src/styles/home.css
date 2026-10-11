@@ -123,7 +123,6 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
 .project-description { display: flex; align-items: center; gap: 14px; }
 .project-description p { color: var(--home-muted); font-size: 12px; line-height: 1.55; margin: 0; min-height: 38px; flex: 1; text-wrap: pretty; }
 .project-tags { display: flex; flex-wrap: wrap; gap: 7px; padding: 0; margin: 10px 0 0; list-style: none; }
-.project-tags li { padding: 5px 9px; background: var(--home-raised); color: var(--home-muted); border-radius: 7px; font-size: 10px; line-height: 1.5; }
 .capabilities-section { padding: 0 0 22px; }
 .capabilities-section .home-container { padding-bottom: 22px; border-bottom: 1px solid var(--home-rule); }
 .capability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -171,8 +170,7 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .project-info { padding-inline: 12px; }
   .project-info h3 { font-size: 13px; }
   .project-tags { gap: 5px; }
-  .project-tags li { font-size: 9px; padding-inline: 7px; }
-}
+  }
 @media (max-width: 1000px) {
   .hero-copy { max-width: 520px; }
   .hero-eyebrow { font-size: 8px; }
@@ -228,8 +226,7 @@ html[data-soft-nav] .hero-copy { animation: enter-fade 320ms var(--ease-out) bot
   .project-description p { font-size: 13px; min-height: 0; }
   .project-description .circle-arrow { display: inline-flex; }
   .project-tags { gap: 7px; margin-top: 12px; }
-  .project-tags li { font-size: 10px; padding: 6px 9px; }
-  .featured-work { padding-bottom: 30px; }
+    .featured-work { padding-bottom: 30px; }
   .capabilities-section { padding-block: 20px 25px; }
   .capability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
   .capability, .capability:nth-child(3) { padding: 0; border-left: 0; gap: 12px; }

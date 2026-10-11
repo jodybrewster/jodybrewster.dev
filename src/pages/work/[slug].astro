@@ -10,6 +10,7 @@ import ImageLightbox from '../../components/case/ImageLightbox.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
 import Button from '../../components/Button.astro';
+import Badge from '../../components/Badge.astro';
 
 export async function getStaticPaths() {
   const published = await getCollection('work', b => !b.data.draft);
@@ -45,7 +46,7 @@ const jsonLd = {
       <div class="case-overview">
         <div class="case-visual-column">
           <CaseVisual slug={entry.id} presentation={presentation} transitionName={mediaTransitionName(Astro.url.pathname)} />
-          {presentation && <ul class="studio-tags" aria-label="Project topics">{presentation.tags.map(tag => <li>{tag}</li>)}</ul>}
+          {presentation && <ul class="studio-tags" aria-label="Project topics">{presentation.tags.map(tag => <li><Badge size="sm">{tag}</Badge></li>)}</ul>}
         </div>
         <CaseFacts role={entry.data.role} sector={entry.data.sector} duration={entry.data.duration} presentation={presentation} />
       </div>

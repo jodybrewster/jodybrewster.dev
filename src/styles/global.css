@@ -504,16 +504,6 @@
     color: var(--ink-faint); font-weight: 500;
     margin-bottom: 10px;
   }
-  .note .state {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px;
-    border: 1px solid var(--rule);
-    border-radius: 99px;
-    font-size: 10px;
-    color: var(--ink-soft);
-    font-weight: 500;
-  }
-  .note .state.evergreen { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
   .note p {
     margin: 0;
     font-size: var(--t-ui-lg);

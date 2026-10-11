@@ -5,6 +5,8 @@ import Icon from '../../components/Icon.astro';
 import { workPresentation } from '../../lib/work-presentation';
 import { mediaTransitionName } from '../../lib/transition-names';
 import Button from '../../components/Button.astro';
+import Badge from '../../components/Badge.astro';
+import PreAIBadge from '../../components/PreAIBadge.astro';
 
 const [briefs, portfolio] = await Promise.all([
   getCollection('work', b => !b.data.draft),
@@ -14,6 +16,8 @@ const order = ['jobbyjob', 'agentic-analytics-platform', 'lennar-interactive-map
 const selectedPortfolio: Record<string, { description: string; tags: string[]; categories: string[] }> = {
   'react-native-reporting-portal': { description: 'A single mobile home for Lennar’s internal business dashboards, with search, favorites, and report details.', tags: ['React Native', 'Enterprise', 'Reporting'], categories: ['enterprise', 'data'] },
   'react-okta-sso-portal': { description: 'An agent-facing portal with branded sign-in, self-service registration, and an authenticated dashboard.', tags: ['React', 'Okta', 'Identity', 'Insurance'], categories: ['enterprise', 'web'] },
+  'blog-page-update': { description: 'A redesigned article template for Senior Healthcare Direct, applied to a Medicare Advantage enrollment article.', tags: ['Web Design', 'Blog', 'UI Design'], categories: ['web'] },
+  'pdf-web-distribution-list': { description: 'A one-page company directory that works as both a printable PDF and a searchable web page.', tags: ['Document Design', 'Print', 'Figma'], categories: ['enterprise'] },
   'senior-healthcare-direct': { description: 'An article experience that brings Medicare information, related video, and subscription journeys together.', tags: ['UX Design', 'Healthcare', 'Web Design'], categories: ['web'] },
 };
 const projects = [
@@ -55,7 +59,7 @@ const filters = [
 
     <section class="work-collection" aria-label="Selected projects" data-work-filter>
       <div class="work-filters" role="group" aria-label="Filter projects by topic">
-        {filters.map(filter => <button type="button" class="btn btn-pill" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</button>)}
+        {filters.map(filter => <Badge as="button" data-filter={filter.id} aria-pressed={filter.id === 'all'} aria-controls="work-grid">{filter.label}</Badge>)}
       </div>
       <p class="work-result-status" aria-live="polite" aria-atomic="true" data-work-status>{projects.length} projects</p>
       <div class="work-grid enter-list" id="work-grid" style="--enter-delay: 200ms">
@@ -65,21 +69,22 @@ const filters = [
               <div class="work-card-preview" transition:name={mediaTransitionName(project.href)}>
                 {project.image && <img src={project.image} alt={project.alt} loading="lazy" decoding="async" width="960" height="640" />}
                 <span class="work-card-labels">
-                  {project.featured && <span class="work-card-kind is-featured">Featured</span>}
-                  <span class="work-card-kind">{project.type}</span>
+                  {project.featured && <Badge size="sm" strong>Featured</Badge>}
+                  <Badge size="sm">{project.type}</Badge>
+                  {project.type === 'Interface work' && <PreAIBadge />}
                 </span>
               </div>
               <div class="work-card-info">
                 <div class="work-card-copy"><h2>{project.title}</h2><p>{project.description}</p></div>
                 <span class="studio-arrow" aria-hidden="true"><Icon name="arrow-right" class="icon" /></span>
-                <ul class="studio-tags" aria-label="Project topics">{project.tags.map(tag => <li>{tag}</li>)}</ul>
+                <ul class="studio-tags" aria-label="Project topics">{project.tags.map(tag => <li><Badge size="sm">{tag}</Badge></li>)}</ul>
               </div>
             </a>
           </article>
         ))}
       </div>
       <p class="work-empty" data-work-empty hidden>No projects in this category yet. Choose All to see the collection.</p>
-      <div class="work-footer"><p>More of the interfaces behind the work.</p><Button href="/portfolio" variant="text" icon="arrow-right">Explore the portfolio</Button></div>
+      <aside class="work-footer" aria-labelledby="portfolio-cta"><div><p class="work-footer-eyebrow">Portfolio</p><h2 id="portfolio-cta">More of the interfaces behind the work.</h2><p class="work-footer-note">Design and product work from before AI, from portals and mobile apps to mapping tools.</p></div><Button href="/portfolio" variant="primary" icon="arrow-right">Explore the portfolio</Button></aside>
     </section>
   </main>
 </Studio>
@@ -133,8 +138,6 @@ const filters = [
   .work-card-preview img { width: 100%; height: 100%; object-fit: cover; object-position: top; transition: transform 400ms; }
   .work-card:hover .work-card-preview img { transform: scale(1.025); }
   .work-card-labels { position: absolute; left: 13px; top: 13px; display: flex; gap: 6px; }
-  .work-card-kind { padding: 3px 9px; border: 1px solid var(--studio-rule); border-radius: 99px; background: var(--studio-surface); color: var(--studio-muted); font-family: var(--mono); font-size: 10px; line-height: 1.4; font-weight: 500; letter-spacing: .06em; }
-  .work-card-kind.is-featured { border-color: var(--studio-cyan); color: var(--studio-cyan); }
   .work-card-info { display: grid; grid-template-columns: 1fr 32px; column-gap: 18px; row-gap: 17px; padding: 20px; flex: 1; align-items: start; }
   .work-card h2 { font: 700 17px/1.35 var(--sans); letter-spacing: -.02em; margin: 0 0 9px; }
   .work-card p { font-size: 12px; line-height: 1.65; color: var(--studio-muted); margin: 0; font-weight: 400; }
@@ -142,8 +145,12 @@ const filters = [
   .work-card .studio-tags { grid-column: 1 / -1; align-self: end; }
   .work-empty { padding: 40px 20px; border: 1px solid var(--studio-rule); border-radius: 10px; color: var(--studio-muted); }
   .work-empty[hidden] { display: none; }
-  .work-footer { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--studio-rule); display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 13px; color: var(--studio-muted); }
+  .work-footer { margin-top: 56px; padding: 34px 38px; border: 1px solid transparent; border-radius: 14px; background: linear-gradient(var(--studio-surface), var(--studio-surface)) padding-box, var(--neon-edge) border-box; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+  .work-footer h2 { margin: 0 0 8px; font: 300 clamp(26px, 3vw, 38px)/1.15 var(--headline); letter-spacing: -.01em; color: var(--studio-ink); }
   .work-footer p { margin: 0; }
+  .work-footer-eyebrow { margin-bottom: 10px !important; font: 600 11px/1.5 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--studio-muted); }
+  .work-footer-note { font-size: 14px; line-height: 1.6; color: var(--studio-muted); max-width: 52ch; }
+  .work-footer :global(.btn) { flex-shrink: 0; min-height: 54px; padding-inline: 28px; font-size: 14px; }
   @media (max-width: 720px) {
     .work-main { padding-top: 10px; padding-bottom: 40px; }
     .work-header { min-height: 265px; padding-top: 25px; }
@@ -152,15 +159,14 @@ const filters = [
     .work-lede { font-size: 13px; max-width: 39ch; }
     .work-office { inset: -40px -20px 0 10%; opacity: .35; }
     .work-filters { gap: 7px; margin: 10px 0 22px; }
-    .work-filters .btn-pill { padding: 7px 12px; font-size: 11px; }
     .work-grid { grid-template-columns: 1fr; gap: 20px; }
     .work-card-preview { height: 205px; }
     .work-card-info { padding: 18px; }
     .work-card h2 { font-size: 16px; }
-    .work-footer { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .work-footer { align-items: flex-start; flex-direction: column; gap: 20px; padding: 26px 22px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .work-card, .work-card-preview img, .work-filters .btn-pill { transition: none; }
+    .work-card, .work-card-preview img { transition: none; }
     .work-card:hover, .work-card:focus-within, .work-card:hover .work-card-preview img { transform: none; }
   }
 </style>

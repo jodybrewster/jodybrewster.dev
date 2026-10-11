@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Studio from '../../layouts/Studio.astro';
 import PageHeader from '../../components/PageHeader.astro';
 import PreAIBadge from '../../components/PreAIBadge.astro';
+import Badge from '../../components/Badge.astro';
 
 const projects = (await getCollection('portfolio'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
@@ -58,7 +59,7 @@ function formatDate(d: Date) {
       <h2 id="lost-title">Lost over the years</h2>
       <p>A lot of my work has been lost over the years. Some of what's gone:</p>
       <ul>
-        {lost.map(name => <li>{name}</li>)}
+        {lost.map(name => <li><Badge>{name}</Badge></li>)}
         <li class="more">and more</li>
       </ul>
     </section>
@@ -169,14 +170,6 @@ function formatDate(d: Date) {
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-  .lost li {
-    padding: 4px 11px;
-    border: 1px solid var(--rule);
-    border-radius: 99px;
-    font-family: var(--sans);
-    font-size: 13px;
-    color: var(--ink-soft);
   }
   .lost li.more {
     border-color: transparent;

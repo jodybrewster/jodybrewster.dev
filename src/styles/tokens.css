@@ -19,6 +19,10 @@
 
   --ui-radius: 10px;
 
+  /* Badge hairline: one flat color, brighter on hover. */
+  --ui-pill-line: rgb(88 150 190 / .5);
+  --ui-pill-line-hover: rgb(70 205 240 / .95);
+
   --home-bg: var(--ui-bg);
   --home-surface: var(--ui-surface);
   --home-raised: var(--ui-raised);

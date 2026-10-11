@@ -23,7 +23,7 @@ const career = [
       <h1 id="about-title" class="enter-title">AI.<br />Architecture.<br /><span class="text-gradient">Adult Supervision.</span></h1>
       <p class="about-lede">I'm Jody Brewster, a hands-on technical leader with 15+ years of experience building web, mobile, data and enterprise software, with a strong focus on AI-powered products and agentic systems.</p>
       <p>I like being close to the code: turning ideas into working products, figuring out where AI actually creates value and building the engineering around it so the result can survive beyond a demo.</p>
-      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class="principle" style={`--i: ${i}`}><img src={`/images/about/skill-${p.art}.webp`} alt="" width="340" height="340" loading="lazy" /><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
+      <div class="about-principles enter-list" style="--enter-delay: 260ms">{principles.map((p, i) => <div class="principle" style={`--i: ${i}`}><img src={`/images/about/skill-${p.art}.webp`} alt="" width="470" height="400" loading="lazy" /><p>{p.name}<small>{p.detail}</small></p></div>)}</div>
       <div class="about-actions"><Button href="/jodybrewster_resume_2026.pdf" download variant="primary" icon="file">Download Résumé</Button><Button href="/work" icon="arrow-right">See what I'm building</Button></div>
       <nav class="about-explore" aria-label="More about Jody">
         <a href="/library" data-astro-reload><span class="about-library-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 4h4v15H4zM10 4h4v15h-4zM16 5l3-1 4 14-3 1zM3 21h20" /></svg></span><span><strong>Explore my library</strong><small>Books, music, and notes on an interactive 3D shelf.</small></span><Icon name="arrow-right" class="icon" /></a>
@@ -50,11 +50,11 @@ const career = [
 h1 { font:300 clamp(40px,4vw,60px)/1.06 var(--headline); letter-spacing:-.01em; margin:0 0 25px; }
 .about-introduction>p:not(.studio-eyebrow) { font-size:16px; line-height:1.7; max-width:550px; color:var(--studio-muted); margin:0 0 19px; text-wrap:pretty; }
 .about-introduction>.about-lede { font-size:17px; }
-.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:640px;margin:44px 0 30px; }
+.about-principles { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:700px;margin:40px 0 30px; }
 .principle { text-align:center; }
-.principle img { display:block;width:100%;max-width:100px;height:auto;margin:0 auto; }
+.principle img { display:block;width:100%;max-width:90px;height:auto;margin:0 auto;mask-image:radial-gradient(ellipse 62% 60% at 50% 50%,#000 55%,transparent 100%); }
 .principle p { font-size:14px;line-height:1.5;margin:6px auto 0;font-weight:600; }
-.principle small { display:block;margin-top:4px;color:var(--studio-muted);font-size:12px;font-weight:400; }
+.principle small { display:block;margin-top:4px;color:var(--studio-muted);font-size:11.5px;font-weight:400;white-space:nowrap; }
 .about-actions { display:flex;align-items:center;gap:28px; }
 .about-explore { max-width:550px;margin-top:35px; }
 .about-explore a { display:flex;align-items:center;gap:18px;width:100%;padding:18px 22px;border:1px solid transparent;border-radius:12px;background:linear-gradient(var(--studio-surface),var(--studio-surface)) padding-box,var(--neon-edge) border-box;text-decoration:none;transition:transform .18s; }

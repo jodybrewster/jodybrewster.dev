@@ -99,8 +99,7 @@ function credit(item: ShelfItem): string {
                 class={`shelf__item shelf__item--${item.kind}`}
                 href={item.url ?? '#'}
                 data-shelf-item={item.id}
-                rel="noopener"
-                target="_blank"
+                {...item.url ? { rel: 'noopener', target: '_blank' } : {}}
               >
                 <span class="shelf__art" style={`--cloth:${item.color}`}>
                   {coverOf(item) ? (

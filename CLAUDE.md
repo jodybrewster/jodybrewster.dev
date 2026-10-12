@@ -129,7 +129,7 @@ A Three.js room at `/library`, linked from the main menu, where Jody's experienc
 | Games (`game`) | game case | `content/games.json`, `npm run games` |
 | Tools (`tool`) | 3.5 inch disk | `content/tools.json`, by hand: `title`, `maker`, `note`, `url` |
 
-Rows marked `"sample": true` are placeholders and say so on their card; replace them before merging. The films are samples until Jody's own list lands.
+Rows marked `"sample": true` are placeholders and say so on their card; replace them before merging.
 
 - `src/lib/shelf/payload.ts` builds the data from the content files above.
 - `src/lib/shelf/media.ts` normalizes every source into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.

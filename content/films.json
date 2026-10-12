@@ -1,7 +1,12 @@
 {
   "films": [
-    { "title": "Miami Vice", "year": "1984-1989", "sample": true },
-    { "title": "Scarface", "year": 1983, "sample": true },
-    { "title": "Back to the Future", "year": 1985, "sample": true }
+    { "title": "Back to the Future", "year": 1985 },
+    { "title": "Moon Knight", "year": 2022 },
+    { "title": "Breaking Bad", "year": "2008-2013" },
+    { "title": "Pulp Fiction", "year": 1994 },
+    { "title": "Toy Story", "year": 1995 },
+    { "title": "Up", "year": 2009 },
+    { "title": "Demon Slayer: Infinity Castle", "year": 2025 },
+    { "title": "The Wild Robot", "year": 2024 }
   ]
 }

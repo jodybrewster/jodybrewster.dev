@@ -825,7 +825,8 @@ export function vhsTexture(film: ShelfFilm, aspect: number): CanvasTexture {
   ctx.font = `700 ${Math.round(lh * 0.1)}px ${SANS}`;
   ctx.textAlign = 'right';
   ctx.fillText('T-120  SP', lx + lw * 0.97, ly + lh * 0.16);
-  handwrite(ctx, film.title, lx + lw * 0.04, ly + lh * 0.62, lw * 0.9, Math.round(lh * 0.5), MARKER);
+  // Written short of the corner where the year goes, so the two never collide.
+  handwrite(ctx, film.title, lx + lw * 0.04, ly + lh * 0.62, lw * (film.year ? 0.72 : 0.9), Math.round(lh * 0.5), MARKER);
   if (film.year) {
     ctx.font = `${Math.round(lh * 0.22)}px ${HAND}`;
     ctx.fillStyle = MARKER;

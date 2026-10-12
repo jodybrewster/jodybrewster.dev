@@ -1,0 +1,148 @@
+{
+  "films": [
+    {
+      "title": "Back to the Future",
+      "year": 1985,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Back_to_the_Future.jpg",
+      "cover": "/media/films/film-back-to-the-future.jpg"
+    },
+    {
+      "title": "Moon Knight",
+      "year": 2022,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Moon_Knight_(miniseries)_logo.jpg",
+      "cover": "/media/films/film-moon-knight.jpg"
+    },
+    {
+      "title": "Breaking Bad",
+      "year": "2008-2013",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Breaking_Bad_logo.svg",
+      "cover": "/media/films/film-breaking-bad.jpg"
+    },
+    {
+      "title": "Pulp Fiction",
+      "year": 1994,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Pulp_Fiction_(1994)_poster.jpg",
+      "cover": "/media/films/film-pulp-fiction.jpg"
+    },
+    {
+      "title": "Toy Story",
+      "year": 1995,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Toy_Story.jpg",
+      "cover": "/media/films/film-toy-story.jpg"
+    },
+    {
+      "title": "Up",
+      "year": 2009,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Up_(2009_film).jpg",
+      "cover": "/media/films/film-up.jpg"
+    },
+    {
+      "title": "Demon Slayer: Infinity Castle",
+      "year": 2025,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Kimetsu_No_Yaiba_Mugen_Jyo-hen_theatrical_poster.jpg",
+      "cover": "/media/films/film-demon-slayer-infinity-castle.jpg"
+    },
+    {
+      "title": "The Wild Robot",
+      "year": 2024,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Wild_Robot_poster.jpg",
+      "cover": "/media/films/film-the-wild-robot.jpg"
+    },
+    {
+      "title": "Spirited Away",
+      "year": 2001,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Spirited_Away_Japanese_poster.png",
+      "cover": "/media/films/film-spirited-away.jpg"
+    },
+    {
+      "title": "Inception",
+      "year": 2010,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Inception_(2010)_theatrical_poster.jpg",
+      "cover": "/media/films/film-inception.jpg"
+    },
+    {
+      "title": "Ne Zha 2",
+      "year": 2025,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Ne_Zha_2_poster.jpg",
+      "cover": "/media/films/film-ne-zha-2.jpg"
+    },
+    {
+      "title": "The Nightmare Before Christmas",
+      "year": 1993,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_nightmare_before_christmas_poster.jpg",
+      "cover": "/media/films/film-the-nightmare-before-christmas.jpg"
+    },
+    {
+      "title": "Fight Club",
+      "year": 1999,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Fight_Club_poster.jpg",
+      "cover": "/media/films/film-fight-club.jpg"
+    },
+    {
+      "title": "The Matrix",
+      "year": 1999,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Matrix.png",
+      "cover": "/media/films/film-the-matrix.jpg"
+    },
+    {
+      "title": "The NeverEnding Story",
+      "year": 1984,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Neverendingstoryposter.jpg",
+      "cover": "/media/films/film-the-neverending-story.jpg"
+    },
+    {
+      "title": "The Dark Crystal",
+      "year": 1982,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Dark_Crystal_Film_Poster.jpg",
+      "cover": "/media/films/film-the-dark-crystal.jpg"
+    },
+    {
+      "title": "The Truman Show",
+      "year": 1998,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Trumanshow.jpg",
+      "cover": "/media/films/film-the-truman-show.jpg"
+    },
+    {
+      "title": "Shaun of the Dead",
+      "year": 2004,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Shaun-of-the-dead.jpg",
+      "cover": "/media/films/film-shaun-of-the-dead.jpg"
+    },
+    {
+      "title": "9",
+      "year": 2009,
+      "coverSource": "https://en.wikipedia.org/wiki/File:9posterfinal.jpg",
+      "cover": "/media/films/film-9.jpg"
+    },
+    {
+      "title": "The Secret of NIMH",
+      "year": 1982,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Secret_of_NIMH.jpg",
+      "cover": "/media/films/film-the-secret-of-nimh.jpg"
+    },
+    {
+      "title": "Whiplash",
+      "year": 2014,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Whiplash_poster.jpg",
+      "cover": "/media/films/film-whiplash.jpg"
+    },
+    {
+      "title": "Get Out",
+      "year": 2017,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Get_Out_poster.png",
+      "cover": "/media/films/film-get-out.jpg"
+    },
+    {
+      "title": "Blue Eye Samurai",
+      "year": 2023,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Blue_Eye_Samurai_poster.jpg",
+      "cover": "/media/films/film-blue-eye-samurai.jpg"
+    },
+    {
+      "title": "Shōgun",
+      "year": 2024,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Sh%C5%8Dgun_(2024_miniseries)_poster.jpg",
+      "cover": "/media/films/film-shogun.jpg"
+    }
+  ]
+}

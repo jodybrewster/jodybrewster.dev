@@ -1,27 +1,21 @@
 ---
-import { scriptJson } from '../lib/script-json';
 /**
- * /library - the shelf.
- *
- * A separate surface from the rest of the site, which lives under /home: full
- * bleed, no global nav or footer chrome. The data comes from the shared payload
- * builder, so this page and the /library-data.json endpoint that warms the
- * scene never diverge.
+ * /library - where Jody has been, what he reads, watches, plays and listens
+ * to, and what he works in, floating in one room. The data comes from the shared payload builder, so this page and
+ * the /library-data.json endpoint never diverge.
  */
+import Studio from '../layouts/Studio.astro';
 import LibraryShelf from '../components/LibraryShelf.astro';
-import Analytics from '../components/Analytics.astro';
 import { buildShelfPayload } from '../lib/shelf/payload';
-import '../styles/global.css';
 import '../styles/shelf.css';
 
-const { albums, books, games, listeningLabel, libraryLabel, gamesLabel } = await buildShelfPayload();
+const payload = await buildShelfPayload();
+const { albums, books, games } = payload;
 
 const title = 'Library - Jody Brewster';
-const description = games.length
-  ? `A shelf of what Jody Brewster is reading, listening to and playing: ${books.length} books, `
-    + `${albums.length} albums in rotation and the games he played this month.`
-  : `A shelf of what Jody Brewster is reading and listening to: ${books.length} books `
-    + `and ${albums.length} albums in rotation.`;
+const description = `Where Jody Brewster has been, and what he reads, listens to, watches and plays: `
+  + `${books.length} books, ${albums.length} albums in rotation`
+  + `${games.length ? `, ${games.length} games` : ''} and the tools he works in.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -32,69 +26,9 @@ const jsonLd = {
   isPartOf: { '@type': 'WebSite', url: 'https://jodybrewster.dev/' },
 };
 ---
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <title>{title}</title>
-  <meta name="description" content={description} />
-  <link rel="icon" type="image/png" href="/favicon.png" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet"
-  />
-
-  <script is:inline type="application/ld+json" set:html={scriptJson(jsonLd)} />
-
-  <Analytics />
-
-  <script is:inline>
-    // On anything getting the 3D shelf, the server-rendered one is not a
-    // loading state - it is a different design, and showing it first means
-    // arriving at flat colour blocks that are then replaced. Hold it back and
-    // let the plaster stand until the scene draws. The timeout is the safety
-    // net for a scene that never arrives.
-    (function () {
-      try {
-        var el = document.documentElement;
-        el.setAttribute('data-shelf-pending', 'true');
-        setTimeout(function () { el.removeAttribute('data-shelf-pending'); }, 8000);
-      } catch (error) {
-        /* fall through to the semantic shelf */
-      }
-    })();
-  </script>
-</head>
-<body class="library-page">
-  <a class="library__back" href="/home">
-    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
-      <path
-        d="M9.5 3.25 4.75 8l4.75 4.75"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-    </svg>
-    Back
-  </a>
-  <main>
+<Studio title={title} description={description} jsonLd={jsonLd} bodyClass="library-page">
+  <main id="main-content">
     <h1 class="library__h1">Library</h1>
-    <LibraryShelf
-      albums={albums}
-      books={books}
-      games={games}
-      listeningLabel={listeningLabel}
-      libraryLabel={libraryLabel}
-      gamesLabel={gamesLabel}
-    />
+    <LibraryShelf payload={payload} />
   </main>
-  <a class="library__back library__privacy" href="/privacy">Privacy</a>
-</body>
-</html>
+</Studio>

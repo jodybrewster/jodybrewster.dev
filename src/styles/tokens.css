@@ -1,6 +1,6 @@
 /* The site's one palette. Home and interior (studio) pages both read from these --ui-* tokens, so a color is
    defined once. The older --home-* and --studio-* names stay as aliases because thousands of existing rules use
-   them; new code should use --ui-*. The site is dark only: /library is its own document and does not load this. */
+   them; new code should use --ui-*. The site is dark only. */
 .home-page, .studio-page {
   --headline: "Barlow Semi Condensed", "Arial Narrow", var(--sans);
 
@@ -16,6 +16,9 @@
   --ui-purple: #b58aff;
   --ui-pink: #f657ac;
   --ui-green: #31da67;
+
+  /* The pre-dawn dark /library opens on, held behind the canvas until the scene draws it. */
+  --ui-night: #0a0d26;
 
   --ui-radius: 10px;
 

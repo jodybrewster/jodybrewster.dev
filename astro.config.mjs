@@ -57,14 +57,17 @@ export default defineConfig({
     // to wait for them, which the policy refuses (scripts/security-headers.ts).
     build: { assetsInlineLimit: 0 },
     optimizeDeps: {
+      // Every three.js module the library scene imports, the lazy ones too.
+      // One left out is found mid-load, which rebuilds the bundle and fails
+      // that page with "Outdated Optimize Dep" after every dev restart.
       include: [
         'three',
-        'three/examples/jsm/geometries/RoundedBoxGeometry.js',
+        'three/examples/jsm/objects/Reflector.js',
         'three/examples/jsm/postprocessing/EffectComposer.js',
-        'three/examples/jsm/postprocessing/GTAOPass.js',
         'three/examples/jsm/postprocessing/OutputPass.js',
         'three/examples/jsm/postprocessing/RenderPass.js',
         'three/examples/jsm/postprocessing/ShaderPass.js',
+        'three/examples/jsm/postprocessing/UnrealBloomPass.js',
       ],
     },
   },

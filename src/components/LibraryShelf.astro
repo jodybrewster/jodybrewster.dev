@@ -1,87 +1,109 @@
 ---
 import { scriptJson } from '../lib/script-json';
 /**
- * The /library shelf.
+ * The /library scene and its fallback.
  *
- * Astro renders a complete, linked, image-bearing shelf here. Three.js then
- * progressively enhances it on pointer devices with room for the scene. The
- * markup below is the whole experience on phones, without WebGL, and for
- * assistive technology, so it is never a stub.
+ * Astro renders a complete, linked, image-bearing list of the shelf here.
+ * Three.js then lifts it into the floating arc. The list is the whole
+ * experience without JavaScript or WebGL and for assistive technology, so it
+ * is never a stub, and the filter column works on both.
  */
-import type { ShelfAlbum, ShelfBook, ShelfGame, ShelfItem } from '../lib/shelf/media';
+import Badge from './Badge.astro';
+import Button from './Button.astro';
+import Icon from './Icon.astro';
+import { DEFAULT_FILTER, FILTERS } from '../lib/shelf/arc';
+import type { ShelfPayloadData } from '../lib/shelf/payload';
+import { coverOf } from '../lib/shelf/media';
+import type { ShelfItem } from '../lib/shelf/media';
 
 interface Props {
-  albums: ShelfAlbum[];
-  books: ShelfBook[];
-  games: ShelfGame[];
-  listeningLabel: string;
-  libraryLabel: string;
-  gamesLabel: string;
+  payload: ShelfPayloadData;
 }
 
-const { albums, books, games, listeningLabel, libraryLabel, gamesLabel } = Astro.props;
+const { payload } = Astro.props;
+const { albums, books, games, tools, films, podcasts, places } = payload;
 
-const shelves = [
-  { key: 'listening', label: listeningLabel, items: albums as ShelfItem[] },
-  { key: 'games', label: gamesLabel, items: games },
-  { key: 'library', label: libraryLabel, items: books },
-].filter(shelf => shelf.items.length > 0);
+const sections = [
+  { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
+  { kind: 'album', label: payload.listeningLabel, items: albums },
+  { kind: 'film', label: 'FILMS', items: films },
+  { kind: 'podcast', label: 'PODCASTS', items: podcasts },
+  { kind: 'game', label: payload.gamesLabel, items: games },
+  { kind: 'tool', label: 'TOOLS', items: tools },
+  { kind: 'place', label: 'EXPERIENCES', items: places },
+].filter(section => section.items.length > 0);
 
-const payload = { albums, books, games, listeningLabel, libraryLabel, gamesLabel };
+const present = new Set(sections.map(section => section.kind));
+const filters = FILTERS.filter(filter => present.has(filter.id));
 
 function credit(item: ShelfItem): string {
-  if (item.kind === 'album') return item.artist;
-  if (item.kind === 'book') return item.author;
-  return item.platform;
+  switch (item.kind) {
+    case 'album': return item.artist;
+    case 'book': return item.author;
+    case 'game': return item.platform;
+    case 'tool': return item.maker ?? '';
+    case 'film': return item.year ?? '';
+    case 'podcast': return item.host ?? '';
+    case 'place': return [item.location, item.year].filter(Boolean).join(', ');
+  }
 }
 ---
 
-<div class="library" data-library>
-  <a class="library__skip" href="#library-end">Skip the shelf</a>
+<div class="library" data-library data-filter={DEFAULT_FILTER}>
+  <a class="library__skip" href="#library-end">Skip the library</a>
 
   <div class="library__stage" data-library-stage>
     <canvas class="library__canvas" data-library-canvas aria-hidden="true"></canvas>
 
-    <p class="library__hint" data-library-hint>
-      Scroll to walk the shelf. Click to turn something over, arrow keys to step through.
-    </p>
+    <nav class="library__rail" aria-label="Show in the library" data-library-rail>
+      <ul role="list">
+        {filters.map(filter => (
+          <li>
+            <a
+              href={filter.id === DEFAULT_FILTER ? '/library' : `/library?show=${filter.id}`}
+              data-library-filter={filter.id}
+              aria-current={filter.id === DEFAULT_FILTER ? 'true' : undefined}
+            >{filter.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
 
-    <div
-      class="library__card"
-      data-library-card
-      role="status"
-      aria-live="polite"
-      hidden
-    >
+    <nav class="library__pager" aria-label="Pages" data-library-pager>
+      <Badge as="button" size="sm" class="library__pager-step" data-pager-step="-1" aria-label="Previous page"><Icon name="arrow-left" class="icon" /></Badge>
+      <ol class="library__pages" role="list" data-pager-pages></ol>
+      <Badge as="button" size="sm" class="library__pager-step" data-pager-step="1" aria-label="Next page"><Icon name="arrow-right" class="icon" /></Badge>
+    </nav>
+    <p class="visually-hidden" aria-live="polite" data-pager-status></p>
+
+    <div class="library__card" data-library-card role="status" aria-live="polite" hidden>
       <p class="library__card-kind" data-card-kind></p>
       <h2 class="library__card-title" data-card-title></h2>
       <p class="library__card-credit" data-card-credit></p>
       <p class="library__card-excerpt" data-card-excerpt hidden></p>
-      <a class="library__card-link" data-card-link href="#">Open</a>
-      <button class="library__card-close" data-card-close type="button">
-        Close<span class="library__kbd">esc</span>
-      </button>
+      <div class="library__card-actions">
+        <Button href="#" variant="primary" icon="arrow-right" data-card-link><span data-card-link-label>Open</span></Button>
+        <Button variant="text" data-card-close>Close <span class="library__kbd">esc</span></Button>
+      </div>
     </div>
   </div>
 
   <div class="library__semantic" data-library-semantic>
-    {shelves.map(shelf => (
-      <section class="shelf" aria-labelledby={`shelf-${shelf.key}`}>
-        <h2 class="shelf__label" id={`shelf-${shelf.key}`}>{shelf.label}</h2>
+    {sections.map(section => (
+      <section class="shelf" aria-labelledby={`shelf-${section.kind}`} data-library-kind={section.kind}>
+        <h2 class="shelf__label" id={`shelf-${section.kind}`}>{section.label}</h2>
         <ul class="shelf__rail" role="list">
-          {shelf.items.map(item => (
+          {section.items.map(item => (
             <li class="shelf__slot">
               <a
                 class={`shelf__item shelf__item--${item.kind}`}
                 href={item.url ?? '#'}
                 data-shelf-item={item.id}
-                data-shelf-kind={item.kind}
-                rel="noopener"
-                target="_blank"
+                {...item.url ? { rel: 'noopener', target: '_blank' } : {}}
               >
                 <span class="shelf__art" style={`--cloth:${item.color}`}>
-                  {item.cover ? (
-                    <img src={item.cover} alt="" loading="lazy" decoding="async" width="180" height="180" />
+                  {coverOf(item) ? (
+                    <img src={coverOf(item)} alt="" loading="lazy" decoding="async" width="180" height="240" />
                   ) : (
                     <span class="shelf__art-fallback" aria-hidden="true">{item.title.slice(0, 1)}</span>
                   )}
@@ -107,68 +129,198 @@ function credit(item: ShelfItem): string {
   import { LibraryScene } from '../lib/shelf/scene';
   import type { ShelfPayload } from '../lib/shelf/scene';
   import { ShelfStore } from '../lib/shelf/scene-state';
+  import { DEFAULT_FILTER, isFilter, pagerWindow } from '../lib/shelf/arc';
+  import type { LibraryFilter } from '../lib/shelf/arc';
   import { track } from '../lib/track';
   import type { ShelfItem } from '../lib/shelf/media';
-
-  /** Puts the server-rendered shelf back; the scene is not coming. */
-  function revealFallback() {
-    document.documentElement.removeAttribute('data-shelf-pending');
-  }
 
   function boot() {
     const root = document.querySelector<HTMLElement>('[data-library]');
     if (!root || root.dataset.booted === 'true') return;
+    root.dataset.booted = 'true';
 
     const canvas = root.querySelector<HTMLCanvasElement>('[data-library-canvas]');
     const stage = root.querySelector<HTMLElement>('[data-library-stage]');
+    const rail = root.querySelector<HTMLElement>('[data-library-rail]');
     const payloadNode = document.querySelector<HTMLScriptElement>('[data-library-payload]');
-    if (!canvas || !stage || !payloadNode) {
-      revealFallback();
-      return;
+    const filterLinks = [...root.querySelectorAll<HTMLAnchorElement>('[data-library-filter]')];
+    const sections = [...root.querySelectorAll<HTMLElement>('[data-library-kind]')];
+
+    let scene: LibraryScene | null = null;
+
+    /** Shows one kind, in the filter column, the list and the scene alike. */
+    function show(filter: LibraryFilter, remember: boolean) {
+      root!.dataset.filter = filter;
+      for (const link of filterLinks) {
+        if (link.dataset.libraryFilter !== filter) {
+          link.removeAttribute('aria-current');
+          continue;
+        }
+        link.setAttribute('aria-current', 'true');
+        // On phones the filters are a row that scrolls sideways; keep the one
+        // showing in view. Only the row moves, never the page.
+        const row = link.closest('ul');
+        if (row && row.scrollWidth > row.clientWidth) {
+          const left = link.offsetLeft - (row.clientWidth - link.offsetWidth) / 2;
+          row.scrollTo({ left: Math.max(0, left), behavior: 'instant' });
+        }
+      }
+      for (const section of sections) section.hidden = section.dataset.libraryKind !== filter;
+      scene?.setFilter(filter);
+      if (remember) {
+        const url = new URL(location.href);
+        if (filter === DEFAULT_FILTER) url.searchParams.delete('show');
+        else url.searchParams.set('show', filter);
+        history.replaceState(history.state, '', url);
+      }
+    }
+
+    for (const link of filterLinks) {
+      link.addEventListener('click', event => {
+        const filter = link.dataset.libraryFilter;
+        if (!isFilter(filter)) return;
+        event.preventDefault();
+        show(filter, true);
+      });
+    }
+
+    const requested = new URLSearchParams(location.search).get('show');
+    const initial: LibraryFilter = isFilter(requested) && filterLinks.some(link => link.dataset.libraryFilter === requested)
+      ? requested
+      : DEFAULT_FILTER;
+
+    /** The scene is not coming: the list is the library. */
+    function fallBack() {
+      root!.dataset.scene = 'off';
+      show(initial, false);
     }
 
     let payload: ShelfPayload;
     try {
-      payload = JSON.parse(payloadNode.textContent ?? '{}') as ShelfPayload;
+      payload = JSON.parse(payloadNode?.textContent ?? '{}') as ShelfPayload;
     } catch {
-      console.warn('[library] shelf payload was unreadable, keeping the semantic shelf.');
-      revealFallback();
+      console.warn('[library] payload was unreadable, keeping the list.');
+      fallBack();
       return;
     }
-    if (!payload.books?.length && !payload.albums?.length) {
-      revealFallback();
+    if (!canvas || !stage) {
+      fallBack();
       return;
     }
 
-    // The shelf used to stop here on anything narrow or touch-driven, because
-    // fitting the whole unit across a phone shrank it to an unreadable diagram.
-    // The camera now frames a phone at the same distance as a desktop and hands
-    // the width to dragging, so the scene is worth having on both. Devices
-    // without WebGL still fall back, below.
+    const pager = root.querySelector<HTMLElement>('[data-library-pager]');
+    const pagerPages = root.querySelector<HTMLOListElement>('[data-pager-pages]');
+    const pagerStatus = root.querySelector<HTMLElement>('[data-pager-status]');
+    const steps = [...root.querySelectorAll<HTMLButtonElement>('[data-pager-step]')];
+
+    /**
+     * Redraws the pager. Its numbers depend on how many items fit across the
+     * screen, so they are built here rather than in the markup. Each is a
+     * Badge: the pill classes are the component's own, and the page in view
+     * takes its solid white look.
+     */
+    function renderPager(page: number, count: number) {
+      if (!pager || !pagerPages) return;
+      pager.hidden = count < 2;
+      steps.forEach(step => {
+        const next = page + Number(step.dataset.pagerStep);
+        step.disabled = next < 0 || next >= count;
+      });
+      pagerPages.replaceChildren(...pagerWindow(page, count).map(n => {
+        const li = document.createElement('li');
+        if (n === null) {
+          li.className = 'library__pager-gap';
+          li.textContent = '…';
+          li.setAttribute('aria-hidden', 'true');
+          return li;
+        }
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = n === page ? 'pill pill-sm pill-strong' : 'pill pill-sm';
+        button.textContent = String(n + 1);
+        button.setAttribute('aria-label', `Page ${n + 1} of ${count}`);
+        if (n === page) button.setAttribute('aria-current', 'page');
+        button.addEventListener('click', () => scene?.goToPage(n));
+        li.append(button);
+        return li;
+      }));
+      if (pagerStatus) pagerStatus.textContent = count > 1 ? `Page ${page + 1} of ${count}` : '';
+    }
+
+    for (const step of steps) {
+      step.addEventListener('click', () => {
+        if (scene) scene.goToPage(scene.page + Number(step.dataset.pagerStep));
+      });
+    }
+
+    /**
+     * Where the free space is: below the nav and above the Verso bar, when
+     * the bar is showing. The pager and the card sit just above the bar, and
+     * a picked item is framed in between, so on a short window nothing runs
+     * under the nav and nothing floats over empty floor.
+     */
+    const nav = document.querySelector<HTMLElement>('.home-nav');
+    const dockBar = () => document.querySelector<HTMLElement>('#chat-dock .dock-bar');
+    function edges() {
+      const height = stage!.clientHeight || window.innerHeight;
+      const top = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 80;
+      const bar = dockBar()?.getBoundingClientRect();
+      const barTop = bar && bar.height > 0 && bar.top < height ? bar.top : height;
+      return { top, foot: Math.max(0, height - barTop) };
+    }
+    function measure() {
+      const { top, foot } = edges();
+      stage!.style.setProperty('--library-top', `${Math.round(top)}px`);
+      stage!.style.setProperty('--library-foot', `${Math.round(foot)}px`);
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    const bar = dockBar();
+    const watcher = bar ? new ResizeObserver(measure) : null;
+    if (bar) watcher!.observe(bar);
+    const PAGER_SPACE = 58;
+    const clearance = () => {
+      const { top, foot } = edges();
+      let bottom = foot + PAGER_SPACE;
+      // On phones the card spans the foot of the screen; the picked item
+      // sits above it rather than behind it.
+      const card = stage!.querySelector<HTMLElement>('[data-library-card]');
+      if (card && !card.hidden) {
+        const box = card.getBoundingClientRect();
+        const height = stage!.clientHeight || window.innerHeight;
+        if (box.height > 0 && box.left < height && box.left < stage!.clientWidth * 0.4) {
+          bottom = Math.max(bottom, height - box.top + 12);
+        }
+      }
+      return { top: top + 12, bottom };
+    };
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const store = new ShelfStore();
-    const scene = LibraryScene.create({ canvas, stage, scroller: root, payload, store, reducedMotion });
+    scene = LibraryScene.create({ canvas, stage, rail, payload, store, reducedMotion, filter: initial, onPage: renderPager, clearance });
     if (!scene) {
-      revealFallback();
+      fallBack();
       return;
     }
-
-    // The scene owns the view now; the plaster hold has done its job.
-    root.dataset.booted = 'true';
     root.dataset.scene = 'live';
-    revealFallback();
+    show(initial, false);
 
     if (import.meta.env.DEV) {
       (window as unknown as { __libraryScene?: unknown }).__libraryScene = scene;
     }
 
-    // Shelf order, top to bottom: albums, then games, then books. Arrow keys
-    // walk this list.
-    const inOrder = [...payload.albums, ...payload.games, ...payload.books];
-    const order = inOrder.map(item => item.id);
     const byId = new Map<string, ShelfItem>();
-    for (const item of inOrder) byId.set(item.id, item);
+    for (const item of [
+      ...payload.albums,
+      ...payload.books,
+      ...payload.games,
+      ...payload.tools,
+      ...payload.films,
+      ...payload.podcasts,
+      ...payload.places,
+    ]) {
+      byId.set(item.id, item);
+    }
 
     const card = root.querySelector<HTMLElement>('[data-library-card]')!;
     const kindEl = card.querySelector<HTMLElement>('[data-card-kind]')!;
@@ -176,45 +328,74 @@ function credit(item: ShelfItem): string {
     const creditEl = card.querySelector<HTMLElement>('[data-card-credit]')!;
     const excerptEl = card.querySelector<HTMLElement>('[data-card-excerpt]')!;
     const linkEl = card.querySelector<HTMLAnchorElement>('[data-card-link]')!;
+    const linkLabel = linkEl.querySelector<HTMLElement>('[data-card-link-label]')!;
     const closeEl = card.querySelector<HTMLButtonElement>('[data-card-close]')!;
-    const hint = root.querySelector<HTMLElement>('[data-library-hint]');
 
     function renderCard(id: string | null) {
       const item = id ? byId.get(id) : undefined;
       if (!item) {
         card.hidden = true;
-        if (hint) hint.hidden = false;
         return;
       }
-
-      if (hint) hint.hidden = true;
       card.hidden = false;
       card.dataset.kind = item.kind;
 
-      // Cleared rather than only hidden: the card is one element reused for
-      // every item, so text left behind is text the next item inherits.
-      if (item.kind === 'album') {
-        kindEl.textContent = 'Listening';
-        creditEl.textContent = item.artist;
-        excerptEl.hidden = true;
-        excerptEl.textContent = '';
-        linkEl.textContent = 'Open in Spotify';
-      } else if (item.kind === 'book') {
-        kindEl.textContent = item.edition ? `Library / ${item.edition} edition` : 'Library';
-        creditEl.textContent = item.author;
-        excerptEl.hidden = true;
-        excerptEl.textContent = '';
-        linkEl.textContent = 'View catalog entry';
-      } else {
-        kindEl.textContent = 'Played this month';
-        creditEl.textContent = item.platform;
-        excerptEl.hidden = !item.note;
-        excerptEl.textContent = item.note ?? '';
-        linkEl.textContent = 'Official page';
+      // Every field is set on every open: the card is one element reused for
+      // everything, so text left behind is text the next item inherits.
+      let kind = '';
+      let credit = '';
+      let excerpt = '';
+      let action = '';
+      switch (item.kind) {
+        case 'album':
+          kind = 'Listening';
+          credit = item.artist;
+          action = 'Open in Spotify';
+          break;
+        case 'book':
+          kind = item.edition ? `Reading / ${item.edition} edition` : 'Reading';
+          credit = item.author;
+          action = 'View catalog entry';
+          break;
+        case 'game':
+          kind = 'Played';
+          credit = item.platform;
+          excerpt = item.note ?? '';
+          action = 'Official page';
+          break;
+        case 'tool':
+          kind = 'Tools I work in';
+          credit = item.maker ?? '';
+          excerpt = item.note ?? '';
+          action = 'Official site';
+          break;
+        case 'film':
+          kind = item.sample ? 'Watching / Sample' : 'Watching';
+          credit = item.year ?? '';
+          excerpt = item.note ?? '';
+          action = 'More about it';
+          break;
+        case 'podcast':
+          kind = item.sample ? 'Listening / Sample' : 'Listening';
+          credit = item.host ?? '';
+          excerpt = item.note ?? '';
+          action = 'Listen';
+          break;
+        case 'place':
+          kind = 'Been there';
+          credit = [item.location, item.year].filter(Boolean).join(', ');
+          excerpt = item.note ?? '';
+          action = 'More about it';
+          break;
       }
 
+      kindEl.textContent = kind;
       titleEl.textContent = item.title;
-
+      creditEl.textContent = credit;
+      creditEl.hidden = !credit;
+      excerptEl.textContent = excerpt;
+      excerptEl.hidden = !excerpt;
+      linkLabel.textContent = action;
       linkEl.hidden = !item.url;
       if (item.url) {
         linkEl.href = item.url;
@@ -229,11 +410,11 @@ function credit(item: ShelfItem): string {
       if (item) track('shelf_open', { kind: item.kind, title: item.title });
     });
 
-    // The rendered anchors stay the keyboard path into the scene. With the
-    // canvas live they drive selection; the card carries the real link.
+    // The list's links stay the keyboard path into the scene. With the canvas
+    // live they drive selection; the card carries the real link.
     for (const anchor of root.querySelectorAll<HTMLAnchorElement>('[data-shelf-item]')) {
       const id = anchor.dataset.shelfItem!;
-      anchor.addEventListener('focus', () => scene.focus(id));
+      anchor.addEventListener('focus', () => scene!.focus(id));
       anchor.addEventListener('click', event => {
         event.preventDefault();
         store.dispatch({ type: 'activate', id });
@@ -242,8 +423,9 @@ function credit(item: ShelfItem): string {
 
     closeEl.addEventListener('click', () => store.dispatch({ type: 'dismiss' }));
 
-    /** Steps the selection along the shelf from wherever it currently is. */
+    /** Steps the selection from wherever it is, turning the page when it runs off one. */
     function stepSelection(delta: number) {
+      const order = scene!.order;
       const current = store.state.active ?? store.state.hovered;
       const at = current ? order.indexOf(current) : -1;
       const next = at === -1
@@ -253,42 +435,43 @@ function credit(item: ShelfItem): string {
       // toggle the open item shut, which is not what an arrow key should do.
       if (next === at) return;
       const id = order[next];
-      if (id) store.dispatch({ type: 'activate', id });
+      if (!id) return;
+      scene!.reveal(id);
+      store.dispatch({ type: 'activate', id });
     }
 
     function isTyping(target: EventTarget | null): boolean {
       const el = target as HTMLElement | null;
       if (!el) return false;
-      const tag = el.tagName;
-      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+      return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
     }
 
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
-
       if (event.key === 'Escape' && store.state.active) {
         event.preventDefault();
         store.dispatch({ type: 'dismiss' });
-        return;
-      }
-      if (event.key === 'ArrowRight') {
+      } else if (event.key === 'ArrowRight') {
         event.preventDefault();
         stepSelection(1);
-        return;
-      }
-      if (event.key === 'ArrowLeft') {
+      } else if (event.key === 'ArrowLeft') {
         event.preventDefault();
         stepSelection(-1);
+      } else if (event.key === 'PageDown' || event.key === 'PageUp') {
+        event.preventDefault();
+        scene!.goToPage(scene!.page + (event.key === 'PageDown' ? 1 : -1));
       }
     };
     document.addEventListener('keydown', onKey);
 
-    // Astro's view transitions swap the document; drop GPU resources first.
+    // Leaving through the client router swaps the document; drop the GPU first.
     document.addEventListener(
       'astro:before-swap',
       () => {
         document.removeEventListener('keydown', onKey);
-        scene.dispose();
+        window.removeEventListener('resize', measure);
+        watcher?.disconnect();
+        scene?.dispose();
       },
       { once: true },
     );

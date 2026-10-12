@@ -1,0 +1,58 @@
+{
+  "tools": [
+    {
+      "title": "Claude Code",
+      "maker": "Anthropic",
+      "note": "Where most of this site was built, this room included. JobbyJob too.",
+      "url": "https://www.anthropic.com/claude-code"
+    },
+    {
+      "title": "Obsidian",
+      "maker": "Obsidian",
+      "note": "Every essay and lab note on this site starts in my vault.",
+      "url": "https://obsidian.md"
+    },
+    {
+      "title": "Codex",
+      "maker": "OpenAI",
+      "note": "The second pair of hands. pro-dev-skillset installs into it and Claude Code alike.",
+      "url": "https://openai.com/codex/"
+    },
+    {
+      "title": "Figma",
+      "maker": "Figma",
+      "note": "Where the interface work in my portfolio was designed.",
+      "url": "https://www.figma.com"
+    },
+    {
+      "title": "Astro",
+      "maker": "Astro",
+      "note": "What this site is built on.",
+      "url": "https://astro.build"
+    },
+    {
+      "title": "Three.js",
+      "maker": "three.js",
+      "note": "The library behind this room.",
+      "url": "https://threejs.org"
+    },
+    {
+      "title": "Vercel",
+      "maker": "Vercel",
+      "note": "Where this site and Verso run.",
+      "url": "https://vercel.com"
+    },
+    {
+      "title": "Gemini",
+      "maker": "Google",
+      "note": "Verso's answers and its voice.",
+      "url": "https://ai.google.dev"
+    },
+    {
+      "title": "Teable",
+      "maker": "Teable",
+      "note": "The database JobbyJob grew out of, self-hosted in Docker.",
+      "url": "https://teable.io"
+    }
+  ]
+}

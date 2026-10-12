@@ -1,0 +1,147 @@
+{
+  "places": [
+    {
+      "title": "Art Basel",
+      "location": "Miami Beach, FL",
+      "scene": "outdoor sculptures and white gallery pavilions under palm trees on Miami Beach, the ocean behind",
+      "photo": "/media/places/place-art-basel.webp"
+    },
+    {
+      "title": "Meow Wolf",
+      "scene": "a surreal, glowing, maze-like house of immersive art, rooms opening into strange neon worlds",
+      "photo": "/media/places/place-meow-wolf.webp"
+    },
+    {
+      "title": "MoMA",
+      "location": "New York, NY",
+      "scene": "a bright modern art museum atrium with large paintings and visitors, Manhattan towers through tall windows",
+      "photo": "/media/places/place-moma.webp"
+    },
+    {
+      "title": "New York City",
+      "location": "New York, NY",
+      "scene": "the Manhattan skyline across the river at dusk, bridges and lit towers",
+      "photo": "/media/places/place-new-york-city.webp"
+    },
+    {
+      "title": "Key West",
+      "location": "Key West, FL",
+      "scene": "a white lighthouse, pastel conch houses and palm trees at sunset",
+      "photo": "/media/places/place-key-west.webp"
+    },
+    {
+      "title": "Disney World",
+      "location": "Orlando, FL",
+      "scene": "a lakeside Florida resort at night with fireworks over the water and palm trees, with no castle, no characters and nothing from any film",
+      "photo": "/media/places/place-disney-world.webp"
+    },
+    {
+      "title": "Tokyo",
+      "location": "Tokyo, Japan",
+      "scene": "a Tokyo street at dusk with lanterns and Tokyo Tower in the distance",
+      "photo": "/media/places/place-tokyo.webp"
+    },
+    {
+      "title": "Tijuana",
+      "location": "Tijuana, Mexico",
+      "scene": "a colourful street of arches and shopfronts strung with papel picado",
+      "photo": "/media/places/place-tijuana.webp"
+    },
+    {
+      "title": "Bolivia",
+      "location": "Bolivia",
+      "scene": "the Salar de Uyuni salt flat as a mirror of the sky, a lone jeep on the horizon",
+      "photo": "/media/places/place-bolivia.webp"
+    },
+    {
+      "title": "Cozumel",
+      "location": "Cozumel, Mexico",
+      "scene": "turquoise Caribbean water over a reef, a wooden pier and a white beach",
+      "photo": "/media/places/place-cozumel.webp"
+    },
+    {
+      "title": "Bluefield",
+      "location": "Bluefield, WV",
+      "scene": "a small Appalachian town among rolling green ridges, a railroad running through it",
+      "photo": "/media/places/place-bluefield.webp"
+    },
+    {
+      "title": "Jacksonville",
+      "location": "Jacksonville, FL",
+      "scene": "bridges over the wide St. Johns River at sunset",
+      "photo": "/media/places/place-jacksonville.webp"
+    },
+    {
+      "title": "San Francisco",
+      "location": "San Francisco, CA",
+      "scene": "the Golden Gate Bridge rising out of rolling fog",
+      "photo": "/media/places/place-san-francisco.webp"
+    },
+    {
+      "title": "Los Angeles",
+      "location": "Los Angeles, CA",
+      "scene": "a palm-lined boulevard running toward the hills",
+      "photo": "/media/places/place-los-angeles.webp"
+    },
+    {
+      "title": "Portland",
+      "location": "Portland, OR",
+      "scene": "Mount Hood behind the city and its bridges over the Willamette River",
+      "photo": "/media/places/place-portland.webp"
+    },
+    {
+      "title": "Austin",
+      "location": "Austin, TX",
+      "scene": "the Texas Capitol at the end of Congress Avenue at dusk",
+      "photo": "/media/places/place-austin.webp"
+    },
+    {
+      "title": "Seattle",
+      "location": "Seattle, WA",
+      "scene": "the Space Needle with Mount Rainier behind it",
+      "photo": "/media/places/place-seattle.webp"
+    },
+    {
+      "title": "North Dakota",
+      "location": "North Dakota",
+      "scene": "the striped badlands of Theodore Roosevelt National Park with bison",
+      "photo": "/media/places/place-north-dakota.webp"
+    },
+    {
+      "title": "Chicago",
+      "location": "Chicago, IL",
+      "scene": "the Chicago skyline along the Lake Michigan shore",
+      "photo": "/media/places/place-chicago.webp"
+    },
+    {
+      "title": "Atlanta",
+      "location": "Atlanta, GA",
+      "scene": "the Atlanta skyline rising out of a canopy of trees",
+      "photo": "/media/places/place-atlanta.webp"
+    },
+    {
+      "title": "Helen",
+      "location": "Helen, GA",
+      "scene": "an Alpine-style Bavarian village beside a river in the north Georgia mountains",
+      "photo": "/media/places/place-helen.webp"
+    },
+    {
+      "title": "Gatlinburg",
+      "location": "Gatlinburg, TN",
+      "scene": "a mountain town under the misty ridges of the Great Smoky Mountains",
+      "photo": "/media/places/place-gatlinburg.webp"
+    },
+    {
+      "title": "Nashville",
+      "location": "Nashville, TN",
+      "scene": "Lower Broadway in Nashville, Tennessee at dusk: old red-brick honky-tonk bars with glowing neon guitar and cowboy boot shapes, the twin-spired AT&T tower behind, the Cumberland River at the end of the street. No palm trees, no beach",
+      "photo": "/media/places/place-nashville.webp"
+    },
+    {
+      "title": "Maryland",
+      "location": "Maryland",
+      "scene": "a screwpile lighthouse on the Chesapeake Bay with crab boats",
+      "photo": "/media/places/place-maryland.webp"
+    }
+  ]
+}

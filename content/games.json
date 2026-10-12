@@ -35,6 +35,66 @@
       "url": "https://www.playstation.com/en-us/games/ghost-of-yotei/",
       "coverSource": "https://en.wikipedia.org/wiki/File:Ghost_of_Y%C5%8Dtei_cover_art.png",
       "cover": "/media/games/game-ghost-of-yotei.jpg"
+    },
+    {
+      "title": "Cyberpunk 2077",
+      "platform": "PlayStation 5",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Cyberpunk_2077_box_art.jpg",
+      "cover": "/media/games/game-cyberpunk-2077.jpg"
+    },
+    {
+      "title": "Super Mario Odyssey",
+      "platform": "Nintendo Switch",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Super_Mario_Odyssey.jpg",
+      "cover": "/media/games/game-super-mario-odyssey.jpg"
+    },
+    {
+      "title": "The Legend of Zelda: Breath of the Wild",
+      "platform": "Nintendo Switch",
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Legend_of_Zelda_Breath_of_the_Wild.jpg",
+      "cover": "/media/games/game-the-legend-of-zelda-breath-of-the-wild.jpg"
+    },
+    {
+      "title": "The Legend of Zelda: Tears of the Kingdom",
+      "platform": "Nintendo Switch",
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Legend_of_Zelda_Tears_of_the_Kingdom_cover.jpg",
+      "cover": "/media/games/game-the-legend-of-zelda-tears-of-the-kingdom.jpg"
+    },
+    {
+      "title": "The Legend of Zelda: Twilight Princess",
+      "platform": "GameCube",
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Legend_of_Zelda_Twilight_Princess_Game_Cover.jpg",
+      "cover": "/media/games/game-the-legend-of-zelda-twilight-princess.jpg"
+    },
+    {
+      "title": "Red Dead Redemption 2",
+      "platform": "PlayStation 5",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Red_Dead_Redemption_II.jpg",
+      "cover": "/media/games/game-red-dead-redemption-2.jpg"
+    },
+    {
+      "title": "The Witcher 3: Wild Hunt",
+      "platform": "PlayStation 5",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Witcher_3_cover_art.jpg",
+      "cover": "/media/games/game-the-witcher-3-wild-hunt.jpg"
+    },
+    {
+      "title": "Windblown",
+      "platform": "PC",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Windblown_cover_art.jpg",
+      "cover": "/media/games/game-windblown.jpg"
+    },
+    {
+      "title": "Hades II",
+      "platform": "Nintendo Switch",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Hades_2_cover_art.jpeg",
+      "cover": "/media/games/game-hades-ii.jpg"
+    },
+    {
+      "title": "Elden Ring",
+      "platform": "PlayStation 5",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Elden_Ring_Box_art.jpg",
+      "cover": "/media/games/game-elden-ring.jpg"
     }
   ]
 }

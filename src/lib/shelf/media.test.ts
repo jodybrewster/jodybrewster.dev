@@ -6,6 +6,10 @@ import {
   normalizeAlbums,
   normalizeBooks,
   normalizeGames,
+  normalizeFilms,
+  normalizePlaces,
+  normalizePodcasts,
+  normalizeTools,
 } from './media';
 
 describe('normalizeBooks', () => {
@@ -209,5 +213,51 @@ describe('fallbackColor', () => {
   it('spreads a realistic library across more than one color', () => {
     const titles = ['Deep Work', 'Grit', 'Mindset', 'Scrum', 'Hooked', 'Antifragile', 'Noise', 'Range'];
     expect(new Set(titles.map(fallbackColor)).size).toBeGreaterThan(1);
+  });
+});
+
+describe('normalizeTools', () => {
+  it('keeps titled rows in order with web links only', () => {
+    const tools = normalizeTools([
+      { title: 'Claude Code', maker: 'Anthropic', note: 'Where this was built.', url: 'https://www.anthropic.com/claude-code' },
+      { title: 'Sketchy', url: 'javascript:alert(1)' },
+      { maker: 'No title' },
+      null,
+      'junk',
+    ] as unknown[]);
+    expect(tools.map(tool => tool.id)).toEqual(['tool-claude-code', 'tool-sketchy']);
+    expect(tools[0]).toMatchObject({ kind: 'tool', index: 0, maker: 'Anthropic', note: 'Where this was built.' });
+    expect(tools[1].url).toBeUndefined();
+  });
+});
+
+describe('normalizeFilms and normalizePodcasts', () => {
+  it('keep titled rows, years as written and the sample flag', () => {
+    const films = normalizeFilms([
+      { title: 'Miami Vice', year: '1984-1989', sample: true },
+      { title: 'Scarface', year: 1983 },
+      { title: 'Bad year', year: 'eighties' },
+      { year: 1999 },
+    ] as unknown[]);
+    expect(films.map(film => [film.title, film.year, film.sample])).toEqual([
+      ['Miami Vice', '1984-1989', true],
+      ['Scarface', '1983', undefined],
+      ['Bad year', undefined, undefined],
+    ]);
+    const [podcast] = normalizePodcasts([{ title: 'Latent Space', host: 'swyx', sample: 'yes' }] as unknown[]);
+    expect(podcast).toMatchObject({ id: 'podcast-latent-space', host: 'swyx' });
+    expect(podcast.sample).toBeUndefined();
+  });
+});
+
+describe('normalizePlaces', () => {
+  it('keeps only photographs from this origin', () => {
+    const places = normalizePlaces([
+      { title: 'Key West', location: 'Key West, FL', photo: '/media/places/key-west.jpg', year: 2024 },
+      { title: 'MoMA', photo: 'https://example.com/moma.jpg' },
+      { title: 'Elsewhere', photo: '//example.com/x.jpg' },
+    ] as unknown[]);
+    expect(places.map(place => place.cover)).toEqual(['/media/places/key-west.jpg', undefined, undefined]);
+    expect(places[0]).toMatchObject({ id: 'place-key-west', location: 'Key West, FL', year: '2024' });
   });
 });

@@ -95,6 +95,54 @@
       "year": 1982,
       "coverSource": "https://en.wikipedia.org/wiki/File:The_Dark_Crystal_Film_Poster.jpg",
       "cover": "/media/films/film-the-dark-crystal.jpg"
+    },
+    {
+      "title": "The Truman Show",
+      "year": 1998,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Trumanshow.jpg",
+      "cover": "/media/films/film-the-truman-show.jpg"
+    },
+    {
+      "title": "Shaun of the Dead",
+      "year": 2004,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Shaun-of-the-dead.jpg",
+      "cover": "/media/films/film-shaun-of-the-dead.jpg"
+    },
+    {
+      "title": "9",
+      "year": 2009,
+      "coverSource": "https://en.wikipedia.org/wiki/File:9posterfinal.jpg",
+      "cover": "/media/films/film-9.jpg"
+    },
+    {
+      "title": "The Secret of NIMH",
+      "year": 1982,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Secret_of_NIMH.jpg",
+      "cover": "/media/films/film-the-secret-of-nimh.jpg"
+    },
+    {
+      "title": "Whiplash",
+      "year": 2014,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Whiplash_poster.jpg",
+      "cover": "/media/films/film-whiplash.jpg"
+    },
+    {
+      "title": "Get Out",
+      "year": 2017,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Get_Out_poster.png",
+      "cover": "/media/films/film-get-out.jpg"
+    },
+    {
+      "title": "Blue Eye Samurai",
+      "year": 2023,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Blue_Eye_Samurai_poster.jpg",
+      "cover": "/media/films/film-blue-eye-samurai.jpg"
+    },
+    {
+      "title": "Shōgun",
+      "year": 2024,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Sh%C5%8Dgun_(2024_miniseries)_poster.jpg",
+      "cover": "/media/films/film-shogun.jpg"
     }
   ]
 }

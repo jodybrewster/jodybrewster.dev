@@ -2,7 +2,9 @@
 import { flags } from '../lib/flags';
 import BrandMark from './BrandMark.astro';
 
-const pathname = Astro.url.pathname;
+// The static build hands pages a trailing slash (/about/) that the dev server
+// leaves off, so it is trimmed before the exact matches below.
+const pathname = Astro.url.pathname.replace(/(.)\/$/, '$1');
 const activeSection = pathname.startsWith('/work') || pathname.startsWith('/portfolio') ? '/work'
   : pathname.startsWith('/writing') || pathname.startsWith('/research') ? '/writing'
   : pathname === '/about' ? '/about'

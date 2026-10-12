@@ -20,6 +20,7 @@
     "books": "tsx scripts/sync-book-covers.ts",
     "games": "tsx scripts/sync-wikipedia-covers.ts games",
     "films": "tsx scripts/sync-wikipedia-covers.ts films",
+    "postcards": "tsx scripts/postcards.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "astro check --minimumFailingSeverity hint",

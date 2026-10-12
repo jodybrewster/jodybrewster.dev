@@ -141,10 +141,12 @@ const VHS_BOX = { width: 1.18, height: 1.9, depth: 0.26 };
  *  and a 6 by 4 postcard, each scaled to sit with the books. */
 /** `fan` turns each one partly edge-on, like a fanned deck, so a page holds
  *  more of them; they are packed by the width they take once turned. */
-const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: number; depth: number; fan: number }> = {
+const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: number; depth: number; fan: number; overlap?: number }> = {
   tool: { width: 1.5, height: 1.56, depth: 0.07, fan: 0.85 },
   podcast: { width: 1.62, height: 1.03, depth: 0.17, fan: 0.9 },
-  place: { width: 2.1, height: 1.4, depth: 0.025, fan: 0.95 },
+  // Postcards pack tightest: the art reads at a glance and the one under the
+  // pointer turns face-on.
+  place: { width: 1.8, height: 1.2, depth: 0.025, fan: 1.08, overlap: 0.6 },
 };
 /** Clear plastic over printed art: jewel cases, game sleeves and video boxes.
  *  Slick enough that the sunset slides across the art as it turns. */
@@ -638,13 +640,13 @@ export class LibraryScene {
     });
 
     const all: ShelfItem[] = [
-      ...payload.places,
       ...payload.books,
       ...payload.albums,
       ...payload.films,
       ...payload.podcasts,
       ...payload.games,
       ...payload.tools,
+      ...payload.places,
     ];
     for (const item of all) this.#views.set(item.id, this.#buildItem(item));
   }
@@ -674,6 +676,7 @@ export class LibraryScene {
     lit: MeshStandardMaterial[],
     release: () => void,
     fan = 0,
+    overlap = FAN_OVERLAP,
   ): ItemView {
     const depth = (mesh.geometry as BoxGeometry).parameters.depth;
     mesh.userData.id = item.id;
@@ -686,7 +689,7 @@ export class LibraryScene {
       height,
       fan,
       // Fanned items overlap their neighbours a little, as a fanned deck does.
-      pack: fan > 0 ? (width * Math.cos(fan) + depth * Math.sin(fan)) * FAN_OVERLAP : width,
+      pack: fan > 0 ? (width * Math.cos(fan) + depth * Math.sin(fan)) * overlap : width,
       face,
       lit,
       x: 0,
@@ -823,7 +826,7 @@ export class LibraryScene {
    * edges and a printed face, drawn once the fonts and any photograph are in.
    */
   #buildPrinted(item: ShelfTool | ShelfPodcast | ShelfPlace): ItemView {
-    const { width, height, depth, fan } = PRINTED[item.kind];
+    const { width, height, depth, fan, overlap } = PRINTED[item.kind];
     const shell = new Color(item.kind === 'place' ? '#f5f0e4' : shellColour(item.id));
     const finish = item.kind === 'place'
       ? { roughness: 0.86 }
@@ -846,7 +849,7 @@ export class LibraryScene {
       back.dispose();
       edge.dispose();
     });
-    return this.#view(item, mesh, width, height, face, [face], release, fan);
+    return this.#view(item, mesh, width, height, face, [face], release, fan, overlap);
   }
 
   /* ---------------------------------------------------------------------- */

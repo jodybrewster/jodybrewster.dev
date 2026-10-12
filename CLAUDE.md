@@ -42,6 +42,7 @@ npm run spotify    # refresh Spotify listening cache → content/listening.json 
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
 npm run games      # cache box art named in content/games.json → public/media/games/
 npm run films      # cache posters named in content/films.json → public/media/films/ (same Wikipedia sync as games)
+npm run postcards  # paint a vintage postcard front for each place in content/places.json with no photo → public/media/places/ (OpenAI gpt-image-2, needs OPENAI_API_KEY; `-- Tokyo` redoes one)
 npm run article-images  # generate the ink illustrations named in content/article-images.json → public/images/articles/ (OpenAI gpt-image-2, needs OPENAI_API_KEY)
 npm run conversations  # download the last 7 days of Verso transcripts → .conversations/ (--days, --digest; --vault puts the digest only in the vault)
 npm run conversation:delete  # find (--find) or delete (--cid, dry run without --yes) one conversation in production
@@ -118,17 +119,17 @@ Gotchas: conversation history is read server-side from Redis and never accepted 
 
 ### The /library room
 
-A Three.js room at `/library`, linked from the main menu, where Jody's experiences and taste float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column and `?show=<kind>` choose what is shown, Experiences by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work.
+A Three.js room at `/library`, linked from the main menu, where Jody's experiences and taste float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column and `?show=<kind>` choose what is shown, Books by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work.
 
 | Filter | Object | Source |
 |---|---|---|
-| Experiences (`place`) | postcard | `content/places.json`, by hand: `title`, `location`, `year`, `note` (written on the back), `photo` (site-absolute, e.g. under `public/media/places/`; without one the front is a lettered "Greetings from" card) |
 | Books (`book`) | book | `content/library.json`, `npm run books` |
 | Music (`album`) | jewel case | `content/listening.json`, `npm run spotify` |
 | Films (`film`) | video store box with the poster | `content/films.json`, by hand: `title`, `year`, `coverSource` (the Wikipedia file page of the poster), then `npm run films` |
 | Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
 | Games (`game`) | game case | `content/games.json`, `npm run games` |
 | Tools (`tool`) | 3.5 inch disk | `content/tools.json`, by hand: `title`, `maker`, `note`, `url` |
+| Experiences (`place`) | postcard | `content/places.json`, by hand: `title`, `location`, `year`, `note` (written on the back), `scene` (what `npm run postcards` paints) and `photo` (site-absolute, under `public/media/places/`; the generated fronts are made-up illustrations, and Jody's own photo replaces one by setting `photo` to it) |
 
 Rows marked `"sample": true` are placeholders and say so on their card; replace them before merging.
 

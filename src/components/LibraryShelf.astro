@@ -24,13 +24,13 @@ const { payload } = Astro.props;
 const { albums, books, games, tools, films, podcasts, places } = payload;
 
 const sections = [
-  { kind: 'place', label: 'EXPERIENCES', items: places as ShelfItem[] },
-  { kind: 'book', label: payload.libraryLabel, items: books },
+  { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
   { kind: 'album', label: payload.listeningLabel, items: albums },
   { kind: 'film', label: 'FILMS', items: films },
   { kind: 'podcast', label: 'PODCASTS', items: podcasts },
   { kind: 'game', label: payload.gamesLabel, items: games },
   { kind: 'tool', label: 'TOOLS', items: tools },
+  { kind: 'place', label: 'EXPERIENCES', items: places },
 ].filter(section => section.items.length > 0);
 
 const present = new Set(sections.map(section => section.kind));

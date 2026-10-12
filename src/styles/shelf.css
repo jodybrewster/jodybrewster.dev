@@ -258,6 +258,11 @@
     flex: 0 0 auto;
   }
 
+  /* A scrolling row drops its own end padding, so the last filter carries the gutter. */
+  .library[data-scene='live'] .library__rail li:last-child {
+    padding-right: var(--site-gutter);
+  }
+
   .library[data-scene='live'] .library__rail a {
     padding-left: 0;
     font-size: 15px;

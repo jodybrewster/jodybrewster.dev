@@ -153,8 +153,18 @@ function credit(item: ShelfItem): string {
     function show(filter: LibraryFilter, remember: boolean) {
       root!.dataset.filter = filter;
       for (const link of filterLinks) {
-        if (link.dataset.libraryFilter === filter) link.setAttribute('aria-current', 'true');
-        else link.removeAttribute('aria-current');
+        if (link.dataset.libraryFilter !== filter) {
+          link.removeAttribute('aria-current');
+          continue;
+        }
+        link.setAttribute('aria-current', 'true');
+        // On phones the filters are a row that scrolls sideways; keep the one
+        // showing in view. Only the row moves, never the page.
+        const row = link.closest('ul');
+        if (row && row.scrollWidth > row.clientWidth) {
+          const left = link.offsetLeft - (row.clientWidth - link.offsetWidth) / 2;
+          row.scrollTo({ left: Math.max(0, left), behavior: 'instant' });
+        }
       }
       for (const section of sections) section.hidden = section.dataset.libraryKind !== filter;
       scene?.setFilter(filter);

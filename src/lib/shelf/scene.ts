@@ -131,11 +131,15 @@ const GAME_CASES: Record<GameSystem, { width: number; height: number; depth: num
 const VHS_BOX = { width: 1.18, height: 1.9, depth: 0.26 };
 /** The flat things: a 3.5 inch disk and a cassette at their real proportions,
  *  and a 6 by 4 postcard, each scaled to sit with the books. */
-const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: number; depth: number }> = {
-  tool: { width: 1.5, height: 1.56, depth: 0.07 },
-  podcast: { width: 1.62, height: 1.03, depth: 0.17 },
-  place: { width: 2.1, height: 1.4, depth: 0.025 },
+/** `fan` turns each one partly edge-on, like a fanned deck, so a page holds
+ *  more of them; they are packed by the width they take once turned. */
+const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: number; depth: number; fan: number }> = {
+  tool: { width: 1.5, height: 1.56, depth: 0.07, fan: 0.85 },
+  podcast: { width: 1.62, height: 1.03, depth: 0.17, fan: 0.9 },
+  place: { width: 2.1, height: 1.4, depth: 0.025, fan: 0.95 },
 };
+/** Share of its turned width a fanned item is packed into. */
+const FAN_OVERLAP = 0.8;
 /** Space between neighbours on a page. */
 const GAP = 0.2;
 /** Share of the lane a page is packed into. The ends of the arc come forward
@@ -206,6 +210,10 @@ interface ItemView {
   mesh: Mesh;
   width: number;
   height: number;
+  /** Radians it is turned edge-on at rest, to fit more on a page. */
+  fan: number;
+  /** The width it takes on the page once turned. */
+  pack: number;
   /** The front face, where the art goes. */
   face: MeshStandardMaterial;
   /** Faces that warm up under the pointer. */
@@ -605,7 +613,17 @@ export class LibraryScene {
   }
 
   /** Shared defaults for a new view; the builders fill in the rest. */
-  #view(item: ShelfItem, mesh: Mesh, width: number, height: number, face: MeshStandardMaterial, lit: MeshStandardMaterial[], release: () => void): ItemView {
+  #view(
+    item: ShelfItem,
+    mesh: Mesh,
+    width: number,
+    height: number,
+    face: MeshStandardMaterial,
+    lit: MeshStandardMaterial[],
+    release: () => void,
+    fan = 0,
+  ): ItemView {
+    const depth = (mesh.geometry as BoxGeometry).parameters.depth;
     mesh.userData.id = item.id;
     mesh.visible = false;
     this.#scene.add(mesh);
@@ -614,6 +632,9 @@ export class LibraryScene {
       mesh,
       width,
       height,
+      fan,
+      // Fanned items overlap their neighbours a little, as a fanned deck does.
+      pack: fan > 0 ? (width * Math.cos(fan) + depth * Math.sin(fan)) * FAN_OVERLAP : width,
       face,
       lit,
       x: 0,
@@ -753,7 +774,7 @@ export class LibraryScene {
    * edges and a printed face, drawn once the fonts and any photograph are in.
    */
   #buildPrinted(item: ShelfTool | ShelfPodcast | ShelfPlace): ItemView {
-    const { width, height, depth } = PRINTED[item.kind];
+    const { width, height, depth, fan } = PRINTED[item.kind];
     const shell = new Color(item.kind === 'place' ? '#f5f0e4' : shellColour(item.id));
     const finish = item.kind === 'place'
       ? { roughness: 0.86 }
@@ -776,7 +797,7 @@ export class LibraryScene {
       back.dispose();
       edge.dispose();
     });
-    return this.#view(item, mesh, width, height, face, [face], release);
+    return this.#view(item, mesh, width, height, face, [face], release, fan);
   }
 
   /* ---------------------------------------------------------------------- */
@@ -954,7 +975,7 @@ export class LibraryScene {
   }
 
   #paginate(): void {
-    this.#pages = paginate(this.#order.map(item => this.#views.get(item.id)!.width), GAP, this.#laneWidth * PAGE_FILL);
+    this.#pages = paginate(this.#order.map(item => this.#views.get(item.id)!.pack), GAP, this.#laneWidth * PAGE_FILL);
   }
 
   /** Where a leaving item flies to, or an arriving one from: just off screen. */
@@ -1306,9 +1327,15 @@ export class LibraryScene {
 
       const sway = this.#reduced ? 0 : Math.sin(this.#time * 0.45 + view.phase * 1.7) * 0.025;
       const straighten = 1 - view.hover * 0.55;
+      // A fanned item's turn is measured from the line to the camera, not from
+      // the arc, so every one in the row shows the same angle whichever side
+      // of the screen it is on. Under the pointer it turns to face the reader.
+      const facing = view.fan > 0
+        ? Math.atan2(camera.position.x - view.x, camera.position.z - arc.z) + view.fan * (1 - view.hover * 0.85)
+        : arc.yaw;
       euler.set(
         view.jitter.pitch * straighten,
-        arc.yaw + view.jitter.yaw * straighten + turn,
+        facing + view.jitter.yaw * straighten + turn,
         (view.jitter.roll + sway) * straighten,
       );
       restQuaternion.setFromEuler(euler);

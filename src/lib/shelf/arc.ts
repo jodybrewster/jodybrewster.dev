@@ -31,9 +31,14 @@ export function isFilter(value: unknown): value is LibraryFilter {
   return FILTERS.some(filter => filter.id === value);
 }
 
-/** The items a filter shows, in their own curated order. */
+/** Kinds whose source file is appended to as things are added, shown newest
+ *  first so the latest is on the first page. */
+const NEWEST_FIRST: ReadonlySet<LibraryFilter> = new Set(['book']);
+
+/** The items a filter shows, in their own curated order, or newest first. */
 export function arrange(items: readonly ShelfItem[], filter: LibraryFilter): ShelfItem[] {
-  return items.filter(item => item.kind === filter);
+  const shown = items.filter(item => item.kind === filter);
+  return NEWEST_FIRST.has(filter) ? shown.reverse() : shown;
 }
 
 /** Centres along a row for items of the given widths, `gap` apart. */

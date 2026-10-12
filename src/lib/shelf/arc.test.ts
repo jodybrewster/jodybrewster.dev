@@ -12,8 +12,8 @@ const games = normalizeGames([{ title: 'Game One', platform: 'Nintendo Switch' }
 const items = [...books, ...albums, ...games];
 
 describe('arrange', () => {
-  it('shows one kind in its curated order', () => {
-    expect(arrange(items, 'book').map(item => item.title)).toEqual(['Book One', 'Book Two', 'Book Three']);
+  it('shows one kind in its curated order, books newest first', () => {
+    expect(arrange(items, 'book').map(item => item.title)).toEqual(['Book Three', 'Book Two', 'Book One']);
     expect(arrange(items, 'game').map(item => item.title)).toEqual(['Game One']);
   });
 });

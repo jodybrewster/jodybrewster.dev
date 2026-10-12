@@ -81,7 +81,6 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   const places = normalizePlaces(list(placesData.places));
 
   const month = monthLabel(listeningData.updated as string | undefined);
-  const gamesMonth = monthLabel(gamesData.updated as string | undefined);
 
   return {
     albums,
@@ -93,6 +92,7 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
     places,
     listeningLabel: month ? `LISTENING · ${month.toUpperCase()}` : 'LISTENING',
     libraryLabel: `LIBRARY · ${books.length} BOOKS`,
-    gamesLabel: gamesMonth ? `PLAYING · ${gamesMonth.toUpperCase()}` : 'PLAYING',
+    // The games are favourites kept by hand, not a month's play, so no date.
+    gamesLabel: `GAMES · ${games.length}`,
   };
 }

@@ -254,9 +254,51 @@ function credit(item: ShelfItem): string {
       });
     }
 
+    /**
+     * Where the free space is: below the nav and above the Verso bar, when
+     * the bar is showing. The pager and the card sit just above the bar, and
+     * a picked item is framed in between, so on a short window nothing runs
+     * under the nav and nothing floats over empty floor.
+     */
+    const nav = document.querySelector<HTMLElement>('.home-nav');
+    const dockBar = () => document.querySelector<HTMLElement>('#chat-dock .dock-bar');
+    function edges() {
+      const height = stage!.clientHeight || window.innerHeight;
+      const top = nav ? Math.max(0, nav.getBoundingClientRect().bottom) : 80;
+      const bar = dockBar()?.getBoundingClientRect();
+      const barTop = bar && bar.height > 0 && bar.top < height ? bar.top : height;
+      return { top, foot: Math.max(0, height - barTop) };
+    }
+    function measure() {
+      const { top, foot } = edges();
+      stage!.style.setProperty('--library-top', `${Math.round(top)}px`);
+      stage!.style.setProperty('--library-foot', `${Math.round(foot)}px`);
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    const bar = dockBar();
+    const watcher = bar ? new ResizeObserver(measure) : null;
+    if (bar) watcher!.observe(bar);
+    const PAGER_SPACE = 58;
+    const clearance = () => {
+      const { top, foot } = edges();
+      let bottom = foot + PAGER_SPACE;
+      // On phones the card spans the foot of the screen; the picked item
+      // sits above it rather than behind it.
+      const card = stage!.querySelector<HTMLElement>('[data-library-card]');
+      if (card && !card.hidden) {
+        const box = card.getBoundingClientRect();
+        const height = stage!.clientHeight || window.innerHeight;
+        if (box.height > 0 && box.left < height && box.left < stage!.clientWidth * 0.4) {
+          bottom = Math.max(bottom, height - box.top + 12);
+        }
+      }
+      return { top: top + 12, bottom };
+    };
+
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const store = new ShelfStore();
-    scene = LibraryScene.create({ canvas, stage, rail, payload, store, reducedMotion, filter: initial, onPage: renderPager });
+    scene = LibraryScene.create({ canvas, stage, rail, payload, store, reducedMotion, filter: initial, onPage: renderPager, clearance });
     if (!scene) {
       fallBack();
       return;
@@ -317,7 +359,7 @@ function credit(item: ShelfItem): string {
           action = 'View catalog entry';
           break;
         case 'game':
-          kind = 'Played this month';
+          kind = 'Played';
           credit = item.platform;
           excerpt = item.note ?? '';
           action = 'Official page';
@@ -428,6 +470,8 @@ function credit(item: ShelfItem): string {
       'astro:before-swap',
       () => {
         document.removeEventListener('keydown', onKey);
+        window.removeEventListener('resize', measure);
+        watcher?.disconnect();
         scene?.dispose();
       },
       { once: true },

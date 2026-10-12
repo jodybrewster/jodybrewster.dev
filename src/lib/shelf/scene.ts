@@ -13,13 +13,16 @@
  */
 
 import {
+  BackSide,
   BoxGeometry,
   Color,
   DirectionalLight,
+  DoubleSide,
   Euler,
   HemisphereLight,
   Material,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   NeutralToneMapping,
@@ -31,6 +34,7 @@ import {
   Raycaster,
   Scene,
   ShaderMaterial,
+  SphereGeometry,
   SRGBColorSpace,
   Texture,
   TextureLoader,
@@ -43,7 +47,7 @@ import { Reflector } from 'three/examples/jsm/objects/Reflector.js';
 // shader compilation land once the room is already on screen. Types only here.
 import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import type { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { arcPose, arrange, DEFAULT_FILTER, pageOf, paginate } from './arc';
+import { ARC, arcPose, arrange, DEFAULT_FILTER, pageOf, paginate } from './arc';
 import type { LibraryFilter, Page } from './arc';
 import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFilm, ShelfGame, ShelfItem, ShelfPlace, ShelfPodcast, ShelfTool } from './media';
 import { coverOf, seededUnit } from './media';
@@ -92,6 +96,10 @@ export interface LibrarySceneOptions {
   filter?: LibraryFilter;
   /** Called whenever the page or the number of pages changes. */
   onPage?: (page: number, count: number) => void;
+  /** Pixels at the top and foot of the stage a picked item must stay clear
+   *  of: the nav above, the pager and the Verso bar below. Measured live,
+   *  because the bar comes and goes and windows vary. */
+  clearance?: () => { top: number; bottom: number };
 }
 
 /* -- The room ------------------------------------------------------------- */
@@ -114,8 +122,8 @@ const CAMERA_Z = 14;
 const MIN_LANE = 4.4;
 const MAX_CAMERA_Z = 19;
 const FLOOR_Y = -2.6;
-/** Height of the arc's lowest point, in the middle of the lane. */
-const ARC_Y = 0.55;
+/** Height of the row before the page has been measured. */
+const ARC_Y = 0.15;
 
 /* -- The objects ------------------------------------------------------------ */
 
@@ -138,6 +146,13 @@ const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: num
   podcast: { width: 1.62, height: 1.03, depth: 0.17, fan: 0.9 },
   place: { width: 2.1, height: 1.4, depth: 0.025, fan: 0.95 },
 };
+/** Clear plastic over printed art: jewel cases, game sleeves and video boxes.
+ *  Slick enough that the sunset slides across the art as it turns. */
+const GLOSS = { roughness: 0.42, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1.15 };
+/** A laminated book jacket: a softer shine than plastic. */
+const LAMINATE = { roughness: 0.5, clearcoat: 0.7, clearcoatRoughness: 0.08, envMapIntensity: 1.05 };
+/** Albums and game cases fan like the flat things, a little less, so the art still reads. */
+const CASE_FAN = 0.7;
 /** Share of its turned width a fanned item is packed into. */
 const FAN_OVERLAP = 0.8;
 /** Space between neighbours on a page. */
@@ -167,7 +182,9 @@ const PRESENTATION: Record<ShelfItem['kind'], { fill: number; tilt: [number, num
 };
 /** The picked item sits left of centre, clear of the card on the right, and a
  *  little high, clear of the pager and the Verso bar along the foot. */
-const CLOSE_UP_SHIFT = { x: -0.14, y: 0.05 };
+const CLOSE_UP_SHIFT_X = -0.14;
+/** What a picked item keeps clear of when the page cannot say. */
+const CLOSE_UP_CLEAR = { top: 96, bottom: 120 };
 
 /* -- Timing ----------------------------------------------------------------- */
 
@@ -367,8 +384,14 @@ export class LibraryScene {
   #pointerInside = false;
   #parallax = new Vector2(0, 0);
   #parallaxTarget = new Vector2(0, 0);
+  /** Where the cursor is over the whole window, -1 to 1, eased. A picked item
+   *  leans a little toward it, as if held up to look at. */
+  #lean = new Vector2(0, 0);
+  #leanTarget = new Vector2(0, 0);
 
   #halfWidth = 7;
+  /** World height of the row, set so it lines up with the filter column. */
+  #rowY = ARC_Y;
   #laneCentre = 0;
   #laneWidth = 12;
   #visibleHeight = 8;
@@ -496,9 +519,7 @@ export class LibraryScene {
           }
           // The plate is also the light the objects are lit by: its peach and
           // lilac in their sheen, its sun in the clearcoat of the cases.
-          const pmrem = new PMREMGenerator(this.#renderer);
-          const environment = pmrem.fromEquirectangular(texture);
-          pmrem.dispose();
+          const environment = this.#buildEnvironment(texture);
           this.#scene.environment = environment.texture;
           this.#cleanup.push(() => {
             texture.dispose();
@@ -513,6 +534,34 @@ export class LibraryScene {
         },
       );
     });
+  }
+
+  /**
+   * The light the objects reflect: the plate wrapped round them, plus a big
+   * softbox above and behind the camera, as a product photographer would set
+   * it. The plate alone is soft and even, so gloss had nothing to catch; the
+   * softbox is the broad band of light that slides across a glossy cover as
+   * it floats and turns. Rendered once and prefiltered.
+   */
+  #buildEnvironment(plate: Texture) {
+    const room = new Scene();
+    const sky = new Mesh(new SphereGeometry(50, 48, 24), new MeshBasicMaterial({ map: plate, side: BackSide }));
+    room.add(sky);
+    const softbox = new Mesh(
+      new PlaneGeometry(46, 5),
+      new MeshBasicMaterial({ color: new Color(1, 0.95, 0.9).multiplyScalar(7), side: DoubleSide }),
+    );
+    softbox.position.set(-4, 9, 32);
+    softbox.lookAt(0, 0, 0);
+    room.add(softbox);
+    const pmrem = new PMREMGenerator(this.#renderer);
+    const environment = pmrem.fromScene(room, 0.02);
+    pmrem.dispose();
+    for (const mesh of [sky, softbox]) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
+    return environment;
   }
 
   #buildRoom(): void {
@@ -661,7 +710,7 @@ export class LibraryScene {
     const width = height * BOOK_ASPECT;
     const depth = jitter(`${book.id}-depth`, 0.16, 0.34);
     const cloth = new Color(book.color);
-    const face = new MeshStandardMaterial({ color: cloth, roughness: 0.62 });
+    const face = new MeshPhysicalMaterial({ ...LAMINATE, color: cloth });
     const spine = new MeshStandardMaterial({ color: cloth, roughness: 0.7 });
     const back = new MeshStandardMaterial({ color: cloth, roughness: 0.7 });
     const edges = this.#pageEdges as MeshStandardMaterial;
@@ -680,7 +729,7 @@ export class LibraryScene {
       spine.dispose();
       back.dispose();
     });
-    return this.#view(book, mesh, width, height, face, [face, spine], release);
+    return this.#view(book, mesh, width, height, face, [face, spine], release, CASE_FAN);
   }
 
   #buildAlbum(album: ShelfAlbum): ItemView {
@@ -692,9 +741,8 @@ export class LibraryScene {
       clearcoat: 1,
       clearcoatRoughness: 0.05,
     });
-    const sleeve = { roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.04 };
-    const face = new MeshPhysicalMaterial({ ...sleeve, color: new Color(album.color) });
-    const back = new MeshPhysicalMaterial({ ...sleeve, color: new Color('#e8e4da') });
+    const face = new MeshPhysicalMaterial({ ...GLOSS, color: new Color(album.color) });
+    const back = new MeshPhysicalMaterial({ ...GLOSS, color: new Color('#e8e4da') });
     const mesh = new Mesh(new BoxGeometry(size, size, depth), [plastic, plastic, plastic, plastic, face, back]);
     const release = () => {
       for (const material of [face, back]) {
@@ -710,7 +758,7 @@ export class LibraryScene {
       back.dispose();
       plastic.dispose();
     });
-    return this.#view(album, mesh, size, size, face, [face], release);
+    return this.#view(album, mesh, size, size, face, [face], release, CASE_FAN);
   }
 
   #buildGame(game: ShelfGame): ItemView {
@@ -721,9 +769,8 @@ export class LibraryScene {
       clearcoat: 0.6,
       clearcoatRoughness: 0.12,
     });
-    const sleeve = { roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.03 };
-    const face = new MeshPhysicalMaterial({ ...sleeve, map: gameCoverTexture(game, width / height) });
-    const spine = new MeshPhysicalMaterial({ ...sleeve, map: gameSpineTexture(game, height / depth) });
+    const face = new MeshPhysicalMaterial({ ...GLOSS, map: gameCoverTexture(game, width / height) });
+    const spine = new MeshPhysicalMaterial({ ...GLOSS, map: gameSpineTexture(game, height / depth) });
     const mesh = new Mesh(new BoxGeometry(width, height, depth), [plastic, spine, plastic, plastic, face, plastic]);
     // A case without its box art still prints its title, so release redraws
     // that rather than leaving a blank.
@@ -739,7 +786,7 @@ export class LibraryScene {
       spine.dispose();
       plastic.dispose();
     });
-    return this.#view(game, mesh, width, height, face, [face, spine], release);
+    return this.#view(game, mesh, width, height, face, [face, spine], release, CASE_FAN);
   }
 
   /** A film in its video store box: black clamshell, poster under the
@@ -748,9 +795,8 @@ export class LibraryScene {
     const { width, height, depth } = VHS_BOX;
     const black = new Color('#1b1a20');
     const plastic = new MeshPhysicalMaterial({ color: black, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.15 });
-    const sleeve = { roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.03 };
-    const face = new MeshPhysicalMaterial({ ...sleeve, color: black });
-    const spine = new MeshPhysicalMaterial({ ...sleeve, color: black });
+    const face = new MeshPhysicalMaterial({ ...GLOSS, color: black });
+    const spine = new MeshPhysicalMaterial({ ...GLOSS, color: black });
     const mesh = new Mesh(new BoxGeometry(width, height, depth), [plastic, spine, plastic, plastic, face, plastic]);
     const release = () => {
       for (const material of [face, spine]) {
@@ -766,7 +812,7 @@ export class LibraryScene {
       spine.dispose();
       plastic.dispose();
     });
-    return this.#view(film, mesh, width, height, face, [face, spine], release);
+    return this.#view(film, mesh, width, height, face, [face, spine], release, CASE_FAN);
   }
 
   /**
@@ -1085,6 +1131,8 @@ export class LibraryScene {
     this.#laneWidth = Math.max(1, this.#halfWidth * 2 - left - right);
     this.#laneCentre = laneLeft + this.#laneWidth / 2;
 
+    this.#rowY = this.#rowHeight(railRight > 0 ? railBox : null, height);
+
     // Keep the first item of the page in view on the page after the resize.
     const first = this.#pages[this.#page]?.start ?? 0;
     const count = this.#pages.length;
@@ -1092,6 +1140,34 @@ export class LibraryScene {
     this.#page = pageOf(this.#pages, first);
     if (this.#intro >= 0) this.#show(this.#page, 1, true);
     if (count !== this.#pages.length) this.#options.onPage?.(this.#page, this.#pages.length);
+  }
+
+  /**
+   * Where the row floats: level with the middle of the filter column, or on
+   * phones, where the filters are a row up top, in the middle of the space
+   * between them and the pager. Worked out by casting a ray through that
+   * point on screen to the plane the row stands in, so it holds at every
+   * window size. The arc's ends rise, so the row is set a third of that rise
+   * lower, which is where its average sits.
+   */
+  #rowHeight(column: DOMRect | null, height: number): number {
+    const stageTop = this.#options.stage.getBoundingClientRect().top;
+    let centre: number;
+    if (column) {
+      centre = column.top + column.height / 2 - stageTop;
+    } else {
+      const clear = this.#options.clearance?.() ?? CLOSE_UP_CLEAR;
+      const rail = this.#options.rail?.getBoundingClientRect();
+      const top = Math.max(clear.top, rail ? rail.bottom - stageTop + 12 : 0);
+      centre = (top + (height - clear.bottom)) / 2;
+    }
+    const camera = this.#camera;
+    camera.lookAt(0, LOOK_Y, 0);
+    camera.updateMatrixWorld();
+    const through = new Vector3(0, 1 - (2 * centre) / height, 0.5).unproject(camera).sub(camera.position);
+    if (Math.abs(through.z) < 1e-6) return ARC_Y;
+    const y = camera.position.y + (through.y * -camera.position.z) / through.z;
+    return y - ARC.sag / 3;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -1169,6 +1245,17 @@ export class LibraryScene {
     });
     observer.observe(stage);
 
+    // The lean follows the cursor anywhere in the window, over the card and the
+    // filters too, not only over the canvas.
+    const onWindowPointer = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return;
+      this.#leanTarget.set(
+        (event.clientX / window.innerWidth) * 2 - 1,
+        -((event.clientY / window.innerHeight) * 2 - 1),
+      );
+    };
+    window.addEventListener('pointermove', onWindowPointer, { passive: true });
+
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerleave', onPointerLeave);
@@ -1179,6 +1266,7 @@ export class LibraryScene {
 
     this.#cleanup.push(() => {
       observer.disconnect();
+      window.removeEventListener('pointermove', onWindowPointer);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerleave', onPointerLeave);
@@ -1249,16 +1337,29 @@ export class LibraryScene {
   #closeUp(view: ItemView, position: Vector3, quaternion: Quaternion): void {
     const look = PRESENTATION[view.item.kind];
     const tan = Math.tan((CAMERA_FOV * Math.PI) / 360);
-    const byHeight = view.height / (2 * tan * look.fill);
-    const byWidth = (view.width * 1.3) / (2 * tan * look.fill * this.#camera.aspect);
+    // Framed inside the band between the nav and the pager, not the whole
+    // window: on a short window a share of the full height runs under both.
+    const stageHeight = this.#options.stage.clientHeight || window.innerHeight;
+    const clear = this.#options.clearance?.() ?? CLOSE_UP_CLEAR;
+    const top = clear.top / stageHeight;
+    const bottom = clear.bottom / stageHeight;
+    const band = Math.max(0.3, 1 - top - bottom);
+    const fill = Math.min(look.fill, band * 0.92);
+    const byHeight = view.height / (2 * tan * fill);
+    const byWidth = (view.width * 1.3) / (2 * tan * fill * this.#camera.aspect);
     const distance = Math.max(byHeight, byWidth);
     const frameHeight = 2 * tan * distance;
     position
-      .set(frameHeight * this.#camera.aspect * CLOSE_UP_SHIFT.x, frameHeight * CLOSE_UP_SHIFT.y, -distance)
+      .set(frameHeight * this.#camera.aspect * CLOSE_UP_SHIFT_X, frameHeight * ((bottom - top) / 2), -distance)
       .applyQuaternion(this.#camera.quaternion)
       .add(this.#camera.position);
+    // Leaning toward the cursor: up to about seven degrees either way.
     quaternion.copy(this.#camera.quaternion).multiply(
-      new Quaternion().setFromEuler(new Euler(look.tilt[0], look.tilt[1], look.tilt[2])),
+      new Quaternion().setFromEuler(new Euler(
+        look.tilt[0] - this.#lean.y * 0.12,
+        look.tilt[1] + this.#lean.x * 0.16,
+        look.tilt[2],
+      )),
     );
   }
 
@@ -1272,7 +1373,10 @@ export class LibraryScene {
 
     // Head movement: the camera drifts with the pointer and the plate drifts
     // a little less, which is what puts the objects in front of the room.
-    if (!this.#reduced) this.#parallax.lerp(this.#parallaxTarget, 1 - Math.pow(0.02, delta));
+    if (!this.#reduced) {
+      this.#parallax.lerp(this.#parallaxTarget, 1 - Math.pow(0.02, delta));
+      this.#lean.lerp(this.#leanTarget, 1 - Math.pow(0.03, delta));
+    }
     const camera = this.#camera;
     camera.position.x = this.#parallax.x * 0.35;
     camera.position.y = CAMERA_Y + this.#parallax.y * 0.18;
@@ -1323,7 +1427,7 @@ export class LibraryScene {
 
       const arc = arcPose(view.x - this.#laneCentre, halfLane);
       const bob = this.#reduced ? 0 : Math.sin(this.#time * 0.7 + view.phase) * 0.06;
-      restPosition.set(view.x, ARC_Y + arc.y + bob + lift + view.hover * 0.12, arc.z + view.hover * 0.7);
+      restPosition.set(view.x, this.#rowY + arc.y + bob + lift + view.hover * 0.12, arc.z + view.hover * 0.7);
 
       const sway = this.#reduced ? 0 : Math.sin(this.#time * 0.45 + view.phase * 1.7) * 0.025;
       const straighten = 1 - view.hover * 0.55;

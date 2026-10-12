@@ -15,7 +15,7 @@ const { albums, books, games } = payload;
 const title = 'Library - Jody Brewster';
 const description = `Where Jody Brewster has been, and what he reads, listens to, watches and plays: `
   + `${books.length} books, ${albums.length} albums in rotation`
-  + `${games.length ? ', the games he played this month' : ''} and the tools he works in.`;
+  + `${games.length ? `, ${games.length} games` : ''} and the tools he works in.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',

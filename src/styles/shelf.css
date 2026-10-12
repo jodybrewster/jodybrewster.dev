@@ -65,7 +65,6 @@
 @media (scripting: enabled) {
   .library:not([data-scene='off']) .library__stage {
     height: 100svh;
-    min-height: 560px;
     overflow: hidden;
     background: var(--ui-night);
   }
@@ -290,7 +289,9 @@
   display: flex;
   position: absolute;
   left: 50%;
-  bottom: 124px;
+  /* Just above the Verso bar, or the foot of the screen when it is closed.
+     The page measures the bar and sets --library-foot. */
+  bottom: calc(var(--library-foot, 96px) + 14px);
   z-index: 3;
   align-items: center;
   gap: 10px;
@@ -339,8 +340,8 @@
   display: block;
   position: absolute;
   right: max(var(--site-gutter), calc((100% - var(--site-width)) / 2));
-  /* Clear of the Verso bar, which floats along the foot of every page. */
-  bottom: 124px;
+  /* Clear of the pager and the Verso bar below it. */
+  bottom: calc(var(--library-foot, 96px) + 58px);
   z-index: 3;
   width: min(420px, calc(100% - 2 * var(--site-gutter)));
   padding: 22px 24px 18px;
@@ -424,13 +425,10 @@
   .library[data-scene='live'] .library__card:not([hidden]) {
     right: var(--site-gutter);
     left: var(--site-gutter);
-    bottom: calc(env(safe-area-inset-bottom) + 92px);
+    bottom: calc(var(--library-foot, 96px) + 58px);
     width: auto;
   }
 
-  .library[data-scene='live'] .library__pager:not([hidden]) {
-    bottom: calc(env(safe-area-inset-bottom) + 92px);
-  }
 }
 
 /* -- Semantic list: no script, no WebGL, and the keyboard path --------------- */

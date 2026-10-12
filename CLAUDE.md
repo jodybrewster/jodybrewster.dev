@@ -48,7 +48,7 @@ npm run conversation:delete  # find (--find) or delete (--cid, dry run without -
 npm test           # vitest run
 ```
 
-Unit tests live under `src/lib/**/*.test.ts` and cover the shelf, Verso transport/routes, conversation history, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
+Unit tests live under `src/lib/**/*.test.ts` (`vitest.config.ts` keeps vitest out of other branches' worktrees in `.worktrees/` and `.claude/worktrees/`) and cover the shelf, Verso transport/routes, conversation history, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
 Type-check with `npx astro check`.
 
 ## Architecture

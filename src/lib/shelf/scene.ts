@@ -66,7 +66,8 @@ import {
   postcardFrontTexture,
   shellColour,
   spineTexture,
-  vhsTexture,
+  vhsBoxTexture,
+  vhsSpineTexture,
 } from './textures';
 
 export interface ShelfPayload {
@@ -126,11 +127,12 @@ const GAME_CASES: Record<GameSystem, { width: number; height: number; depth: num
   ps5: { width: 1.41, height: 1.78, depth: 0.15 },
   other: { width: 1.41, height: 1.98, depth: 0.15 },
 };
-/** The flat things: a 3.5 inch disk, a VHS tape and a cassette at their real
- *  proportions, and a 6 by 4 postcard, each scaled to sit with the books. */
-const PRINTED: Record<'tool' | 'film' | 'podcast' | 'place', { width: number; height: number; depth: number }> = {
+/** A video store clamshell, standing like a book. */
+const VHS_BOX = { width: 1.18, height: 1.9, depth: 0.26 };
+/** The flat things: a 3.5 inch disk and a cassette at their real proportions,
+ *  and a 6 by 4 postcard, each scaled to sit with the books. */
+const PRINTED: Record<'tool' | 'podcast' | 'place', { width: number; height: number; depth: number }> = {
   tool: { width: 1.5, height: 1.56, depth: 0.07 },
-  film: { width: 1.95, height: 1.07, depth: 0.26 },
   podcast: { width: 1.62, height: 1.03, depth: 0.17 },
   place: { width: 2.1, height: 1.4, depth: 0.025 },
 };
@@ -154,7 +156,7 @@ const PRESENTATION: Record<ShelfItem['kind'], { fill: number; tilt: [number, num
   book: { fill: 0.6, tilt: [0.07, 0.46, 0.04], spinTurns: 0 },
   game: { fill: 0.58, tilt: [0.05, 0.3, 0.02], spinTurns: 0 },
   tool: { fill: 0.5, tilt: [0.06, 0.22, 0.03], spinTurns: 0 },
-  film: { fill: 0.34, tilt: [0.08, 0.2, 0.02], spinTurns: 0 },
+  film: { fill: 0.62, tilt: [0.05, 0.32, 0.02], spinTurns: 0 },
   podcast: { fill: 0.34, tilt: [0.08, 0.2, 0.02], spinTurns: 0 },
   // A postcard turns all the way over on the way in, so its written side shows.
   place: { fill: 0.44, tilt: [0.04, 0.12, -0.02], spinTurns: 1 },
@@ -595,6 +597,8 @@ export class LibraryScene {
         return this.#buildAlbum(item);
       case 'game':
         return this.#buildGame(item);
+      case 'film':
+        return this.#buildFilm(item);
       default:
         return this.#buildPrinted(item);
     }
@@ -717,13 +721,40 @@ export class LibraryScene {
     return this.#view(game, mesh, width, height, face, [face, spine], release);
   }
 
+  /** A film in its video store box: black clamshell, poster under the
+   *  sleeve, the title down the spine. The art prints with the fonts. */
+  #buildFilm(film: ShelfFilm): ItemView {
+    const { width, height, depth } = VHS_BOX;
+    const black = new Color('#1b1a20');
+    const plastic = new MeshPhysicalMaterial({ color: black, roughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.15 });
+    const sleeve = { roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.03 };
+    const face = new MeshPhysicalMaterial({ ...sleeve, color: black });
+    const spine = new MeshPhysicalMaterial({ ...sleeve, color: black });
+    const mesh = new Mesh(new BoxGeometry(width, height, depth), [plastic, spine, plastic, plastic, face, plastic]);
+    const release = () => {
+      for (const material of [face, spine]) {
+        material.map?.dispose();
+        material.map = null;
+        material.color.copy(black);
+        material.needsUpdate = true;
+      }
+    };
+    this.#cleanup.push(() => {
+      release();
+      face.dispose();
+      spine.dispose();
+      plastic.dispose();
+    });
+    return this.#view(film, mesh, width, height, face, [face, spine], release);
+  }
+
   /**
-   * A disk, a tape, a cassette or a postcard: shell or card stock round the
+   * A disk, a cassette or a postcard: shell or card stock round the
    * edges and a printed face, drawn once the fonts and any photograph are in.
    */
-  #buildPrinted(item: ShelfTool | ShelfFilm | ShelfPodcast | ShelfPlace): ItemView {
+  #buildPrinted(item: ShelfTool | ShelfPodcast | ShelfPlace): ItemView {
     const { width, height, depth } = PRINTED[item.kind];
-    const shell = new Color(item.kind === 'place' ? '#f5f0e4' : item.kind === 'film' ? '#1b1a20' : shellColour(item.id));
+    const shell = new Color(item.kind === 'place' ? '#f5f0e4' : shellColour(item.id));
     const finish = item.kind === 'place'
       ? { roughness: 0.86 }
       : { roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.2 };
@@ -816,7 +847,11 @@ export class LibraryScene {
               view.face.map = floppyTexture(item, aspect);
               back.map = floppyBackTexture(item, aspect);
             } else if (item.kind === 'film') {
-              view.face.map = vhsTexture(item, aspect);
+              const [, spine] = view.lit;
+              view.face.map = vhsBoxTexture(item, aspect, image);
+              spine.map = vhsSpineTexture(item, VHS_BOX.height / VHS_BOX.depth);
+              spine.color.set(0xffffff);
+              spine.needsUpdate = true;
             } else if (item.kind === 'podcast') {
               view.face.map = cassetteTexture(item, aspect);
             } else {

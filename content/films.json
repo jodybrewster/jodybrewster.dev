@@ -1,12 +1,70 @@
 {
   "films": [
-    { "title": "Back to the Future", "year": 1985 },
-    { "title": "Moon Knight", "year": 2022 },
-    { "title": "Breaking Bad", "year": "2008-2013" },
-    { "title": "Pulp Fiction", "year": 1994 },
-    { "title": "Toy Story", "year": 1995 },
-    { "title": "Up", "year": 2009 },
-    { "title": "Demon Slayer: Infinity Castle", "year": 2025 },
-    { "title": "The Wild Robot", "year": 2024 }
+    {
+      "title": "Back to the Future",
+      "year": 1985,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Back_to_the_Future.jpg",
+      "cover": "/media/films/film-back-to-the-future.jpg"
+    },
+    {
+      "title": "Moon Knight",
+      "year": 2022,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Moon_Knight_(miniseries)_logo.jpg",
+      "cover": "/media/films/film-moon-knight.jpg"
+    },
+    {
+      "title": "Breaking Bad",
+      "year": "2008-2013",
+      "coverSource": "https://en.wikipedia.org/wiki/File:Breaking_Bad_logo.svg",
+      "cover": "/media/films/film-breaking-bad.jpg"
+    },
+    {
+      "title": "Pulp Fiction",
+      "year": 1994,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Pulp_Fiction_(1994)_poster.jpg",
+      "cover": "/media/films/film-pulp-fiction.jpg"
+    },
+    {
+      "title": "Toy Story",
+      "year": 1995,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Toy_Story.jpg",
+      "cover": "/media/films/film-toy-story.jpg"
+    },
+    {
+      "title": "Up",
+      "year": 2009,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Up_(2009_film).jpg",
+      "cover": "/media/films/film-up.jpg"
+    },
+    {
+      "title": "Demon Slayer: Infinity Castle",
+      "year": 2025,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Kimetsu_No_Yaiba_Mugen_Jyo-hen_theatrical_poster.jpg",
+      "cover": "/media/films/film-demon-slayer-infinity-castle.jpg"
+    },
+    {
+      "title": "The Wild Robot",
+      "year": 2024,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Wild_Robot_poster.jpg",
+      "cover": "/media/films/film-the-wild-robot.jpg"
+    },
+    {
+      "title": "Spirited Away",
+      "year": 2001,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Spirited_Away_Japanese_poster.png",
+      "cover": "/media/films/film-spirited-away.jpg"
+    },
+    {
+      "title": "Inception",
+      "year": 2010,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Inception_(2010)_theatrical_poster.jpg",
+      "cover": "/media/films/film-inception.jpg"
+    },
+    {
+      "title": "Ne Zha 2",
+      "year": 2025,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Ne_Zha_2_poster.jpg",
+      "cover": "/media/films/film-ne-zha-2.jpg"
+    }
   ]
 }

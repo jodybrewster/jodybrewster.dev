@@ -41,6 +41,7 @@ npm run sync       # sync content from Obsidian vault → content/
 npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
 npm run games      # cache box art named in content/games.json → public/media/games/
+npm run films      # cache posters named in content/films.json → public/media/films/ (same Wikipedia sync as games)
 npm run article-images  # generate the ink illustrations named in content/article-images.json → public/images/articles/ (OpenAI gpt-image-2, needs OPENAI_API_KEY)
 npm run conversations  # download the last 7 days of Verso transcripts → .conversations/ (--days, --digest; --vault puts the digest only in the vault)
 npm run conversation:delete  # find (--find) or delete (--cid, dry run without --yes) one conversation in production
@@ -124,7 +125,7 @@ A Three.js room at `/library`, linked from the main menu, where Jody's experienc
 | Experiences (`place`) | postcard | `content/places.json`, by hand: `title`, `location`, `year`, `note` (written on the back), `photo` (site-absolute, e.g. under `public/media/places/`; without one the front is a lettered "Greetings from" card) |
 | Books (`book`) | book | `content/library.json`, `npm run books` |
 | Music (`album`) | jewel case | `content/listening.json`, `npm run spotify` |
-| Films (`film`) | VHS tape | `content/films.json`, by hand |
+| Films (`film`) | video store box with the poster | `content/films.json`, by hand: `title`, `year`, `coverSource` (the Wikipedia file page of the poster), then `npm run films` |
 | Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
 | Games (`game`) | game case | `content/games.json`, `npm run games` |
 | Tools (`tool`) | 3.5 inch disk | `content/tools.json`, by hand: `title`, `maker`, `note`, `url` |

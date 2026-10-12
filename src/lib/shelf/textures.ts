@@ -645,7 +645,6 @@ export function shellColour(id: string): string {
 }
 
 const BALLPOINT = '#1f2c6e';
-const MARKER = '#17151c';
 
 /** A grain of moulded plastic, with light falling from the top left. */
 function plastic(ctx: CanvasRenderingContext2D, width: number, height: number, colour: string, seed: string) {
@@ -798,48 +797,100 @@ function reels(ctx: CanvasRenderingContext2D, cx: number, cy: number, gap: numbe
   }
 }
 
+/** The colour of an image's top-left corner, which for a logo is its background. */
+function cornerColour(image: HTMLImageElement): string {
+  try {
+    const { ctx } = canvas(8, 8);
+    ctx.drawImage(image, 0, 0, 8, 8);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${r}, ${g}, ${b})`;
+  } catch {
+    return '#1b1a20';
+  }
+}
+
 /**
- * A VHS tape seen from above: black shell, the reel window, and a white label
- * written on in marker, a recording somebody kept.
+ * The front of a video store box: the poster under the clamshell's clear
+ * sleeve inside a thin black rim, with a round rental sticker carrying the
+ * year in the corner. Wide art, a series' logo most often, is set whole over
+ * a blurred bleed of itself rather than cropped, as on the game cases.
+ * Without art it is the title written on the sleeve in marker.
  */
-export function vhsTexture(film: ShelfFilm, aspect: number): CanvasTexture {
-  const width = 768;
+export function vhsBoxTexture(film: ShelfFilm, aspect: number, image?: HTMLImageElement | null): CanvasTexture {
+  const width = 512;
   const height = Math.round(width / aspect);
   const { element, ctx } = canvas(width, height);
   plastic(ctx, width, height, '#1b1a20', film.id);
 
-  // Moulded ribs along the foot.
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-  for (let x = width * 0.06; x < width * 0.94; x += width * 0.03) ctx.fillRect(x, height * 0.86, width * 0.012, height * 0.1);
-
-  // The label.
-  const lx = width * 0.07;
-  const ly = height * 0.08;
-  const lw = width * 0.86;
-  const lh = height * 0.4;
-  ctx.fillStyle = '#f4f1ea';
-  ctx.fillRect(lx, ly, lw, lh);
-  ctx.fillStyle = shellColour(`${film.id}-stripe`);
-  ctx.fillRect(lx, ly + lh * 0.82, lw, lh * 0.1);
-  ctx.fillStyle = '#6a6670';
-  ctx.font = `700 ${Math.round(lh * 0.1)}px ${SANS}`;
-  ctx.textAlign = 'right';
-  ctx.fillText('T-120  SP', lx + lw * 0.97, ly + lh * 0.16);
-  // Written short of the corner where the year goes, so the two never collide.
-  handwrite(ctx, film.title, lx + lw * 0.04, ly + lh * 0.62, lw * (film.year ? 0.72 : 0.9), Math.round(lh * 0.5), MARKER);
-  if (film.year) {
-    ctx.font = `${Math.round(lh * 0.22)}px ${HAND}`;
-    ctx.fillStyle = MARKER;
-    ctx.textAlign = 'right';
-    ctx.fillText(film.year, lx + lw * 0.96, ly + lh * 0.78);
+  const rim = Math.round(width * 0.03);
+  const iw = width - rim * 2;
+  const ih = height - rim * 2;
+  if (image && image.naturalWidth / image.naturalHeight > 1.1) {
+    // A series' logo rather than a poster: set whole on a field of its own
+    // background colour. A blurred bleed of a logo is a smear of its letters.
+    ctx.fillStyle = cornerColour(image);
+    ctx.fillRect(rim, rim, iw, ih);
+    const scale = (iw * 0.86) / image.naturalWidth;
+    const dw = image.naturalWidth * scale;
+    const dh = image.naturalHeight * scale;
+    ctx.drawImage(image, rim + (iw - dw) / 2, rim + (ih - dh) / 2, dw, dh);
+  } else if (image) {
+    drawArt(ctx, image, rim, rim, iw, ih);
+  } else {
+    ctx.fillStyle = shellColour(`${film.id}-sleeve`);
+    ctx.fillRect(rim, rim, iw, ih);
+    handwrite(ctx, film.title, rim + iw * 0.08, rim + ih * 0.5, iw * 0.84, Math.round(iw * 0.2), '#ffffff');
   }
 
-  // The window, and the tape behind it.
-  const wy = height * 0.67;
-  ctx.fillStyle = 'rgba(120, 125, 140, 0.35)';
-  ctx.fillRect(width * 0.22, wy - height * 0.13, width * 0.56, height * 0.26);
-  reels(ctx, width / 2, wy, width * 0.36, height * 0.12, 'rgba(160, 165, 180, 0.4)');
+  // The clear sleeve catches the light along one diagonal.
+  const sheen = ctx.createLinearGradient(0, 0, width, height);
+  sheen.addColorStop(0.3, 'rgba(255, 255, 255, 0)');
+  sheen.addColorStop(0.42, 'rgba(255, 255, 255, 0.1)');
+  sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(rim, rim, iw, ih);
 
+  if (film.year) {
+    const r = width * 0.09;
+    const cx = width - rim - r * 1.3;
+    const cy = rim + r * 1.3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = shellColour(`${film.id}-sticker`);
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const label = film.year.split('-')[0];
+    ctx.font = `700 ${Math.round(r * 0.62)}px ${SANS}`;
+    ctx.fillText(label, cx, cy + 1);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  return toTexture(element, 8);
+}
+
+/** The box's spine: black, with the title down it in condensed capitals. */
+export function vhsSpineTexture(film: ShelfFilm, aspect: number): CanvasTexture {
+  const width = 72;
+  const height = Math.round(Math.max(512, Math.min(1400, width * aspect)));
+  const { element, ctx } = canvas(width, height);
+  plastic(ctx, width, height, '#1b1a20', `${film.id}-spine`);
+  ctx.save();
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate(Math.PI / 2);
+  const run = height * 0.82;
+  const name = film.title.toUpperCase();
+  const size = fitText(ctx, name, run, Math.round(width * 0.5), Math.round(width * 0.22), value => `500 ${value}px ${HEADLINE}`);
+  ctx.font = `500 ${size}px ${HEADLINE}`;
+  ctx.fillStyle = '#f4f1ea';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(truncate(ctx, name, run), 0, 0);
+  ctx.restore();
   return toTexture(element, 8);
 }
 

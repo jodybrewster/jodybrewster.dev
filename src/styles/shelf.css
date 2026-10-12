@@ -71,10 +71,18 @@
   }
 
   /* `display: none`, not clipped: a clipped list still counts as rendered, so
-     its lazy covers would all fetch and compete with the scene for the boot. */
+     its lazy covers would all fetch and compete with the scene for the boot.
+     If the scene's script never arrives at all (a failed download, a blocked
+     module), the list comes back on its own after eight seconds, the same
+     safety net the old shelf had, rather than leaving an empty night. */
   .library:not([data-scene]) .library__semantic {
     display: none;
+    animation: library-unhold 0s 8s forwards;
   }
+}
+
+@keyframes library-unhold {
+  to { display: block; }
 }
 
 .library[data-scene='live'] .library__canvas {

@@ -1,17 +1,19 @@
 /**
- * Idempotent box art cache for the games row on the /library shelf.
+ * Idempotent cover cache for the /library games and films.
  *
- * content/games.json is kept by hand. Each record names the image its cover
- * comes from as a Wikipedia file page (`coverSource`), which is where a game's
- * standard cover art lives. This resolves that page through the MediaWiki API,
- * downloads the file once into public/media/games/, and writes the cached path
- * back as `cover`. The cached files are committed like the book jackets, so
- * nothing here runs in the build.
+ * content/games.json and content/films.json are kept by hand. Each record
+ * names the image its cover comes from as a Wikipedia file page
+ * (`coverSource`), which is where a game's box art and a film's poster live.
+ * This resolves that page through the MediaWiki API, downloads the file once
+ * into public/media/<collection>/, and writes the cached path back as `cover`.
+ * The cached files are committed like the book jackets, so nothing here runs
+ * in the build.
  *
  * Records whose cover is already on disk are skipped. Pass --force to fetch
  * everything again.
  *
- *   npx tsx scripts/sync-game-covers.ts
+ *   npx tsx scripts/sync-wikipedia-covers.ts games
+ *   npx tsx scripts/sync-wikipedia-covers.ts films
  */
 
 import { execFileSync } from 'node:child_process';
@@ -20,16 +22,29 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const UA = 'jodybrewster.dev library sync (https://jodybrewster.dev)';
-const GAMES_PATH = resolve('content/games.json');
-const GAME_DIR = resolve('public/media/games');
 /** Covers are drawn onto a case face well under this, so more is only weight. */
 const MAX_EDGE = 600;
 
+const COLLECTIONS = {
+  games: { label: 'Games', prefix: 'game' },
+  films: { label: 'Films', prefix: 'film' },
+} as const;
+type CollectionName = keyof typeof COLLECTIONS;
+
+const requested = process.argv.slice(2).find(arg => !arg.startsWith('--'));
+if (!requested || !(requested in COLLECTIONS)) {
+  console.error(`Name a collection: ${Object.keys(COLLECTIONS).join(' or ')}.`);
+  process.exit(1);
+}
+const name = requested as CollectionName;
+const collection = COLLECTIONS[name];
+const DATA_PATH = resolve(`content/${name}.json`);
+const MEDIA_DIR = resolve(`public/media/${name}`);
+
 const force = process.argv.includes('--force');
 
-interface GameRecord {
+interface CoverRecord {
   title: string;
-  platform: string;
   coverSource?: string;
   cover?: string;
   [key: string]: unknown;
@@ -40,6 +55,10 @@ const EXTENSIONS: Record<string, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
 };
+
+/** Series infoboxes often carry an SVG logo rather than a poster. The API
+ *  renders those as PNG thumbnails, so the cache never holds an SVG. */
+const RENDERED = new Set(['image/svg+xml']);
 
 function slugify(input: string): string {
   return input
@@ -75,15 +94,17 @@ async function resolveFile(source: string): Promise<{ url: string; mime: string 
     format: 'json',
     prop: 'imageinfo',
     iiprop: 'url|mime',
+    iiurlwidth: String(MAX_EDGE),
     titles: parsed.title,
   }).toString();
   const response = await fetch(query, { headers: { 'User-Agent': UA } });
   if (!response.ok) return null;
   const payload = (await response.json()) as {
-    query?: { pages?: Record<string, { imageinfo?: { url?: string; mime?: string }[] }> };
+    query?: { pages?: Record<string, { imageinfo?: { url?: string; mime?: string; thumburl?: string }[] }> };
   };
   const page = Object.values(payload.query?.pages ?? {})[0];
   const info = page?.imageinfo?.[0];
+  if (info?.mime && RENDERED.has(info.mime) && info.thumburl) return { url: info.thumburl, mime: 'image/png' };
   return info?.url && info.mime ? { url: info.url, mime: info.mime } : null;
 }
 
@@ -115,61 +136,61 @@ function compress(file: string): string {
 
 function cachedCover(id: string): string | undefined {
   for (const ext of new Set(Object.values(EXTENSIONS))) {
-    const path = `/media/games/${id}.${ext}`;
+    const path = `/media/${name}/${id}.${ext}`;
     if (existsSync(resolve(`public${path}`))) return path;
   }
   return undefined;
 }
 
 async function main(): Promise<void> {
-  await mkdir(GAME_DIR, { recursive: true });
-  const raw = JSON.parse(await readFile(GAMES_PATH, 'utf-8')) as { games?: GameRecord[] };
-  const games = raw.games ?? [];
-  console.log(`Games: ${games.length} records`);
+  await mkdir(MEDIA_DIR, { recursive: true });
+  const raw = JSON.parse(await readFile(DATA_PATH, 'utf-8')) as Record<string, CoverRecord[] | undefined>;
+  const records = raw[name] ?? [];
+  console.log(`${collection.label}: ${records.length} records`);
 
   let cached = 0;
   let skipped = 0;
   const failed: string[] = [];
 
-  for (const game of games) {
-    if (!game?.title) continue;
-    const id = `game-${slugify(game.title)}`;
+  for (const record of records) {
+    if (!record?.title) continue;
+    const id = `${collection.prefix}-${slugify(record.title)}`;
     const existing = cachedCover(id);
     if (existing && !force) {
-      game.cover = existing;
+      record.cover = existing;
       skipped += 1;
       continue;
     }
-    if (!game.coverSource) {
-      failed.push(`${game.title} (no coverSource)`);
+    if (!record.coverSource) {
+      failed.push(`${record.title} (no coverSource)`);
       continue;
     }
 
-    const file = await resolveFile(game.coverSource).catch(() => null);
+    const file = await resolveFile(record.coverSource).catch(() => null);
     const ext = file ? EXTENSIONS[file.mime] : undefined;
     if (!file || !ext) {
-      failed.push(`${game.title} (could not resolve ${game.coverSource})`);
+      failed.push(`${record.title} (could not resolve ${record.coverSource})`);
       continue;
     }
 
     const response = await fetch(file.url, { headers: { 'User-Agent': UA } }).catch(() => null);
     if (!response?.ok) {
-      failed.push(`${game.title} (download failed)`);
+      failed.push(`${record.title} (download failed)`);
       continue;
     }
 
-    const downloaded = resolve(GAME_DIR, `${id}.${ext}`);
+    const downloaded = resolve(MEDIA_DIR, `${id}.${ext}`);
     await writeFile(downloaded, Buffer.from(await response.arrayBuffer()));
     const kept = compress(downloaded);
     if (kept !== downloaded) await rm(downloaded, { force: true });
 
-    game.cover = `/media/games/${kept.split('/').pop()}`;
+    record.cover = `/media/${name}/${kept.split('/').pop()}`;
     cached += 1;
-    console.log(`  ${game.title} <- ${file.url.split('?')[0]}`);
+    console.log(`  ${record.title} <- ${file.url.split('?')[0]}`);
   }
 
-  await writeFile(GAMES_PATH, `${JSON.stringify(raw, null, 2)}\n`, 'utf-8');
-  console.log(`Games done: ${cached} cached, ${skipped} already current.`);
+  await writeFile(DATA_PATH, `${JSON.stringify(raw, null, 2)}\n`, 'utf-8');
+  console.log(`${collection.label} done: ${cached} cached, ${skipped} already current.`);
   if (failed.length) {
     console.log(`Without a cover (${failed.length}), these fall back to a drawn one:`);
     for (const line of failed) console.log(`  - ${line}`);

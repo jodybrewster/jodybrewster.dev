@@ -1,6 +1,7 @@
 ---
 /**
- * /library - what Jody reads, plays and listens to, floating in one room. The data comes from the shared payload builder, so this page and
+ * /library - where Jody has been, what he reads, watches, plays and listens
+ * to, and what he works in, floating in one room. The data comes from the shared payload builder, so this page and
  * the /library-data.json endpoint never diverge.
  */
 import Studio from '../layouts/Studio.astro';
@@ -12,11 +13,9 @@ const payload = await buildShelfPayload();
 const { albums, books, games } = payload;
 
 const title = 'Library - Jody Brewster';
-const description = games.length
-  ? `What Jody Brewster is reading, listening to and playing: ${books.length} books, `
-    + `${albums.length} albums in rotation and the games he played this month.`
-  : `What Jody Brewster is reading and listening to: ${books.length} books `
-    + `and ${albums.length} albums in rotation.`;
+const description = `Where Jody Brewster has been, and what he reads, listens to, watches and plays: `
+  + `${books.length} books, ${albums.length} albums in rotation`
+  + `${games.length ? ', the games he played this month' : ''} and the tools he works in.`;
 
 const jsonLd = {
   '@context': 'https://schema.org',

@@ -7,7 +7,7 @@
  * malformed record can never take the shelf down.
  */
 
-export type MediaKind = 'album' | 'book' | 'game';
+export type MediaKind = 'album' | 'book' | 'game' | 'tool' | 'film' | 'podcast' | 'place';
 
 interface ShelfItemBase {
   id: string;
@@ -53,7 +53,62 @@ export interface ShelfGame extends ShelfItemBase {
   cover?: string;
 }
 
-export type ShelfItem = ShelfAlbum | ShelfBook | ShelfGame;
+/** Software Jody works in, kept by hand in content/tools.json. */
+export interface ShelfTool extends ShelfItemBase {
+  kind: 'tool';
+  title: string;
+  /** Who makes it. */
+  maker?: string;
+  /** One line of Jody's on how he uses it, shown on the card. */
+  note?: string;
+  /** The tool's official page. */
+  url?: string;
+}
+
+/** A film or a series, kept by hand in content/films.json. */
+export interface ShelfFilm extends ShelfItemBase {
+  kind: 'film';
+  title: string;
+  /** As written, e.g. `1985` or `1984-1989`. */
+  year?: string;
+  note?: string;
+  url?: string;
+  cover?: string;
+  /** A placeholder standing in until Jody's own list lands. */
+  sample?: boolean;
+}
+
+/** A show Jody listens to, kept in content/podcasts.json. */
+export interface ShelfPodcast extends ShelfItemBase {
+  kind: 'podcast';
+  title: string;
+  host?: string;
+  note?: string;
+  url?: string;
+  cover?: string;
+  sample?: boolean;
+}
+
+/** Somewhere Jody went, printed as a postcard. Kept in content/places.json. */
+export interface ShelfPlace extends ShelfItemBase {
+  kind: 'place';
+  title: string;
+  /** City and region for the postmark, e.g. `Miami Beach, FL`. */
+  location?: string;
+  year?: string;
+  /** What he would write on the back. */
+  note?: string;
+  /** His own photograph for the front, site-absolute. */
+  cover?: string;
+  url?: string;
+}
+
+export type ShelfItem = ShelfAlbum | ShelfBook | ShelfGame | ShelfTool | ShelfFilm | ShelfPodcast | ShelfPlace;
+
+/** An item's own picture, for the kinds that have one. */
+export function coverOf(item: ShelfItem): string | undefined {
+  return 'cover' in item ? item.cover : undefined;
+}
 
 /** Muted book-cloth tones. Saturated enough to read as bound cloth, quiet
  *  enough to sit beside ash paper and the one forest green. */
@@ -268,4 +323,117 @@ export function normalizeGames(rows: readonly unknown[]): ShelfGame[] {
   }
 
   return games;
+}
+
+export function normalizeTools(rows: readonly unknown[]): ShelfTool[] {
+  if (!Array.isArray(rows)) return [];
+  const taken = new Set<string>();
+  const tools: ShelfTool[] = [];
+
+  for (const row of rows) {
+    const raw = record(row);
+    if (!raw) continue;
+    const title = text(raw.title);
+    if (!title) continue;
+
+    const slug = slugify(title);
+    if (!slug) continue;
+
+    tools.push({
+      id: uniqueId(`tool-${slug}`, taken),
+      kind: 'tool',
+      index: tools.length,
+      title,
+      maker: text(raw.maker) || undefined,
+      note: tidy(raw.note, NOTE_MAX) || undefined,
+      url: externalUrl(raw.url),
+      color: fallbackColor(`tool|${title}`),
+    });
+  }
+
+  return tools;
+}
+
+/** A year or a span of years, as written. Anything else is dropped. */
+function years(value: unknown): string | undefined {
+  const raw = text(typeof value === 'number' ? String(value) : value);
+  return /^\d{4}(\s*-\s*(\d{4})?)?$/.test(raw) ? raw.replace(/\s+/g, '') : undefined;
+}
+
+export function normalizeFilms(rows: readonly unknown[]): ShelfFilm[] {
+  if (!Array.isArray(rows)) return [];
+  const taken = new Set<string>();
+  const films: ShelfFilm[] = [];
+  for (const row of rows) {
+    const raw = record(row);
+    const title = text(raw?.title);
+    const slug = slugify(title);
+    if (!raw || !slug) continue;
+    films.push({
+      id: uniqueId(`film-${slug}`, taken),
+      kind: 'film',
+      index: films.length,
+      title,
+      year: years(raw.year),
+      note: tidy(raw.note, NOTE_MAX) || undefined,
+      url: externalUrl(raw.url),
+      cover: localAsset(raw.cover),
+      sample: raw.sample === true || undefined,
+      color: fallbackColor(`film|${title}`),
+    });
+  }
+  return films;
+}
+
+export function normalizePodcasts(rows: readonly unknown[]): ShelfPodcast[] {
+  if (!Array.isArray(rows)) return [];
+  const taken = new Set<string>();
+  const podcasts: ShelfPodcast[] = [];
+  for (const row of rows) {
+    const raw = record(row);
+    const title = text(raw?.title);
+    const slug = slugify(title);
+    if (!raw || !slug) continue;
+    podcasts.push({
+      id: uniqueId(`podcast-${slug}`, taken),
+      kind: 'podcast',
+      index: podcasts.length,
+      title,
+      host: text(raw.host) || undefined,
+      note: tidy(raw.note, NOTE_MAX) || undefined,
+      url: externalUrl(raw.url),
+      cover: localAsset(raw.cover),
+      sample: raw.sample === true || undefined,
+      color: fallbackColor(`podcast|${title}`),
+    });
+  }
+  return podcasts;
+}
+
+export function normalizePlaces(rows: readonly unknown[]): ShelfPlace[] {
+  if (!Array.isArray(rows)) return [];
+  const taken = new Set<string>();
+  const places: ShelfPlace[] = [];
+  for (const row of rows) {
+    const raw = record(row);
+    const title = text(raw?.title);
+    const slug = slugify(title);
+    if (!raw || !slug) continue;
+    // A photograph has to be on this origin: it is drawn into a canvas that
+    // becomes a texture, and a remote image would taint it.
+    const cover = text(raw.photo ?? raw.cover);
+    places.push({
+      id: uniqueId(`place-${slug}`, taken),
+      kind: 'place',
+      index: places.length,
+      title,
+      location: text(raw.location) || undefined,
+      year: years(raw.year),
+      note: tidy(raw.note, NOTE_MAX) || undefined,
+      cover: cover.startsWith('/') && !cover.startsWith('//') ? cover : undefined,
+      url: externalUrl(raw.url),
+      color: fallbackColor(`place|${title}`),
+    });
+  }
+  return places;
 }

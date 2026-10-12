@@ -485,8 +485,12 @@
   background: var(--cloth, var(--ui-raised));
 }
 
-.shelf__item--album .shelf__art {
+.shelf__item:is(.shelf__item--album, .shelf__item--tool) .shelf__art {
   aspect-ratio: 1 / 1;
+}
+
+.shelf__item:is(.shelf__item--place, .shelf__item--film, .shelf__item--podcast) .shelf__art {
+  aspect-ratio: 3 / 2;
 }
 
 /* Box art comes in whatever shape the publisher cut it, and wide art carries

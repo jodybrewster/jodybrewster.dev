@@ -1,0 +1,14 @@
+{
+  "podcasts": [
+    { "title": "Latent Space", "host": "swyx and Alessio Fanelli", "url": "https://www.latent.space" },
+    { "title": "Lenny's Podcast", "host": "Lenny Rachitsky" },
+    { "title": "Dwarkesh Podcast", "host": "Dwarkesh Patel", "url": "https://www.dwarkesh.com" },
+    { "title": "Hard Fork", "host": "Kevin Roose and Casey Newton" },
+    { "title": "No Priors", "host": "Sarah Guo and Elad Gil" },
+    { "title": "The Cognitive Revolution", "host": "Nathan Labenz" },
+    { "title": "Decoder", "host": "Nilay Patel" },
+    { "title": "Acquired", "host": "Ben Gilbert and David Rosenthal", "url": "https://www.acquired.fm" },
+    { "title": "Design Details", "host": "Brian Lovin and Marshall Bock" },
+    { "title": "Syntax", "host": "Wes Bos and Scott Tolinski", "url": "https://syntax.fm" }
+  ]
+}

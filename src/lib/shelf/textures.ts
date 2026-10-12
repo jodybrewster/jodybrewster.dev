@@ -15,12 +15,15 @@ import {
   LinearMipmapLinearFilter,
   SRGBColorSpace,
 } from 'three';
-import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame } from './media';
-import { seededUnit } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFilm, ShelfGame, ShelfPlace, ShelfPodcast, ShelfTool } from './media';
+import { hash, seededUnit } from './media';
 
 const DISPLAY = '"Source Serif 4", "Iowan Old Style", Georgia, serif';
 const SANS = '"Plus Jakarta Sans", -apple-system, system-ui, sans-serif';
 const MONO = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace';
+const HEADLINE = '"Barlow Semi Condensed", "Arial Narrow", sans-serif';
+/** The site's script face, standing in for handwriting on labels and postcards. */
+const HAND = '"Mr Dafoe", "Snell Roundhand", cursive';
 
 const INK = '#14181d';
 
@@ -630,6 +633,440 @@ export function gameSpineTexture(game: ShelfGame, aspect: number): CanvasTexture
 }
 
 /* -------------------------------------------------------------------------- */
+/* Floppy disks, tapes and postcards                                           */
+/* -------------------------------------------------------------------------- */
+
+/** Shell colours, the translucent pastels of a box of disks bought in 1986. */
+const SHELLS = ['#2aa7a1', '#e2458f', '#8f7fd0', '#f2c14e', '#25242e', '#ef8a4b', '#4f86d6'] as const;
+
+/** The plastic an object's shell is moulded in, chosen off its id so it never changes. */
+export function shellColour(id: string): string {
+  return SHELLS[hash(id) % SHELLS.length];
+}
+
+const BALLPOINT = '#1f2c6e';
+const MARKER = '#17151c';
+
+/** A grain of moulded plastic, with light falling from the top left. */
+function plastic(ctx: CanvasRenderingContext2D, width: number, height: number, colour: string, seed: string) {
+  const random = noise(seed);
+  ctx.fillStyle = colour;
+  ctx.fillRect(0, 0, width, height);
+  const light = ctx.createLinearGradient(0, 0, width, height);
+  light.addColorStop(0, 'rgba(255, 255, 255, 0.16)');
+  light.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+  light.addColorStop(1, 'rgba(0, 0, 0, 0.14)');
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, width, height);
+  for (let i = 0; i < 2500; i += 1) {
+    ctx.fillStyle = `rgba(${random() > 0.5 ? '255, 255, 255' : '0, 0, 0'}, ${random() * 0.04})`;
+    ctx.fillRect(random() * width, random() * height, 1.5, 1.5);
+  }
+}
+
+/** Faint ruled lines across a paper label. */
+function ruled(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, step: number) {
+  ctx.strokeStyle = 'rgba(70, 110, 190, 0.22)';
+  ctx.lineWidth = 1.5;
+  for (let ly = y + step; ly < y + h - step * 0.4; ly += step) {
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.04, ly);
+    ctx.lineTo(x + w * 0.96, ly);
+    ctx.stroke();
+  }
+}
+
+/** A title written by hand on a label: fitted to the width, never cut off. */
+function handwrite(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, size: number, colour: string) {
+  const fitted = fitText(ctx, text, maxWidth, size, Math.round(size * 0.45), value => `${value}px ${HAND}`);
+  ctx.font = `${fitted}px ${HAND}`;
+  ctx.fillStyle = colour;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, x, y);
+}
+
+function metal(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  const sheen = ctx.createLinearGradient(x, y, x + w, y + h);
+  sheen.addColorStop(0, '#e8ebef');
+  sheen.addColorStop(0.45, '#b9bfc7');
+  sheen.addColorStop(0.55, '#d6dae0');
+  sheen.addColorStop(1, '#9aa1aa');
+  ctx.fillStyle = sheen;
+  ctx.fillRect(x, y, w, h);
+}
+
+/**
+ * The front of a 3.5 inch disk: the sliding metal shutter at the head, and a
+ * paper label with the tool's name written on it in ballpoint, the way a disk
+ * of something you used every day ended up labelled.
+ */
+export function floppyTexture(tool: ShelfTool, aspect: number): CanvasTexture {
+  const width = 640;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  plastic(ctx, width, height, shellColour(tool.id), tool.id);
+
+  // Shutter, with its read slot.
+  const sx = width * 0.26;
+  const sw = width * 0.5;
+  const sh = height * 0.36;
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+  ctx.fillRect(sx - 6, 0, sw + 12, sh + 6);
+  metal(ctx, sx, 0, sw, sh);
+  ctx.fillStyle = '#2b2d33';
+  ctx.fillRect(sx + sw * 0.62, sh * 0.12, sw * 0.18, sh * 0.72);
+
+  // Embossed capacity mark in the top corner.
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+  ctx.font = `700 ${Math.round(width * 0.04)}px ${SANS}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('HD', width * 0.05, height * 0.1);
+
+  // Write-protect and density holes at the foot.
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillRect(width * 0.04, height * 0.9, width * 0.045, width * 0.045);
+  ctx.fillRect(width * 0.915, height * 0.9, width * 0.045, width * 0.045);
+
+  // The label.
+  const lx = width * 0.12;
+  const ly = height * 0.43;
+  const lw = width * 0.76;
+  const lh = height * 0.55;
+  ctx.fillStyle = '#f6f2e8';
+  ctx.fillRect(lx, ly, lw, lh);
+  ctx.fillStyle = shellColour(`${tool.id}-band`);
+  ctx.fillRect(lx, ly, lw, lh * 0.12);
+  if (tool.maker) {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `500 ${Math.round(lh * 0.065)}px ${MONO}`;
+    ctx.letterSpacing = '3px';
+    ctx.fillText(truncate(ctx, tool.maker.toUpperCase(), lw * 0.9), lx + lw * 0.05, ly + lh * 0.085);
+    ctx.letterSpacing = '0px';
+  }
+  ruled(ctx, lx, ly + lh * 0.12, lw, lh * 0.88, lh * 0.17);
+  handwrite(ctx, tool.title, lx + lw * 0.07, ly + lh * 0.62, lw * 0.86, Math.round(lh * 0.36), BALLPOINT);
+
+  return toTexture(element, 8);
+}
+
+/** The back of a disk: the shutter again and the steel hub. */
+export function floppyBackTexture(tool: ShelfTool, aspect: number): CanvasTexture {
+  const width = 512;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  plastic(ctx, width, height, shellColour(tool.id), `${tool.id}-back`);
+  metal(ctx, width * 0.24, 0, width * 0.5, height * 0.36);
+  const cx = width / 2;
+  const cy = height * 0.62;
+  ctx.beginPath();
+  ctx.arc(cx, cy, width * 0.14, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  ctx.fill();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, width * 0.11, 0, Math.PI * 2);
+  ctx.clip();
+  metal(ctx, cx - width * 0.11, cy - width * 0.11, width * 0.22, width * 0.22);
+  ctx.restore();
+  ctx.fillStyle = '#2b2d33';
+  ctx.fillRect(cx - width * 0.02, cy - width * 0.02, width * 0.04, width * 0.04);
+  ctx.fillRect(cx + width * 0.05, cy - width * 0.015, width * 0.04, width * 0.06);
+  return toTexture(element, 4);
+}
+
+/** Two reel windows, the tape wound round dark hubs. */
+function reels(ctx: CanvasRenderingContext2D, cx: number, cy: number, gap: number, radius: number, window: string) {
+  for (const x of [cx - gap / 2, cx + gap / 2]) {
+    ctx.beginPath();
+    ctx.arc(x, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = window;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, cy, radius * 0.78, 0, Math.PI * 2);
+    ctx.fillStyle = '#2a1e1a';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, cy, radius * 0.34, 0, Math.PI * 2);
+    ctx.fillStyle = '#efece6';
+    ctx.fill();
+    ctx.fillStyle = '#2a1e1a';
+    for (let i = 0; i < 6; i += 1) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.fillRect(x + Math.cos(a) * radius * 0.24 - 3, cy + Math.sin(a) * radius * 0.24 - 3, 6, 6);
+    }
+  }
+}
+
+/**
+ * A VHS tape seen from above: black shell, the reel window, and a white label
+ * written on in marker, a recording somebody kept.
+ */
+export function vhsTexture(film: ShelfFilm, aspect: number): CanvasTexture {
+  const width = 768;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  plastic(ctx, width, height, '#1b1a20', film.id);
+
+  // Moulded ribs along the foot.
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  for (let x = width * 0.06; x < width * 0.94; x += width * 0.03) ctx.fillRect(x, height * 0.86, width * 0.012, height * 0.1);
+
+  // The label.
+  const lx = width * 0.07;
+  const ly = height * 0.08;
+  const lw = width * 0.86;
+  const lh = height * 0.4;
+  ctx.fillStyle = '#f4f1ea';
+  ctx.fillRect(lx, ly, lw, lh);
+  ctx.fillStyle = shellColour(`${film.id}-stripe`);
+  ctx.fillRect(lx, ly + lh * 0.82, lw, lh * 0.1);
+  ctx.fillStyle = '#6a6670';
+  ctx.font = `700 ${Math.round(lh * 0.1)}px ${SANS}`;
+  ctx.textAlign = 'right';
+  ctx.fillText('T-120  SP', lx + lw * 0.97, ly + lh * 0.16);
+  handwrite(ctx, film.title, lx + lw * 0.04, ly + lh * 0.62, lw * 0.9, Math.round(lh * 0.5), MARKER);
+  if (film.year) {
+    ctx.font = `${Math.round(lh * 0.22)}px ${HAND}`;
+    ctx.fillStyle = MARKER;
+    ctx.textAlign = 'right';
+    ctx.fillText(film.year, lx + lw * 0.96, ly + lh * 0.78);
+  }
+
+  // The window, and the tape behind it.
+  const wy = height * 0.67;
+  ctx.fillStyle = 'rgba(120, 125, 140, 0.35)';
+  ctx.fillRect(width * 0.22, wy - height * 0.13, width * 0.56, height * 0.26);
+  reels(ctx, width / 2, wy, width * 0.36, height * 0.12, 'rgba(160, 165, 180, 0.4)');
+
+  return toTexture(element, 8);
+}
+
+/**
+ * A compact cassette: a coloured shell, a paper label with the show's name
+ * written on it, the two reels and the screws at the corners.
+ */
+export function cassetteTexture(podcast: ShelfPodcast, aspect: number): CanvasTexture {
+  const width = 768;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  plastic(ctx, width, height, shellColour(podcast.id), podcast.id);
+
+  // Screws.
+  ctx.fillStyle = 'rgba(30, 30, 36, 0.6)';
+  for (const [x, y] of [[0.05, 0.08], [0.95, 0.08], [0.05, 0.92], [0.95, 0.92], [0.5, 0.9]]) {
+    ctx.beginPath();
+    ctx.arc(width * x, height * y, width * 0.014, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // The label, with its window cut out.
+  const lx = width * 0.08;
+  const ly = height * 0.07;
+  const lw = width * 0.84;
+  const lh = height * 0.62;
+  ctx.fillStyle = '#f6f2e8';
+  ctx.fillRect(lx, ly, lw, lh);
+  ctx.fillStyle = shellColour(`${podcast.id}-band`);
+  ctx.fillRect(lx, ly + lh * 0.38, lw, lh * 0.5);
+  ctx.fillStyle = '#6a6670';
+  ctx.font = `700 ${Math.round(lh * 0.1)}px ${SANS}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('A', lx + lw * 0.03, ly + lh * 0.13);
+  handwrite(ctx, podcast.title, lx + lw * 0.1, ly + lh * 0.3, lw * 0.85, Math.round(lh * 0.24), BALLPOINT);
+
+  const wy = ly + lh * 0.63;
+  ctx.fillStyle = '#2b2a31';
+  ctx.beginPath();
+  ctx.roundRect(width * 0.28, wy - lh * 0.15, width * 0.44, lh * 0.3, lh * 0.15);
+  ctx.fill();
+  reels(ctx, width / 2, wy, width * 0.33, lh * 0.12, '#3a3842');
+
+  // The trapezoid at the foot, where the heads meet the tape.
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+  ctx.beginPath();
+  ctx.moveTo(width * 0.2, height);
+  ctx.lineTo(width * 0.26, height * 0.76);
+  ctx.lineTo(width * 0.74, height * 0.76);
+  ctx.lineTo(width * 0.8, height);
+  ctx.closePath();
+  ctx.fill();
+
+  return toTexture(element, 8);
+}
+
+/** Sunset bands for a lettered postcard with no photograph yet. */
+const POSTCARD_SKIES = [
+  ['#3f6fc2', '#b98ad6', '#ff9a8b', '#ffd29d'],
+  ['#2aa7a1', '#7fd3c6', '#ffc1a6', '#ff8fb1'],
+  ['#5b4bb7', '#e2458f', '#ff9651', '#ffd36e'],
+] as const;
+
+/**
+ * The picture side of a postcard. With the visitor's own photograph it is that
+ * photograph inside a white border; without one it is a large-letter
+ * "Greetings from" card in the sunset's colours, the classic Florida tourist
+ * card, until the photograph is added.
+ */
+export function postcardFrontTexture(place: ShelfPlace, aspect: number, image?: HTMLImageElement | null): CanvasTexture {
+  const width = 900;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  ctx.fillStyle = '#f7f3ea';
+  ctx.fillRect(0, 0, width, height);
+  const border = width * 0.035;
+  const iw = width - border * 2;
+  const ih = height - border * 2;
+
+  if (image) {
+    drawArt(ctx, image, border, border, iw, ih);
+  } else {
+    const sky = POSTCARD_SKIES[hash(place.id) % POSTCARD_SKIES.length];
+    const gradient = ctx.createLinearGradient(0, border, 0, border + ih);
+    sky.forEach((colour, i) => gradient.addColorStop(i / (sky.length - 1), colour));
+    ctx.fillStyle = gradient;
+    ctx.fillRect(border, border, iw, ih);
+    // The sun, set low, with the bands cut through it.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(border, border, iw, ih);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.arc(width * 0.72, border + ih * 0.78, ih * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 236, 190, 0.85)';
+    ctx.fill();
+    ctx.fillStyle = sky[3];
+    for (let i = 0; i < 5; i += 1) ctx.fillRect(border, border + ih * (0.66 + i * 0.06), iw, ih * (0.012 + i * 0.006));
+    ctx.restore();
+  }
+
+  // "Greetings from" in script, the place in big outlined letters.
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.shadowColor = 'rgba(20, 10, 40, 0.45)';
+  ctx.shadowBlur = width * 0.01;
+  ctx.font = `${Math.round(ih * 0.13)}px ${HAND}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('Greetings from', border + iw * 0.06, border + ih * 0.22);
+  const name = place.title.toUpperCase();
+  const size = fitText(ctx, name, iw * 0.88, Math.round(ih * 0.3), Math.round(ih * 0.1), value => `500 ${value}px ${HEADLINE}`);
+  ctx.font = `500 ${size}px ${HEADLINE}`;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = size * 0.1;
+  ctx.strokeStyle = '#1d1838';
+  const lines = wrapLines(ctx, name, iw * 0.88, 2);
+  let y = border + ih * 0.22 + size * 1.02;
+  for (const line of lines) {
+    ctx.strokeText(line, border + iw * 0.06, y);
+    ctx.fillStyle = '#fff4dc';
+    ctx.fillText(line, border + iw * 0.06, y);
+    y += size * 0.96;
+  }
+  ctx.shadowColor = 'transparent';
+
+  return toTexture(element, 8);
+}
+
+/**
+ * The written side: a short note in the site's hand on the left, a stamp, a
+ * postmark with the place and year, and the address lines on the right.
+ */
+export function postcardBackTexture(place: ShelfPlace, aspect: number): CanvasTexture {
+  const width = 900;
+  const height = Math.round(width / aspect);
+  const { element, ctx } = canvas(width, height);
+  const random = noise(`${place.id}-back`);
+  ctx.fillStyle = '#f5f0e4';
+  ctx.fillRect(0, 0, width, height);
+  for (let i = 0; i < 5000; i += 1) {
+    ctx.fillStyle = `rgba(120, 104, 80, ${random() * 0.05})`;
+    ctx.fillRect(random() * width, random() * height, 1.4, 1.4);
+  }
+
+  ctx.strokeStyle = 'rgba(60, 50, 40, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(width * 0.55, height * 0.1);
+  ctx.lineTo(width * 0.55, height * 0.9);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(60, 50, 40, 0.55)';
+  ctx.font = `500 ${Math.round(height * 0.035)}px ${MONO}`;
+  ctx.letterSpacing = '4px';
+  ctx.textAlign = 'left';
+  ctx.fillText('POST CARD', width * 0.06, height * 0.12);
+  ctx.letterSpacing = '0px';
+
+  if (place.note) {
+    ctx.font = `${Math.round(height * 0.085)}px ${HAND}`;
+    ctx.fillStyle = BALLPOINT;
+    const lines = wrapLines(ctx, place.note, width * 0.44, 5);
+    let y = height * 0.3;
+    for (const line of lines) {
+      ctx.fillText(line, width * 0.06, y);
+      y += height * 0.11;
+    }
+  }
+
+  // Address lines.
+  ctx.strokeStyle = 'rgba(60, 50, 40, 0.3)';
+  for (let i = 0; i < 3; i += 1) {
+    const y = height * (0.6 + i * 0.1);
+    ctx.beginPath();
+    ctx.moveTo(width * 0.6, y);
+    ctx.lineTo(width * 0.94, y);
+    ctx.stroke();
+  }
+
+  // Stamp, with its perforated edge.
+  const sx = width * 0.78;
+  const sy = height * 0.1;
+  const sw = width * 0.15;
+  const sh = sw * 1.2;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(sx, sy, sw, sh);
+  ctx.fillStyle = shellColour(`${place.id}-stamp`);
+  ctx.fillRect(sx + sw * 0.1, sy + sh * 0.08, sw * 0.8, sh * 0.84);
+  ctx.beginPath();
+  ctx.arc(sx + sw * 0.5, sy + sh * 0.62, sw * 0.22, Math.PI, 0);
+  ctx.fillStyle = '#ffd36e';
+  ctx.fill();
+  ctx.fillStyle = '#f5f0e4';
+  for (let i = 0; i <= 8; i += 1) {
+    for (const [x, y] of [[sx + (sw * i) / 8, sy], [sx + (sw * i) / 8, sy + sh]]) {
+      ctx.beginPath();
+      ctx.arc(x, y, sw * 0.035, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Postmark over the stamp's corner.
+  const px = sx - sw * 0.15;
+  const py = sy + sh * 0.75;
+  const pr = sw * 0.42;
+  ctx.strokeStyle = 'rgba(40, 40, 70, 0.6)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(px, py, pr, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(40, 40, 70, 0.7)';
+  ctx.textAlign = 'center';
+  ctx.font = `600 ${Math.round(pr * 0.24)}px ${SANS}`;
+  ctx.fillText(truncate(ctx, (place.location ?? place.title).toUpperCase(), pr * 1.7), px, py - pr * 0.1);
+  if (place.year) {
+    ctx.font = `600 ${Math.round(pr * 0.3)}px ${SANS}`;
+    ctx.fillText(place.year, px, py + pr * 0.35);
+  }
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo(px + pr * 1.1, py - pr * 0.45 + i * pr * 0.3);
+    ctx.bezierCurveTo(px + pr * 1.6, py - pr * 0.7 + i * pr * 0.3, px + pr * 2.1, py - pr * 0.2 + i * pr * 0.3, px + pr * 2.6, py - pr * 0.45 + i * pr * 0.3);
+    ctx.stroke();
+  }
+
+  return toTexture(element, 8);
+}
+
+/* -------------------------------------------------------------------------- */
 /* External images                                                             */
 /* -------------------------------------------------------------------------- */
 
@@ -672,7 +1109,16 @@ export async function loadImage(url: string): Promise<HTMLImageElement | null> {
 export async function fontsReady(): Promise<void> {
   if (!('fonts' in document)) return;
   try {
-    await document.fonts.ready;
+    // `fonts.ready` only covers faces the page has already used, and most of
+    // these are used only on canvas, so each is asked for by name.
+    await Promise.all([
+      document.fonts.load(`600 40px ${DISPLAY}`),
+      document.fonts.load(`500 40px ${SANS}`),
+      document.fonts.load(`700 40px ${SANS}`),
+      document.fonts.load(`500 20px ${MONO}`),
+      document.fonts.load(`500 40px ${HEADLINE}`),
+      document.fonts.load(`40px ${HAND}`),
+    ]);
   } catch {
     /* keep going with fallback faces */
   }

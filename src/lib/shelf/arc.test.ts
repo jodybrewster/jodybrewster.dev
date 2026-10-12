@@ -23,7 +23,9 @@ describe('isFilter', () => {
     expect(isFilter('book')).toBe(true);
     expect(isFilter('album')).toBe(true);
     expect(isFilter('all')).toBe(false);
-    expect(isFilter('podcast')).toBe(false);
+    expect(isFilter('podcast')).toBe(true);
+    expect(isFilter('place')).toBe(true);
+    expect(isFilter('case')).toBe(false);
     expect(isFilter(undefined)).toBe(false);
   });
 });

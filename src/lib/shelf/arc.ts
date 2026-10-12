@@ -14,13 +14,18 @@ import type { MediaKind, ShelfItem } from './media';
 export type LibraryFilter = MediaKind;
 
 export const FILTERS: ReadonlyArray<{ id: LibraryFilter; label: string }> = [
+  { id: 'place', label: 'Experiences' },
   { id: 'book', label: 'Books' },
-  { id: 'game', label: 'Games' },
   { id: 'album', label: 'Music' },
+  { id: 'film', label: 'Films' },
+  { id: 'podcast', label: 'Podcasts' },
+  { id: 'game', label: 'Games' },
+  { id: 'tool', label: 'Tools' },
 ];
 
-/** The filter /library opens on when the address names none. */
-export const DEFAULT_FILTER: LibraryFilter = 'book';
+/** The filter /library opens on when the address names none: where Jody has
+ *  been says the most about him, so the room opens on the postcards. */
+export const DEFAULT_FILTER: LibraryFilter = 'place';
 
 export function isFilter(value: unknown): value is LibraryFilter {
   return FILTERS.some(filter => filter.id === value);

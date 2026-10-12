@@ -11,13 +11,27 @@
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { monthLabel, normalizeAlbums, normalizeBooks, normalizeGames, slugify } from './media';
-import type { ShelfAlbum, ShelfBook, ShelfGame } from './media';
+import {
+  monthLabel,
+  normalizeAlbums,
+  normalizeBooks,
+  normalizeFilms,
+  normalizeGames,
+  normalizePlaces,
+  normalizePodcasts,
+  normalizeTools,
+  slugify,
+} from './media';
+import type { ShelfAlbum, ShelfBook, ShelfFilm, ShelfGame, ShelfPlace, ShelfPodcast, ShelfTool } from './media';
 
 export interface ShelfPayloadData {
   albums: ShelfAlbum[];
   books: ShelfBook[];
   games: ShelfGame[];
+  tools: ShelfTool[];
+  films: ShelfFilm[];
+  podcasts: ShelfPodcast[];
+  places: ShelfPlace[];
   listeningLabel: string;
   libraryLabel: string;
   gamesLabel: string;
@@ -35,6 +49,10 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   const libraryData = await readJson('content/library.json');
   const listeningData = await readJson('content/listening.json');
   const gamesData = await readJson('content/games.json');
+  const toolsData = await readJson('content/tools.json');
+  const filmsData = await readJson('content/films.json');
+  const podcastsData = await readJson('content/podcasts.json');
+  const placesData = await readJson('content/places.json');
 
   const books = normalizeBooks((libraryData.books as unknown[]) ?? []);
 
@@ -56,6 +74,12 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   });
   const games = normalizeGames(rawGames);
 
+  const list = (value: unknown) => (Array.isArray(value) ? value : []);
+  const tools = normalizeTools(list(toolsData.tools));
+  const films = normalizeFilms(list(filmsData.films));
+  const podcasts = normalizePodcasts(list(podcastsData.podcasts));
+  const places = normalizePlaces(list(placesData.places));
+
   const month = monthLabel(listeningData.updated as string | undefined);
   const gamesMonth = monthLabel(gamesData.updated as string | undefined);
 
@@ -63,6 +87,10 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
     albums,
     books,
     games,
+    tools,
+    films,
+    podcasts,
+    places,
     listeningLabel: month ? `LISTENING · ${month.toUpperCase()}` : 'LISTENING',
     libraryLabel: `LIBRARY · ${books.length} BOOKS`,
     gamesLabel: gamesMonth ? `PLAYING · ${gamesMonth.toUpperCase()}` : 'PLAYING',

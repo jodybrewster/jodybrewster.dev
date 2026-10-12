@@ -1,0 +1,7 @@
+{
+  "films": [
+    { "title": "Miami Vice", "year": "1984-1989", "sample": true },
+    { "title": "Scarface", "year": 1983, "sample": true },
+    { "title": "Back to the Future", "year": 1985, "sample": true }
+  ]
+}

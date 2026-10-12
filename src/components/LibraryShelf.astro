@@ -13,6 +13,7 @@ import Button from './Button.astro';
 import Icon from './Icon.astro';
 import { DEFAULT_FILTER, FILTERS } from '../lib/shelf/arc';
 import type { ShelfPayloadData } from '../lib/shelf/payload';
+import { coverOf } from '../lib/shelf/media';
 import type { ShelfItem } from '../lib/shelf/media';
 
 interface Props {
@@ -20,21 +21,31 @@ interface Props {
 }
 
 const { payload } = Astro.props;
-const { albums, books, games } = payload;
+const { albums, books, games, tools, films, podcasts, places } = payload;
 
 const sections = [
-  { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
-  { kind: 'game', label: payload.gamesLabel, items: games },
+  { kind: 'place', label: 'EXPERIENCES', items: places as ShelfItem[] },
+  { kind: 'book', label: payload.libraryLabel, items: books },
   { kind: 'album', label: payload.listeningLabel, items: albums },
+  { kind: 'film', label: 'FILMS', items: films },
+  { kind: 'podcast', label: 'PODCASTS', items: podcasts },
+  { kind: 'game', label: payload.gamesLabel, items: games },
+  { kind: 'tool', label: 'TOOLS', items: tools },
 ].filter(section => section.items.length > 0);
 
 const present = new Set(sections.map(section => section.kind));
 const filters = FILTERS.filter(filter => present.has(filter.id));
 
 function credit(item: ShelfItem): string {
-  if (item.kind === 'album') return item.artist;
-  if (item.kind === 'book') return item.author;
-  return item.platform;
+  switch (item.kind) {
+    case 'album': return item.artist;
+    case 'book': return item.author;
+    case 'game': return item.platform;
+    case 'tool': return item.maker ?? '';
+    case 'film': return item.year ?? '';
+    case 'podcast': return item.host ?? '';
+    case 'place': return [item.location, item.year].filter(Boolean).join(', ');
+  }
 }
 ---
 
@@ -92,8 +103,8 @@ function credit(item: ShelfItem): string {
                 target="_blank"
               >
                 <span class="shelf__art" style={`--cloth:${item.color}`}>
-                  {item.cover ? (
-                    <img src={item.cover} alt="" loading="lazy" decoding="async" width="180" height="240" />
+                  {coverOf(item) ? (
+                    <img src={coverOf(item)} alt="" loading="lazy" decoding="async" width="180" height="240" />
                   ) : (
                     <span class="shelf__art-fallback" aria-hidden="true">{item.title.slice(0, 1)}</span>
                   )}
@@ -248,7 +259,15 @@ function credit(item: ShelfItem): string {
     }
 
     const byId = new Map<string, ShelfItem>();
-    for (const item of [...payload.albums, ...payload.books, ...payload.games]) {
+    for (const item of [
+      ...payload.albums,
+      ...payload.books,
+      ...payload.games,
+      ...payload.tools,
+      ...payload.films,
+      ...payload.podcasts,
+      ...payload.places,
+    ]) {
       byId.set(item.id, item);
     }
 
@@ -292,6 +311,30 @@ function credit(item: ShelfItem): string {
           credit = item.platform;
           excerpt = item.note ?? '';
           action = 'Official page';
+          break;
+        case 'tool':
+          kind = 'Tools I work in';
+          credit = item.maker ?? '';
+          excerpt = item.note ?? '';
+          action = 'Official site';
+          break;
+        case 'film':
+          kind = item.sample ? 'Watching / Sample' : 'Watching';
+          credit = item.year ?? '';
+          excerpt = item.note ?? '';
+          action = 'More about it';
+          break;
+        case 'podcast':
+          kind = item.sample ? 'Listening / Sample' : 'Listening';
+          credit = item.host ?? '';
+          excerpt = item.note ?? '';
+          action = 'Listen';
+          break;
+        case 'place':
+          kind = 'Been there';
+          credit = [item.location, item.year].filter(Boolean).join(', ');
+          excerpt = item.note ?? '';
+          action = 'More about it';
           break;
       }
 

@@ -1,6 +1,7 @@
 /**
- * The /library scene: what Jody reads, plays and listens to, floating a page
- * at a time in front of a Miami morning.
+ * The /library scene: where Jody has been, what he reads, watches, plays and
+ * listens to, and what he works in, floating a page at a time in front of a
+ * Miami morning.
  *
  * Owns the renderer, the backdrop, the objects, picking, paging and the move
  * that brings a picked item up to the reader. A page flies in from the right
@@ -44,27 +45,38 @@ import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectCom
 import type { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { arcPose, arrange, DEFAULT_FILTER, pageOf, paginate } from './arc';
 import type { LibraryFilter, Page } from './arc';
-import type { GameSystem, ShelfAlbum, ShelfBook, ShelfGame, ShelfItem } from './media';
-import { seededUnit } from './media';
+import type { GameSystem, ShelfAlbum, ShelfBook, ShelfFilm, ShelfGame, ShelfItem, ShelfPlace, ShelfPodcast, ShelfTool } from './media';
+import { coverOf, seededUnit } from './media';
 import type { ShelfStore } from './scene-state';
 import {
   albumBackTexture,
   artTexture,
   casePlastic,
+  cassetteTexture,
   fallbackCoverTexture,
+  floppyBackTexture,
+  floppyTexture,
   fontsReady,
   gameCoverTexture,
   gameSpineTexture,
   loadImage,
   pageEdgeTexture,
   paletteFromImage,
+  postcardBackTexture,
+  postcardFrontTexture,
+  shellColour,
   spineTexture,
+  vhsTexture,
 } from './textures';
 
 export interface ShelfPayload {
   albums: ShelfAlbum[];
   books: ShelfBook[];
   games: ShelfGame[];
+  tools: ShelfTool[];
+  films: ShelfFilm[];
+  podcasts: ShelfPodcast[];
+  places: ShelfPlace[];
 }
 
 export interface LibrarySceneOptions {
@@ -114,6 +126,14 @@ const GAME_CASES: Record<GameSystem, { width: number; height: number; depth: num
   ps5: { width: 1.41, height: 1.78, depth: 0.15 },
   other: { width: 1.41, height: 1.98, depth: 0.15 },
 };
+/** The flat things: a 3.5 inch disk, a VHS tape and a cassette at their real
+ *  proportions, and a 6 by 4 postcard, each scaled to sit with the books. */
+const PRINTED: Record<'tool' | 'film' | 'podcast' | 'place', { width: number; height: number; depth: number }> = {
+  tool: { width: 1.5, height: 1.56, depth: 0.07 },
+  film: { width: 1.95, height: 1.07, depth: 0.26 },
+  podcast: { width: 1.62, height: 1.03, depth: 0.17 },
+  place: { width: 2.1, height: 1.4, depth: 0.025 },
+};
 /** Space between neighbours on a page. */
 const GAP = 0.2;
 /** Share of the lane a page is packed into. The ends of the arc come forward
@@ -133,6 +153,11 @@ const PRESENTATION: Record<ShelfItem['kind'], { fill: number; tilt: [number, num
   album: { fill: 0.46, tilt: [0.05, 0.14, 0.015], spinTurns: 1 },
   book: { fill: 0.6, tilt: [0.07, 0.46, 0.04], spinTurns: 0 },
   game: { fill: 0.58, tilt: [0.05, 0.3, 0.02], spinTurns: 0 },
+  tool: { fill: 0.5, tilt: [0.06, 0.22, 0.03], spinTurns: 0 },
+  film: { fill: 0.34, tilt: [0.08, 0.2, 0.02], spinTurns: 0 },
+  podcast: { fill: 0.34, tilt: [0.08, 0.2, 0.02], spinTurns: 0 },
+  // A postcard turns all the way over on the way in, so its written side shows.
+  place: { fill: 0.44, tilt: [0.04, 0.12, -0.02], spinTurns: 1 },
 };
 /** The picked item sits left of centre, clear of the card on the right, and a
  *  little high, clear of the pager and the Verso bar along the foot. */
@@ -550,7 +575,15 @@ export class LibraryScene {
       edges.dispose();
     });
 
-    const all: ShelfItem[] = [...payload.books, ...payload.albums, ...payload.games];
+    const all: ShelfItem[] = [
+      ...payload.places,
+      ...payload.books,
+      ...payload.albums,
+      ...payload.films,
+      ...payload.podcasts,
+      ...payload.games,
+      ...payload.tools,
+    ];
     for (const item of all) this.#views.set(item.id, this.#buildItem(item));
   }
 
@@ -560,8 +593,10 @@ export class LibraryScene {
         return this.#buildBook(item);
       case 'album':
         return this.#buildAlbum(item);
-      default:
+      case 'game':
         return this.#buildGame(item);
+      default:
+        return this.#buildPrinted(item);
     }
   }
 
@@ -682,6 +717,37 @@ export class LibraryScene {
     return this.#view(game, mesh, width, height, face, [face, spine], release);
   }
 
+  /**
+   * A disk, a tape, a cassette or a postcard: shell or card stock round the
+   * edges and a printed face, drawn once the fonts and any photograph are in.
+   */
+  #buildPrinted(item: ShelfTool | ShelfFilm | ShelfPodcast | ShelfPlace): ItemView {
+    const { width, height, depth } = PRINTED[item.kind];
+    const shell = new Color(item.kind === 'place' ? '#f5f0e4' : item.kind === 'film' ? '#1b1a20' : shellColour(item.id));
+    const finish = item.kind === 'place'
+      ? { roughness: 0.86 }
+      : { roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.2 };
+    const edge = new MeshPhysicalMaterial({ ...finish, color: shell });
+    const face = new MeshPhysicalMaterial({ ...finish, color: shell });
+    const back = new MeshPhysicalMaterial({ ...finish, color: shell });
+    const mesh = new Mesh(new BoxGeometry(width, height, depth), [edge, edge, edge, edge, face, back]);
+    const release = () => {
+      for (const material of [face, back]) {
+        material.map?.dispose();
+        material.map = null;
+        material.color.copy(shell);
+        material.needsUpdate = true;
+      }
+    };
+    this.#cleanup.push(() => {
+      release();
+      face.dispose();
+      back.dispose();
+      edge.dispose();
+    });
+    return this.#view(item, mesh, width, height, face, [face], release);
+  }
+
   /* ---------------------------------------------------------------------- */
   /* Art                                                                     */
   /* ---------------------------------------------------------------------- */
@@ -698,7 +764,8 @@ export class LibraryScene {
     const item = view.item;
 
     const apply = (paint: (image: HTMLImageElement | null) => void) => async () => {
-      const image = item.cover ? await loadImage(item.cover) : null;
+      const cover = coverOf(item);
+      const image = cover ? await loadImage(cover) : null;
       // Spines and case bands are set in the webfonts.
       await fontsReady();
       // Released or torn down while loading: nothing to print onto.
@@ -735,11 +802,32 @@ export class LibraryScene {
             back.map = albumBackTexture(item);
             back.needsUpdate = true;
           });
-        default:
+        case 'game':
           return apply(image => {
             view.face.map?.dispose();
             view.face.map = gameCoverTexture(item, view.width / view.height, image);
             view.face.needsUpdate = true;
+          });
+        default:
+          return apply(image => {
+            const aspect = view.width / view.height;
+            const back = (view.mesh.material as Material[])[5] as MeshStandardMaterial;
+            if (item.kind === 'tool') {
+              view.face.map = floppyTexture(item, aspect);
+              back.map = floppyBackTexture(item, aspect);
+            } else if (item.kind === 'film') {
+              view.face.map = vhsTexture(item, aspect);
+            } else if (item.kind === 'podcast') {
+              view.face.map = cassetteTexture(item, aspect);
+            } else {
+              view.face.map = postcardFrontTexture(item, aspect, image);
+              back.map = postcardBackTexture(item, aspect);
+            }
+            for (const material of [view.face, back]) {
+              if (!material.map) continue;
+              material.color.set(0xffffff);
+              material.needsUpdate = true;
+            }
           });
       }
     })();

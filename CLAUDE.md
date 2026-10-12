@@ -117,13 +117,25 @@ Gotchas: conversation history is read server-side from Redis and never accepted 
 
 ### The /library room
 
-A Three.js room at `/library`, linked from the main menu: books (`content/library.json`), albums (`content/listening.json`, the rolling snapshot) and games (`content/games.json`) float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column (Books, Games, Music) and `?show=<kind>` choose what is shown, Books by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work, and the library is only Jody's taste.
+A Three.js room at `/library`, linked from the main menu, where Jody's experiences and taste float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column and `?show=<kind>` choose what is shown, Experiences by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work.
 
-- `src/lib/shelf/payload.ts` builds the data from the three media files.
-- `src/lib/shelf/media.ts` normalizes all three sources into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
+| Filter | Object | Source |
+|---|---|---|
+| Experiences (`place`) | postcard | `content/places.json`, by hand: `title`, `location`, `year`, `note` (written on the back), `photo` (site-absolute, e.g. under `public/media/places/`; without one the front is a lettered "Greetings from" card) |
+| Books (`book`) | book | `content/library.json`, `npm run books` |
+| Music (`album`) | jewel case | `content/listening.json`, `npm run spotify` |
+| Films (`film`) | VHS tape | `content/films.json`, by hand |
+| Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
+| Games (`game`) | game case | `content/games.json`, `npm run games` |
+| Tools (`tool`) | 3.5 inch disk | `content/tools.json`, by hand: `title`, `maker`, `note`, `url` |
+
+Rows marked `"sample": true` are placeholders and say so on their card; replace them before merging. The films are samples until Jody's own list lands.
+
+- `src/lib/shelf/payload.ts` builds the data from the content files above.
+- `src/lib/shelf/media.ts` normalizes every source into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
 - `src/lib/shelf/arc.ts` is the pure layout: the filters, pagination, the pager's numbers and the arc pose.
 - `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
-- `src/lib/shelf/textures.ts` draws spines and game cases on canvas. Real jackets, album art and box art come from files and are redrawn no larger than 640px.
+- `src/lib/shelf/textures.ts` draws spines, game cases, disks, tapes, cassettes and postcards on canvas, with labels in the site's script face. Real jackets, album art, box art and postcard photos come from files and are redrawn no larger than 640px. `fontsReady()` loads each face by name, because `document.fonts.ready` skips faces the page itself never used.
 - `src/lib/shelf/scene.ts` owns the renderer, the backdrop, the objects, picking, paging and the flights.
 - `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing list in HTML, with the filter column working on it too. Three.js progressively enhances it; that markup is the whole experience without WebGL or scripts and for assistive tech.
 

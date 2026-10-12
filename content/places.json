@@ -1,0 +1,10 @@
+{
+  "places": [
+    { "title": "Art Basel", "location": "Miami Beach, FL" },
+    { "title": "Meow Wolf" },
+    { "title": "MoMA", "location": "New York, NY" },
+    { "title": "New York City", "location": "New York, NY" },
+    { "title": "Key West", "location": "Key West, FL" },
+    { "title": "Disney World", "location": "Orlando, FL" }
+  ]
+}

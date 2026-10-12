@@ -221,7 +221,7 @@ There is no spinning edge and no halo, because badges are not actions.
 
 The library is one screen: the home nav fixed over a Three.js room, with the footer below it.
 The room is a plate, `public/images/library/backdrop.webp`: concrete, a Miami sunset over the water and a wet stone floor, made with gpt-image-2 from the design mock with its objects and interface taken out.
-Books, albums and game cases float in front of it on a shallow arc, one kind and one page at a time.
+Postcards, books, albums, VHS tapes, cassettes, game cases and floppy disks float in front of it on a shallow arc, one kind and one page at a time. Labels are written in the script face, as if by hand.
 The page opens in pre-dawn dark (`--ui-night`) and the plate grades up to the morning while the first page flies in from the right.
 
 - **Filter column.** Left, over the dark wall: Plus Jakarta Sans 16px on a 1px hairline, the current filter in `--ui-pink` with a glowing segment on the line and a dot, like the nav's underline. Below 760px it becomes a row under the nav.

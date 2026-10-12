@@ -71,6 +71,30 @@
       "year": 1993,
       "coverSource": "https://en.wikipedia.org/wiki/File:The_nightmare_before_christmas_poster.jpg",
       "cover": "/media/films/film-the-nightmare-before-christmas.jpg"
+    },
+    {
+      "title": "Fight Club",
+      "year": 1999,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Fight_Club_poster.jpg",
+      "cover": "/media/films/film-fight-club.jpg"
+    },
+    {
+      "title": "The Matrix",
+      "year": 1999,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Matrix.png",
+      "cover": "/media/films/film-the-matrix.jpg"
+    },
+    {
+      "title": "The NeverEnding Story",
+      "year": 1984,
+      "coverSource": "https://en.wikipedia.org/wiki/File:Neverendingstoryposter.jpg",
+      "cover": "/media/films/film-the-neverending-story.jpg"
+    },
+    {
+      "title": "The Dark Crystal",
+      "year": 1982,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_Dark_Crystal_Film_Poster.jpg",
+      "cover": "/media/films/film-the-dark-crystal.jpg"
     }
   ]
 }

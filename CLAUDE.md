@@ -72,6 +72,8 @@ Content lives in two places:
 | `notes` | `content/notes/` | `title`, `date`, `status` (seedling/budding/evergreen), `publish` |
 | `work` | `content/work/` | `title`, `sector`, `role`, `duration` |
 
+Research and notes take `publish: true`, `false` or `draft`. A draft shows on the dev server only; a production build leaves it out of every page, feed, `llms.txt` and Verso's corpus. Every check goes through `isPublished()` in `src/lib/publish.ts`, because 'draft' is a truthy string and a loose check would ship it.
+
 `content/now.md` is a standalone file (not a collection), read directly by the Now page.
 
 ### Pages

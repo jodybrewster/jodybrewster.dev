@@ -5,12 +5,13 @@ import { articleImage } from '../lib/article-images';
 import { mediaTransitionName } from '../lib/transition-names';
 import Button from './Button.astro';
 import Badge from './Badge.astro';
+import { isPublished } from '../lib/publish';
 
 interface Props { researchOnly?: boolean; }
 const { researchOnly = false } = Astro.props;
 const [essays, research] = await Promise.all([
   researchOnly ? Promise.resolve([]) : getCollection('writing', entry => entry.data.status === 'published'),
-  getCollection('research', entry => entry.data.publish),
+  getCollection('research', entry => isPublished(entry.data.publish, import.meta.env.DEV)),
 ]);
 const categoryDefinitions = [
   { id: 'architecture', label: 'Architecture', pattern: /architecture|systems|framework|mcp|platform|knowledge|snowflake|stack|codebase/i },

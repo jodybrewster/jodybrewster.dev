@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { getCollection, getEntry } from 'astro:content';
+import { isPublished } from '../../lib/publish';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 export async function getStaticPaths() {
-  const notes = await getCollection('notes', ({ data }) => data.publish);
+  const notes = await getCollection('notes', ({ data }) => isPublished(data.publish, import.meta.env.DEV));
   return notes.map((entry) => ({ params: { slug: entry.id } }));
 }
 
@@ -14,7 +15,7 @@ export const GET: APIRoute = async ({ params }) => {
     return new Response('Bad request', { status: 400 });
   }
   const entry = await getEntry('notes', slug);
-  if (!entry || !entry.data.publish) {
+  if (!entry || !isPublished(entry.data.publish, import.meta.env.DEV)) {
     return new Response('Not found', { status: 404 });
   }
   const filePath = entry.filePath ?? resolve(`content/notes/${slug}.md`);

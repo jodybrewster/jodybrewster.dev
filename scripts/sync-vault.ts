@@ -96,7 +96,7 @@ async function main() {
     process.exit(1);
   }
   await syncDir('writing');
-  await syncDir('notes', fm => fm.publish === true);
+  await syncDir('notes', fm => fm.publish === true || fm.publish === 'draft');
   await syncDir('work');
   await syncDir('research');
   await syncNow();

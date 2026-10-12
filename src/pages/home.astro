@@ -5,9 +5,10 @@ import Icon from '../components/Icon.astro';
 import HomeCaseStudies from '../components/HomeCaseStudies.astro';
 import '../styles/home.css';
 import Button from '../components/Button.astro';
+import { isPublished } from '../lib/publish';
 
-const research = (await getCollection('research', r => r.data.publish))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()).slice(0, 3);
+const research = (await getCollection('research', r => isPublished(r.data.publish, import.meta.env.DEV)))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf() || a.data.title.localeCompare(b.data.title)).slice(0, 3);
 const capabilities = [
   { icon: 'code', title: 'AI & Agents', description: 'Design · Build · Evaluate', color: 'orange' },
   { icon: 'cube', title: 'Web & Mobile', description: 'Modern apps, end to end', color: 'cyan' },

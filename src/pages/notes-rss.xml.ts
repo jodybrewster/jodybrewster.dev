@@ -11,7 +11,7 @@ function firstNonHeadingLine(body: string): string {
 }
 
 export const GET: APIRoute = async (context) => {
-  const entries = await getCollection('notes', (n) => n.data.publish);
+  const entries = await getCollection('notes', (n) => n.data.publish === true);
   const sorted = entries.sort(
     (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
   );

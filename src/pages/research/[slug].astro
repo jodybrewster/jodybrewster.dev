@@ -3,18 +3,19 @@ import { getCollection, getEntry, render } from 'astro:content';
 import Essay from '../../layouts/Essay.astro';
 import { articleImage } from '../../lib/article-images';
 import { pullQuotes } from '../../lib/pull-quotes';
+import { isPublished } from '../../lib/publish';
 
 export async function getStaticPaths() {
-  const published = await getCollection('research', r => r.data.publish);
+  const published = await getCollection('research', r => isPublished(r.data.publish, import.meta.env.DEV));
   return published.map((entry) => ({ params: { slug: entry.id } }));
 }
 
 const { slug } = Astro.params;
 const entry = slug ? await getEntry('research', slug) : undefined;
-if (!entry || !entry.data.publish) return new Response('Not found', { status: 404 });
+if (!entry || !isPublished(entry.data.publish, import.meta.env.DEV)) return new Response('Not found', { status: 404 });
 
-const entries = (await getCollection('research', r => r.data.publish))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const entries = (await getCollection('research', r => isPublished(r.data.publish, import.meta.env.DEV)))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf() || a.data.title.localeCompare(b.data.title));
 const idx = entries.findIndex(e => e.id === entry.id);
 
 const words = (entry.body ?? '').split(/\s+/).filter(Boolean).length;

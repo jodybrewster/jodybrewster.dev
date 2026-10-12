@@ -19,7 +19,7 @@ const notes = defineCollection({
     title: z.string(),
     date: z.coerce.date(),
     status: z.enum(['seedling', 'budding', 'evergreen']),
-    publish: z.boolean().default(false),
+    publish: z.union([z.boolean(), z.literal('draft')]).default(false),
     tags: z.array(z.string()).default([]),
   }),
 });
@@ -45,7 +45,7 @@ const research = defineCollection({
     description: z.string(),
     pillar: z.string().optional(),
     tags: z.array(z.string()).default([]),
-    publish: z.boolean().default(true),
+    publish: z.union([z.boolean(), z.literal('draft')]).default(true),
     slug: z.string().optional(),
   }),
 });

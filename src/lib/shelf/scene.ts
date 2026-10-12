@@ -547,11 +547,14 @@ export class LibraryScene {
     const room = new Scene();
     const sky = new Mesh(new SphereGeometry(50, 48, 24), new MeshBasicMaterial({ map: plate, side: BackSide }));
     room.add(sky);
+    // A thin strip, low behind the camera, where a cover facing the reader
+    // reflects it: a band of light across the face at rest that slides as the
+    // cover turns. Taller, it fills the whole face at once and reads as glare.
     const softbox = new Mesh(
-      new PlaneGeometry(46, 5),
-      new MeshBasicMaterial({ color: new Color(1, 0.95, 0.9).multiplyScalar(7), side: DoubleSide }),
+      new PlaneGeometry(46, 2.4),
+      new MeshBasicMaterial({ color: new Color(1, 0.95, 0.9).multiplyScalar(4), side: DoubleSide }),
     );
-    softbox.position.set(-4, 9, 32);
+    softbox.position.set(-4, -2.5, 32);
     softbox.lookAt(0, 0, 0);
     room.add(softbox);
     const pmrem = new PMREMGenerator(this.#renderer);
@@ -589,7 +592,7 @@ export class LibraryScene {
     // Warm from the right, where the sun is in the plate, and a sky-and-floor
     // fill so the faces turned away from it never go dead.
     const key = new DirectionalLight(0xffdcc0, 1.9);
-    key.position.set(9, 8, 10);
+    key.position.set(9, 3.5, 10);
     this.#scene.add(key);
     this.#key = key;
     const hemi = new HemisphereLight(0xc6cdf4, 0xf2b38d, 0.55);

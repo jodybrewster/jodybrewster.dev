@@ -1353,11 +1353,11 @@ export class LibraryScene {
       .set(frameHeight * this.#camera.aspect * CLOSE_UP_SHIFT_X, frameHeight * ((bottom - top) / 2), -distance)
       .applyQuaternion(this.#camera.quaternion)
       .add(this.#camera.position);
-    // Leaning toward the cursor: up to about seven degrees either way.
+    // Leaning toward the cursor: up to about eleven degrees either way.
     quaternion.copy(this.#camera.quaternion).multiply(
       new Quaternion().setFromEuler(new Euler(
-        look.tilt[0] - this.#lean.y * 0.12,
-        look.tilt[1] + this.#lean.x * 0.16,
+        look.tilt[0] - this.#lean.y * 0.19,
+        look.tilt[1] + this.#lean.x * 0.26,
         look.tilt[2],
       )),
     );

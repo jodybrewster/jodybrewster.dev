@@ -65,6 +65,12 @@
       "year": 2025,
       "coverSource": "https://en.wikipedia.org/wiki/File:Ne_Zha_2_poster.jpg",
       "cover": "/media/films/film-ne-zha-2.jpg"
+    },
+    {
+      "title": "The Nightmare Before Christmas",
+      "year": 1993,
+      "coverSource": "https://en.wikipedia.org/wiki/File:The_nightmare_before_christmas_poster.jpg",
+      "cover": "/media/films/film-the-nightmare-before-christmas.jpg"
     }
   ]
 }

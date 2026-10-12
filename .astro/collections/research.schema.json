@@ -37,7 +37,15 @@
           "default": []
         },
         "publish": {
-          "type": "boolean",
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string",
+              "const": "draft"
+            }
+          ],
           "default": true
         },
         "slug": {

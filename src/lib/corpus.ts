@@ -4,10 +4,11 @@ import { join, resolve } from 'node:path';
 import { slug as githubSlug } from 'github-slugger';
 import { parse } from 'yaml';
 import type { SourceMetadata } from './rag';
+import { isPublished, type Publish } from './publish';
 
 export interface Frontmatter {
   title?: string; date?: string; pubDate?: string; description?: string;
-  status?: string; publish?: boolean; draft?: boolean; slug?: string;
+  status?: string; publish?: Publish; draft?: boolean; slug?: string;
   sector?: string; role?: string; duration?: string; pillar?: string; tags?: string[];
   images?: unknown[];
 }
@@ -31,9 +32,9 @@ export function parseFrontmatter(raw: string): { fm: Frontmatter; body: string }
 }
 function published(type: CollectionType, fm: Frontmatter): boolean {
   if (type === 'writing') return fm.status !== 'draft';
-  if (type === 'notes') return fm.publish === true;
+  if (type === 'notes') return isPublished(fm.publish, false);
   if (type === 'work') return fm.draft !== true;
-  if (type === 'research') return fm.publish !== false;
+  if (type === 'research') return fm.publish === undefined || isPublished(fm.publish, false);
   return true;
 }
 async function filesIn(dir: string, prefix = ''): Promise<string[]> {

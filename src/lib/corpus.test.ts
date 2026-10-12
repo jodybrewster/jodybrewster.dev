@@ -31,6 +31,8 @@ describe('published Verso corpus', () => {
       'work/Secret.md': '---\ntitle: Secret\ndraft: true\n---\nPrivate work',
       'research/Research.mdx': '---\ntitle: Research\nslug: custom-research\npubDate: 2026-07-30\n---\nPublic research',
       'research/Secret.md': '---\ntitle: Hidden\npublish: false\n---\nPrivate research',
+      'research/Draft.md': '---\ntitle: Draft\npublish: draft\n---\nLocal-only research',
+      'notes/Draft.md': '---\ntitle: Draft note\npublish: draft\n---\nLocal-only note',
       'portfolio/Project.md': '---\ntitle: Project\n---\nPublic portfolio',
     });
     const docs = await loadDocs(root);

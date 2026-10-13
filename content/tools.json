@@ -37,6 +37,18 @@
       "url": "https://astro.build"
     },
     {
+      "title": "TypeScript",
+      "maker": "Microsoft",
+      "note": "This site, every script behind it and JobbyJob's web app.",
+      "url": "https://www.typescriptlang.org"
+    },
+    {
+      "title": "Python",
+      "maker": "Python Software Foundation",
+      "note": "The JobbyJob pipeline that fetches, filters and judges every posting.",
+      "url": "https://www.python.org"
+    },
+    {
       "title": "Three.js",
       "maker": "three.js",
       "note": "The library behind this room.",
@@ -53,12 +65,6 @@
       "maker": "Google",
       "note": "Verso's answers and its voice.",
       "url": "https://ai.google.dev"
-    },
-    {
-      "title": "Teable",
-      "maker": "Teable",
-      "note": "The database JobbyJob grew out of, self-hosted in Docker.",
-      "url": "https://teable.io"
     }
   ]
 }

@@ -19,6 +19,12 @@
       "url": "https://openai.com/codex/"
     },
     {
+      "title": "herdr",
+      "maker": "herdr",
+      "note": "Where Claude Code and Codex run side by side, and where I see which one is waiting on me.",
+      "url": "https://herdr.dev"
+    },
+    {
       "title": "Figma",
       "maker": "Figma",
       "note": "Where the interface work in my portfolio was designed.",

@@ -28,6 +28,10 @@ Off, `/api/chat` answers 503 with paused copy the dock shows (`X-Switched-Off`),
 A switch lives in a deployment's environment, so a rollback restores the switches of the deployment it returns to; and every API route refuses, in production, any host but `jodybrewster.dev` and `www.jodybrewster.dev` (`isCanonicalHost`), so old deployments' permanent URLs, which keep their old switches, serve no API.
 Unrecognized switch values count as off.
 
+`npm run rollback` ([`release.md`](release.md)) is that kind of rollback: production comes back with the switches the target deployment was built with.
+A switch turned off after that build is on again.
+After a rollback, set it again with `npm run switch`, then deploy and promote the new deployment.
+
 ## Audit log
 
 `src/lib/audit.ts` keeps a tamper-evident chain on Upstash (`@jodybrewster/gemini-live/server/audit`), in Production only (`audit:production`).

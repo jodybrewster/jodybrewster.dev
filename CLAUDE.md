@@ -83,4 +83,5 @@ $ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
 - `docs/verso.md`: Verso from the plain summary down to the route, cards, voice and the vendored bundle; `docs/verso-evaluation.md` is its test set and runbook.
 - `docs/security.md`: security headers, kill switches, the audit log and rate limits.
 - `docs/library.md`: the `/library` room.
+- `docs/release.md`: how a merge reaches production, branch protection and rollback.
 - `REVIEW.md`: the three review passes and what blocks a merge.

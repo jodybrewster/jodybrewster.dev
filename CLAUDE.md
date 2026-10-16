@@ -56,9 +56,9 @@ $ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
 Every production incident adds a case to the evaluation set in `docs/verso-evaluation.md`, in the PR that fixes it.
 
 ## How work flows here
+Planning context: `~/Projects/hq/AGENTS.md`, then `~/Projects/hq/STATUS.md`; this block names only what this repo has.
 Intents live in `intent/`; older plans stay in `docs/plans/`.
-Verify with `npm test`, `npx astro check` and `npm run build`, as above.
-Review against `REVIEW.md`.
+Verify with `npm test`, `npx astro check` and `npm run build` as above and review against `REVIEW.md`.
 Decision log: none yet; decisions go in `docs/`.
 Merging a PR into `main` deploys production (`docs/release.md`).
 Jody merges; agents stop at the PR.

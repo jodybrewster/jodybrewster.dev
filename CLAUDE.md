@@ -53,6 +53,7 @@ $ npx astro check       # 0 errors, 0 warnings, 0 hints
 $ npm run build         # the site, then pagefind and the security headers
 $ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
 ```
+Every production incident adds a case to the evaluation set in `docs/verso-evaluation.md`, in the PR that fixes it.
 
 ## Design system
 - `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.

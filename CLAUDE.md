@@ -55,6 +55,14 @@ $ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
 ```
 Every production incident adds a case to the evaluation set in `docs/verso-evaluation.md`, in the PR that fixes it.
 
+## How work flows here
+Intents live in `intent/`; older plans stay in `docs/plans/`.
+Verify with `npm test`, `npx astro check` and `npm run build`, as above.
+Review against `REVIEW.md`.
+Decision log: none yet; decisions go in `docs/`.
+Merging a PR into `main` deploys production (`docs/release.md`).
+Jody merges; agents stop at the PR.
+
 ## Design system
 - `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.
 - `src/components/Button.astro` is the only button, with `primary`, `secondary` and `text` variants. Its look is `src/styles/buttons.css`. Never hand-write a button class in a page.

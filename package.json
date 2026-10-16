@@ -29,6 +29,7 @@
     "transcripts:sweep": "tsx scripts/sweep-transcripts.ts",
     "audit:verify": "tsx scripts/audit-verify.ts",
     "switch": "tsx scripts/switch.ts",
+    "rollback": "tsx scripts/rollback.ts",
     "test:headers": "playwright test -c playwright.headers.config.ts",
     "security:approve": "tsx scripts/security-headers.ts --approve"
   },

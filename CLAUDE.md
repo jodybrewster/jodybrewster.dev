@@ -1,9 +1,9 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This is an **Astro 5 static site** deployed to Vercel. It's a personal site for Jody Brewster (jodybrewster.dev) with writing, digital garden notes, work briefs, and an AI chat interface.
 
 ## What this site is for
-
 Everything here serves one goal: conveying what it is like to work with Jody, and who he is. It is not a portfolio that lists what he has done, and not a blog that happens to carry his name. A reader should come away with a sense of how he thinks, what he notices, and what having him on a team would actually be like.
 
 That goal settles the decisions that would otherwise come down to taste. When a call is genuinely close, take the option that reveals more of the person:
@@ -16,23 +16,15 @@ That goal settles the decisions that would otherwise come down to taste. When a 
 This is also why the anti-references in `PRODUCT.md` are what they are. The generic portfolio, the SaaS landing page and the AI startup aesthetic all fail the same test: each one would describe anybody.
 
 ## Behavioral Guidelines
-
-**Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask rather than guessing.
-
-**Simplicity first.** Minimum code that solves the problem. No features beyond what was asked, no abstractions for single-use code, no speculative flexibility. If it could be 50 lines, don't write 200.
-
-**Surgical changes.** Touch only what the task requires. Don't improve adjacent code, refactor things that aren't broken, or match a different style than what's already there. If your changes create orphaned imports/variables, remove those — but leave pre-existing dead code alone unless asked.
-
-**Verify before reporting done.** For multi-step tasks, define success criteria upfront and confirm each step. Clarifying questions come before implementation, not after mistakes.
-
-**Parallelize with subagents.** When the work splits into independent pieces (separate files, distinct features, isolated checks), spawn multiple subagents in a single message rather than working sequentially. Use the `general-purpose` agent for parallel writes/builds, and the `Explore` agent for parallel investigation. Brief each subagent on the existing context it needs (which components/layouts/styles to read) so it doesn't re-explore the whole repo. Skip subagents for trivially small work where their setup overhead outweighs the parallelism gain.
-
-**Verify before inventing.** If uncertain about a file path, function signature, library version, or API, use Read/Grep/search first. Say "I don't know" rather than fabricating. Never invent imports, function names, or citation sources.
-
-**Before any UI change, read `DESIGN.md`.** Use only the tokens, fonts, spacing, and components defined there (`tokens.css`, `Button.astro`). Do not introduce hex values, font families, or radius values outside the system.
+- **Think before coding.** State assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If something is unclear, stop and ask rather than guessing.
+- **Simplicity first.** Minimum code that solves the problem. No features beyond what was asked, no abstractions for single-use code, no speculative flexibility. If it could be 50 lines, don't write 200.
+- **Surgical changes.** Touch only what the task requires. Don't improve adjacent code, refactor things that aren't broken, or match a different style than what's already there. If your changes create orphaned imports/variables, remove those — but leave pre-existing dead code alone unless asked.
+- **Verify before reporting done.** For multi-step tasks, define success criteria upfront and confirm each step. Clarifying questions come before implementation, not after mistakes.
+- **Parallelize with subagents.** When the work splits into independent pieces (separate files, distinct features, isolated checks), spawn multiple subagents in a single message rather than working sequentially. Use the `general-purpose` agent for parallel writes/builds, and the `Explore` agent for parallel investigation. Brief each subagent on the existing context it needs (which components/layouts/styles to read) so it doesn't re-explore the whole repo. Skip subagents for trivially small work where their setup overhead outweighs the parallelism gain.
+- **Verify before inventing.** If uncertain about a file path, function signature, library version, or API, use Read/Grep/search first. Say "I don't know" rather than fabricating. Never invent imports, function names, or citation sources.
+- **Before any UI change, read `DESIGN.md`.** Use only the tokens, fonts, spacing, and components defined there (`tokens.css`, `Button.astro`). Do not introduce hex values, font families, or radius values outside the system.
 
 ## Commands
-
 ```bash
 npm run dev        # start dev server (http://localhost:4321)
 npm run build      # production build (runs pagefind after)
@@ -50,171 +42,56 @@ npm run conversation:delete  # find (--find) or delete (--cid, dry run without -
 npm test           # vitest run
 ```
 
+## Verifying your work
 Unit tests live under `src/lib/**/*.test.ts` (`vitest.config.ts` keeps vitest out of other branches' worktrees in `.worktrees/` and `.claude/worktrees/`) and cover the shelf, Verso transport/routes, conversation history, origins and corpus. Route tests belong in `src/lib/__tests__`, never under `src/pages` where Astro would publish them.
 Type-check with `npx astro check`.
 
-## Architecture
+```text
+$ npm test              # vitest, about 3 seconds; green ends with:
+ Test Files  41 passed (41)
+      Tests  461 passed (461)
+$ npx astro check       # 0 errors, 0 warnings, 0 hints
+$ npm run build         # the site, then pagefind and the security headers
+$ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
+```
+Every production incident adds a case to the evaluation set in `docs/verso-evaluation.md`, in the PR that fixes it.
 
-This is an **Astro 5 static site** deployed to Vercel. It's a personal site for Jody Brewster (jodybrewster.dev) with writing, digital garden notes, work briefs, and an AI chat interface.
+## How work flows here
+Planning context: `~/Projects/hq/AGENTS.md`, then `~/Projects/hq/STATUS.md`; this block names only what this repo has.
+Intents live in `intent/`; older plans stay in `docs/plans/`.
+Verify with `npm test`, `npx astro check` and `npm run build` as above and review against `REVIEW.md`.
+Decision log: none yet; decisions go in `docs/`.
+Merging a PR into `main` deploys production (`docs/release.md`).
+Jody merges; agents stop at the PR.
 
-### Content pipeline
-
-Content lives in two places:
-1. **Obsidian vault** at `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Sheikah Slate/personal/projects/jodybrewster.dev` — the authoring source
-2. **`content/`** — the Astro content layer source, populated by `npm run sync`
-
-`scripts/sync-vault.ts` copies files from the vault into `content/{writing,notes,work}` and `content/now.md`. Notes require `publish: true` in frontmatter to be synced. Running `npm run sync` before editing or building is necessary to have current content.
-
-### Content collections (`src/content.config.ts`)
-
-| Collection | Path | Key frontmatter |
-|---|---|---|
-| `writing` | `content/writing/` | `title`, `date`, `description`, `tags[]`, `status` (draft/published) |
-| `notes` | `content/notes/` | `title`, `date`, `status` (seedling/budding/evergreen), `publish` |
-| `work` | `content/work/` | `title`, `sector`, `role`, `duration` |
-
-Research and notes take `publish: true`, `false` or `draft`. A draft shows on the dev server only; a production build leaves it out of every page, feed, `llms.txt` and Verso's corpus. Every check goes through `isPublished()` in `src/lib/publish.ts`, because 'draft' is a truthy string and a loose check would ship it.
-
-`content/now.md` is a standalone file (not a collection), read directly by the Now page.
-
-### Pages
-
-Routes: `/` (redirects to `/home`), `/home` (the editorial home page), `/library` (the library room), `/writing`, `/writing/[slug]`, `/notes`, `/notes/[slug]`, `/work`, `/work/[slug]`, `/now`, `/privacy`. Verso, the chat, is a popup on every page (not a route; `/chat` and `/ask` redirect home). It calls `src/pages/api/chat.ts`, which uses Gemini + Upstash Vector for RAG over the site's own content.
-
-The Studio interior surfaces (`/about`, `/work`, `/research`, `/writing`, `/notes`, `/now`, and their detail pages) share `src/layouts/Studio.astro` and the dark token set in `src/styles/studio.css`. Article imagery is chosen by slug in `src/lib/article-images.ts`, which both the index cards (`src/components/WritingIndex.astro`) and each article's lead figure (`src/layouts/Essay.astro`) read, so every writing and research page shows the same image as its card. The images are ink illustrations generated from the subjects, grounds and framing in `content/article-images.json` by `scripts/article-images.ts`, which holds the fixed house style; the `article-image` skill walks through making one for a new piece. A piece missing from the manifest gets one of the fallback illustrations, picked from its slug. Beside the body, wide screens show three or four pull quotes per piece from `content/pull-quotes.json`, kept by hand because synced frontmatter would be overwritten; `src/lib/pull-quotes.ts` drops any quote that no longer appears verbatim in the article, using the same check as Verso's `open_page`.
-
-`/drafts` exists only on the dev server. It lists `posts/drafts/` in the real article layout so skill-written posts can be read before they are published. It is a rest-param route whose `getStaticPaths` returns an empty array outside dev, so a production build emits nothing and the URL 404s. Use that shape for any local-only surface: a plain `index.astro` still ships an HTML file in a static build.
-
-The site opens on `/home`; the root redirects there (`redirects` in `astro.config.mjs`, which the Vercel adapter turns into a real redirect and which also resolves under `astro dev`). `/library` is a Studio page whose first screen is a Three.js room, and the only page that loads Three.js. See below. Everything else hangs off `/home`, which is where the `Nav` logo mark points.
-
-
-### Verso (the chat)
-
-The chat persona is named Verso. `/api/chat` answers with Google Gemini (`gemini-3.8-flash`, via `@google/genai`), grounded in the site's own corpus: each question is embedded, the top excerpts from Upstash Vector ride on the final user message, and the answer streams back over SSE. The route holds itself to a 55-second deadline inside `maxDuration: 60` in `astro.config.mjs`, which is adapter-level because Astro has no per-route override and the adapter emits one function for every dynamic route.
-
-Verso is an AI and never waits for a person. Jody reads along on Telegram: after each text turn, `/api/chat` sends the question and answer to his phone (`src/lib/operator.ts`, bounded to 3 seconds, before the `done` frame so the send survives the function freezing). If he swipe-replies, `/api/telegram` adds a `{ r: 'j' }` turn to that conversation and the dock picks it up from `/api/replies`, polling for 30 minutes after the last question. His replies render as "Jody", never as Verso, and `normalizeTurns` keeps them out of the prompt. A reply also makes the conversation live with him for 2 minutes (`chat:live:<cid>`, `LIVE_WINDOW_MS`), restarted by each reply: the route then holds the visitor's next question for him (`chat:held:<cid>`, a `{ hold: { until } }` frame, no model call) and the dock waits with a countdown. When the time runs out or the visitor taps "Ask Verso now", the dock re-asks with `fallback: true`, which clears the held question first and answers normally. The dock's note (`.dock-data-note`) says Verso is an AI and can get things wrong, that Jody sees what's asked and sometimes replies, that the site keeps conversations for 30 days and Jody's copies may be kept longer, and that voice uses Google's speech AI, then links to `/privacy`; nothing may suggest Jody writes Verso's answers. The note names no other vendor and not the read-along channel: recipients are described by category on `/privacy` (`src/pages/privacy.astro`), which must change whenever what the site collects, who receives it or how long it is kept changes. The ask-bar placeholder ("Ask Verso about my work") is a deliberate exception, chosen by him. `npm run telegram:setup` registers the webhook (`-- --info` shows delivery errors); the three `TELEGRAM_*` vars are set in Vercel for Production only. The webhook must be on `www` (the bare domain redirects, which Telegram counts as a failure). Merging to main deploys production: `.github/workflows/deploy.yml` runs `npm test` in one job, then `vercel deploy --prod` in a second job that never installs the project, so no dependency code shares a runner with the token. The CLI is pinned by its own lockfile in `.github/deploy-cli` (Dependabot bumps it and the SHA-pinned actions monthly). `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` are secrets of the GitHub `production` environment, which only `main` may deploy to; Vercel still builds remotely with its own env. The Vercel project has no Git integration, so there are no preview deployments per branch. `npx vercel --prod` still works by hand (a switch change with no commit needs one, or `gh workflow run deploy.yml`), and `.vercelignore` keeps `.env` out of that upload.
-
-Layering: `src/lib/verso.ts` is pure (persona, prompt, history assembly into Gemini `Content`). `src/lib/conversation.ts` is the Redis history store under `chat:conv:<cid>`, distinct from the `rl:*` prefixes the rate limiter owns. The route is deliberately thin so the decisions stay unit-testable.
-
-**Security headers.** `postbuild` runs `scripts/security-headers.ts`, which inserts one route at the top of `.vercel/output/config.json` sending, for every path, a Content Security Policy plus HSTS, nosniff, Referrer-Policy, COOP, `X-Frame-Options` and a Permissions-Policy (microphone only), built from the preset in `@jodybrewster/gemini-live/server/headers` with the options in `src/lib/security.ts`. Vercel applies neither `vercel.json` headers nor routes after the adapter's "filesystem" step to static files, which is why it goes in there (and why the script also copies `vercel.json`'s crons into `config.json`). Scripts run only by origin or by the hash of an inline script found in the build; styles allow inline attributes; `img`, `font` and `connect` list exact hosts (GA4's are an accepted risk; `i.scdn.co` serves the shelf's album covers). `assetsInlineLimit: 0` keeps Astro's scripts as files, since an inline module script would make the client router insert a `data:` script the policy refuses. Voice loads its audio worklets from `/worklets/*.js` (built from the bundle), since a hashed policy refuses `blob:` ones. A build with an inline event handler fails, and so does one with an inline script whose hash is not in `security/inline-scripts.json`: trusting whatever the build contains would also trust a script injected through content. After adding or editing an inline script, check where each new hash comes from and run `npm run security:approve` (after a build). JSON written into a `<script>` element goes through `scriptJson()` (`src/lib/script-json.ts`), which escapes `<` so a value (a Spotify album title, say) cannot close the element. `npm run test:headers` (after `npm run build`) serves the build as Vercel would and checks every page, the client router, search and a mocked voice session for policy violations in Chromium, WebKit and Firefox. After a deploy, `curl -I https://www.jodybrewster.dev/home` should show the policy. Adding a third-party script, font, image host or API means adding it to `src/lib/security.ts`.
-
-**Kill switches.** `src/lib/switches.ts` reads `SWITCH_CHAT`, `SWITCH_VOICE`, `SWITCH_TOOL_SEARCH_SITE` and `SWITCH_TOOL_ASK_JODY` from the environment only (`off` or `force-off`; unset is on), so nothing in Redis can turn one back on. Off, `/api/chat` answers 503 with paused copy the dock shows (`X-Switched-Off`), `/api/live-token` answers `voice_off`, `/api/corpus` refuses voice search, and MCP's `ask_jody` returns a paused result. `npm run switch -- <chat|voice|search_site|ask_jody> <on|off|force-off>` sets the Production variable with the Vercel CLI and never deploys; the change applies at the next `npx vercel --prod`, and the first request after it records `switch.changed` in the audit log. `flags.chat` (`src/lib/flags.ts`) still removes the dock entirely at build time. `SWITCH_TOOL_SEARCH_SITE` covers voice search (`/api/corpus`) only, not MCP's `search_writing` or the text chat's retrieval. A switch lives in a deployment's environment, so a rollback restores the switches of the deployment it returns to; and every API route refuses, in production, any host but `jodybrewster.dev` and `www.jodybrewster.dev` (`isCanonicalHost`), so old deployments' permanent URLs, which keep their old switches, serve no API. Unrecognized switch values count as off.
-
-**Audit log.** `src/lib/audit.ts` keeps a tamper-evident chain on Upstash (`@jodybrewster/gemini-live/server/audit`), in Production only (`audit:production`). It records answers, failures (model and status only), held questions, Jody's Telegram replies, minted voice tokens, `ask_jody` calls (with tokens used) and switch changes; never an IP, a user agent, visitor text or a conversation id (`ref()` is a keyed hash of an id instead). Refusals are counted per day in Redis, not chained, and the daily cron writes one summary entry, so a flood cannot fill the log. A write never blocks a request; failures and size warnings reach Jody on Telegram. Jody's replies and switch changes send their anchor to Telegram at once; `/api/cron/audit-anchor` (Vercel cron, `CRON_SECRET`) sends the newest daily with the month's count, and drops months older than 13 after recording, anchored, where each ended. Anchors protect the entries before them: the Redis token alone can trim entries after the newest anchor on Telegram, until the next one. `security find-generic-password -s "jodybrewster.dev AUDIT_CHAIN_KEY" -w | npm run audit:verify -- --anchor seq:hash@date` checks the chain and the anchors with a read-only token, taking the key on stdin; `AUDIT_CHAIN_KEY` never goes in `.env`. The key lives in Jody's macOS Keychain (service `jodybrewster.dev AUDIT_CHAIN_KEY`) and in Vercel Production as a sensitive value, so Vercel cannot show it back: losing the Keychain copy means starting a new chain. Switches live in env, so the first request after a redeploy records a change (retried until written).
-
-Rate limits all live in `src/lib/limits.ts`, on the framework's limiter (`@jodybrewster/gemini-live/server/limits`): Upstash on Vercel (`RATE_LIMIT_STORE` defaults to `upstash` there; no Redis refuses with 503), memory in `astro dev`. Every limiter fails closed. Chat: 5 a minute per visitor and 75 answers a day site-wide (a quota checked at setup and spent just before the model call); voice search shares the chat's per-visitor counter; MCP: 20 tool calls a minute per visitor and 2,000 a day site-wide, and `ask_jody` 5 an hour per visitor, 50 calls a day and 250,000 tokens a day (each call reserves its worst case before calling Claude and settles from the reported usage); reply polling: 60 a minute per visitor. The visitor is Vercel's trusted client IP, IPv6 by /64. Windows are fixed, a UTC day on Upstash, so up to twice a daily cap can pass around midnight UTC. Origin checks are in `src/lib/origin.ts`.
-
-The conversation ID lives in `sessionStorage` under `verso:cid`. New chat clears it.
-
-The server enforces an independent 55-second request deadline, plus shorter setup/retrieval/model/persistence deadlines. The browser times out after 60 seconds, supports Stop and Retry, and consumes `done` as a terminal frame. Stage logs contain message IDs and timing, never question text. A timed-out rate-limit fallback is refused.
-
-On phones, one fixed safe-area-aware composer replaces the header button, hero action and introduction card. The panel expands above it; 16px inputs prevent iPhone focus zoom. Conversation DOM is persisted across Astro navigation.
-
-`npm run embed -- --dry-run` validates the complete five-collection corpus without network access. Production Vercel builds refresh it after the application build: stage a new namespace, verify all vectors, then atomically switch `chat:corpus:active`. Never reset the active namespace. See `docs/verso-evaluation.md` for rollback and answer-quality checks.
-
-Gotchas: conversation history is read server-side from Redis and never accepted from the client, or a caller could fabricate assistant turns into the prompt. An *unreachable* Redis is not the same as an absent one: a deleted database throws a DNS error out of the rate limiter, which is why those calls are wrapped and answer 503 in production rather than a bare 500.
-
-**Cards.** The model can show the site's own content inline: `show_work`, `show_writing`, `show_note`, `show_now` and `open_page`, declared once in `src/lib/verso-tools.ts` (pure, browser-safe) and used by both the text route and voice. `resolveCard` only returns cards for slugs and urls that exist in the card index (`src/lib/cards.ts`, served statically at `/verso-cards.json`), and `open_page` keeps a quote only if it appears verbatim in that page, so the model can pick a card but never invent one or put words in Jody's mouth. The text route runs at most two tool rounds, sends each card as a `{ card }` SSE frame and only takes the model fallback before anything, text or card, has been sent. Cards render from `<template>`s in `ChatDock.astro` through `src/lib/card-render.ts`, text via `textContent` only. Verso also links pages inline as Markdown (`[title](/work/slug)`); the route checks each path against the card index and sends the real ones as a `{ links }` frame before `done`, and `src/lib/verso-links.ts` draws only those, so an invented slug shows as plain words. The old "Explore the sources" list is gone. Following any link in the conversation collapses the dock.
-
-**Voice.** The mic in the dock opens a Gemini Live session (`gemini-3.8-live`) that runs browser to Google, using `@jodybrewster/gemini-live` (built from the gemini-live-nextjs repo). The server's only lever is the ephemeral token from `/api/live-token`, minted by the framework's `voiceTokenRouteFromEnv` (`@jodybrewster/gemini-live/server`): single use, locked to Verso's model, voice prompt (`src/lib/verso-voice.ts`) and tools, capped at 3 per visitor (Vercel's client IP, IPv6 by /64) and 40 site-wide per UTC day on Upstash (`rl:voice:site:*`), allowed only from the site's origins (plus the preview's own URL on a preview; `VOICE_ALLOWED_ORIGINS` overrides), refused with 503 when Redis, the key or the store is missing, and switched off by `SWITCH_VOICE=off` or `force-off` in the environment (nothing in Redis can turn it back on; a change needs a redeploy). Local dev counts in memory (`rate-limiter-flexible`) and allows `localhost:4321`. `lockAdditionalFields` must stay unset: Google rejects `[]` with "field_mask is invalid" once tools are locked. In the browser, `search_site` calls `/api/corpus` and never renders; the `show_*` tools resolve against `/verso-cards.json`. The session lives at module scope in `src/lib/live/voice.ts`, so it survives soft navigation with the dock, ends itself after five minutes (`VOICE_SESSION_MS`) and shows a countdown. The voice chunk is preloaded at idle rather than on tap because iOS only lets audio start inside the tap handler itself (`unlockAudio()` runs before any await). Voice turns are never sent to the server, so the text chat cannot see what was said aloud; accepting client transcripts would reopen the fabricated-history hole above. Typing and voice never run at once.
-
-`@jodybrewster/gemini-live` is vendored: `vendor/jodybrewster-gemini-live-<version>.tgz`, packed from `main` of the gemini-live-nextjs repo and installed with `file:`, so Vercel installs it with no registry or token. The browser code imports `./voice` (the session, the Live client and audio); the server entries (`./server`, `./server/limits`, `./server/switches`, `./server/headers`) are for API routes and build config only. To update it, pack the bundle there (`npm pack` in `packages/gemini-live-bundle` after a build), replace the tarball here, point `package.json` at it and run `npm install`. That repo's site contract mirrors `src/lib/live/voice.ts` and `voice-dock.ts` byte for byte, so it is updated alongside.
-
-### The /library room
-
-A Three.js room at `/library`, linked from the main menu, where Jody's experiences and taste float on a shallow arc in front of a sunset, a page at a time. It is a Studio page, so the home nav, the Verso dock and the footer are the site's own. The filter column and `?show=<kind>` choose what is shown, Books by default; the pager above the Verso bar turns pages. The site's own writing and case studies are deliberately not here: they live under Writing and Work.
-
-| Filter | Object | Source |
-|---|---|---|
-| Books (`book`) | book | `content/library.json`, `npm run books` |
-| Music (`album`) | jewel case | `content/music.json`, by hand: one album per band (`artist`, `title`), then `npm run music`, which writes the Spotify `url` and cached `cover` back (paste a different album page into `url` and drop `cover` to correct a match) |
-| Films (`film`) | video store box with the poster | `content/films.json`, by hand: `title`, `year`, `coverSource` (the Wikipedia file page of the poster), then `npm run films` |
-| Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
-| Games (`game`) | game case | `content/games.json`, `npm run games` |
-| Tools (`tool`) | 3.5 inch disk | `content/tools.json`, by hand: `title`, `maker`, `note`, `url` |
-| Experiences (`place`) | postcard | `content/places.json`, by hand: `title`, `location`, `year`, `note` (written on the back), `scene` (what `npm run postcards` paints) and `photo` (site-absolute, under `public/media/places/`; the generated fronts are made-up illustrations, and Jody's own photo replaces one by setting `photo` to it) |
-
-Rows marked `"sample": true` are placeholders and say so on their card; replace them before merging.
-
-- `src/lib/shelf/payload.ts` builds the data from the content files above.
-- `src/lib/shelf/media.ts` normalizes every source into `ShelfItem`s with stable ids. Pure, never throws, drops bad rows individually.
-- `src/lib/shelf/arc.ts` is the pure layout: the filters, pagination, the pager's numbers and the arc pose.
-- `src/lib/shelf/scene-state.ts` holds hover/active selection. Canvas and DOM dispatch into the same store, which is what keeps them in sync.
-- `src/lib/shelf/textures.ts` draws spines, game cases, disks, tapes, cassettes and postcards on canvas, with labels in the site's script face. Real jackets, album art, box art and postcard photos come from files and are redrawn no larger than 640px. `fontsReady()` loads each face by name, because `document.fonts.ready` skips faces the page itself never used.
-- `src/lib/shelf/scene.ts` owns the renderer, the backdrop, the objects, picking, paging and the flights.
-- `src/components/LibraryShelf.astro` renders a complete, linked, image-bearing list in HTML, with the filter column working on it too. Three.js progressively enhances it; that markup is the whole experience without WebGL or scripts and for assistive tech.
-
-The room is one image, `public/images/library/backdrop.webp`, made with gpt-image-2 from the design mock with its objects and interface removed. It is drawn as a cover-fitted backdrop inside WebGL so the opening can grade it from pre-dawn to morning. The floor is a `Reflector` that sees only the objects (the backdrop is hidden and the target cleared to transparent while it renders), so their reflections land on the plate's own wet floor. The camera height and tilt are set so the plate's horizon and that floor agree at desktop proportions; moving the camera means checking the reflections again.
-
-Motion: a page flies in from the right, leading edge first, and floats until something is picked. A new filter or page sends the current one off to the left as the next arrives; going back runs the other way. Arrow keys step the selection and turn the page when they run off it; PageUp and PageDown turn pages; a sideways swipe or trackpad gesture does too. With reduced motion everything is placed instantly.
-
-Game cases are drawn at their real proportions (a Switch case narrower than a PS5 one) in their plastic; only the cover art is a file. `content/games.json` is kept by hand: title, platform, optional `note` (shown on the card), optional `url` to the game's official page, and `coverSource`, the Wikipedia file page the art comes from. `npm run games` downloads each cover once into `public/media/games/` and writes `cover` back; the cached files are committed like the book jackets and nothing in the build fetches them.
-
-Gotchas: art loads only for the page in view and the next one, and at most `FACE_BUDGET` faces are held at once, oldest released first; the opening waits on the plate and the first page's art (up to `ART_WAIT_MS`) so nothing flies in blank; a swipe must not also register as a click on whatever it ended over. Pages are packed to `PAGE_FILL` of the lane because the arc's ends come forward and grow in perspective. Automation browsers often report the tab hidden, which stops requestAnimationFrame and image decoding there; review the scene with headless Playwright instead. Devices without WebGL still get the semantic list.
-
-### Design system
-
-The site is dark only.
-The light theme is gone; `/library` keeps the dark chrome over a bright image of a room.
-
+## Design system
 - `src/styles/tokens.css` holds the palette once (`--ui-*`). The older `--home-*` and `--studio-*` names are aliases, kept because many rules use them.
 - `src/components/Button.astro` is the only button, with `primary`, `secondary` and `text` variants. Its look is `src/styles/buttons.css`. Never hand-write a button class in a page.
 - `src/components/Badge.astro` is the only badge, label, tag, chip or filter pill. Its look is `src/styles/badge.css`. Never hand-write a pill in a page.
-- `src/styles/neon.css` adds the spinning conic edge, the hover glint and the white edge flash to buttons, the chat bar and the case-study cards.
 - `DESIGN.md` is the written system and is current for the colors, type and buttons. Read it before any UI change.
 
-Fonts: **Barlow Semi Condensed** (headlines), **Plus Jakarta Sans** (body and UI), **JetBrains Mono** (labels), **Mr Dafoe** (the home headline's closing word).
-`global.css` still carries the older Source Serif 4 type ramp for long-form pages; keep `font-variation-settings: "opsz" <value>` on it (the axis stops at 60).
-Accent color is cyan `#00c6e7`.
-
-Wiki-links (`[[note-name]]`) in markdown are resolved to `/notes/note-name` via `remark-wiki-link`.
-
-### Search
-
-`pagefind` runs after `astro build` (via `postbuild` script) to generate a static search index in `dist/`. The `@pagefind/default-ui` package provides the client-side search widget.
-
-### AI / RAG (env vars required)
-
-The chat page and search features use:
-- `GEMINI_API_KEY` - Gemini API for Verso, the chat (text answers and voice tokens)
-- `ANTHROPIC_API_KEY` - Claude API for the MCP server's ask tool (`src/pages/api/mcp.ts`). The MCP route is public, so its limits are its protection: one JSON-RPC message per request (no batches), JSON only, a foreign `Origin` refused, 600-character queries, every tool call limited per IP, and `ask_jody` capped per visitor, in calls and in tokens a day (`src/lib/limits.ts`)
-- `OPENAI_API_KEY` - local only, for `npm run article-images`; never needed by the build or in Vercel
-- `VOYAGE_API_KEY` — embeddings (via `scripts/embed.ts`)
-- `UPSTASH_VECTOR_*` — vector store for semantic search over content
-- `UPSTASH_REDIS_*` — caching/rate limiting
-
-Copy `.env.example` to `.env` and fill in keys to use these features locally.
-
-### Analytics
-
-Google Analytics 4, property `G-4DLGJN6CZ5`, loaded directly rather than through a tag manager.
-A container was tried first and removed: one tag and one person who would ever change it does not justify 100KB and a Google UI standing between the repo and a single measurement ID.
-The id is public by design, so it sits in `src/lib/analytics.ts` rather than the environment; `analyticsEnabled` gates it on `import.meta.env.PROD`, so the dev server never reports traffic.
-`Analytics.astro` goes in the head of `Base.astro`, which every page uses.
-
-Page views are sent by hand. `Base.astro` uses `<ClientRouter />`, so every navigation after the first is a soft one and gtag's automatic page view would fire once per session rather than once per page.
-`send_page_view: false` turns that off; one call covers the landing page and an `astro:after-swap` listener covers the rest, reading title and URL after the swap rather than before.
-
-Two settings outside this repo can break the count, both in the GA4 data stream.
-**"Page changes based on browser history events"** must stay off under Enhanced measurement: the site navigates with `pushState`, so leaving it on double-counts every navigation.
-Enhanced measurement's other toggles are harmless.
-
-Custom events all go through `track()` in `src/lib/track.ts`, which no-ops without gtag, so callers never check the environment.
-They are `contact_click`, `chat_open`, `chat_question` (source, outcome, topic, turn), `chat_new`, `chat_reply_seen`, `card_click`, `voice_start`, `voice_end`, `lightbox_open` and `shelf_open`.
-Parameters are values the site chooses, never visitor text; GA4 forbids PII and a chat box is where people type theirs.
-A question's topic comes from a small Gemini call beside retrieval (`src/lib/topics.ts`), constrained to a fixed list so free text cannot leak into GA4.
-Each custom parameter must be registered as a custom dimension in GA4 before it appears in reports.
-
-Verso's words go to the transcript log instead (`src/lib/transcripts.ts`): `chat:log:<cid>` lists plus a `chat:log:index` sorted set, kept 30 days, with emails and phone numbers redacted on write.
-The dock discloses the 30 days. `npm run conversations` reads it and needs `PROD_UPSTASH_REDIS_REST_URL` and `_TOKEN` in `.env`, prefixed so the dev server never connects to production; its output goes to the gitignored `.conversations/` because it holds visitors' words.
-Downloads follow the same clock: each run deletes its own earlier files (`scripts/conversation-files.ts`), a transcript file once its oldest conversation is 30 days past its first message (the file name carries that day: `verso-<written>-from-<oldest>.md`) and a digest 30 days after it was written. `--vault` (which needs `--digest`) writes only the digest into the iCloud vault, never transcripts, and runs delete any transcript file left there.
-A visitor can ask for a conversation to be deleted (never sent to them: nobody can prove they wrote one). `npm run conversation:delete -- --find "<words>"` lists matching conversations; `-- --cid <id>` shows what the site holds and, with `--yes` and the audit chain key on stdin, checks the key against the newest chain entry (`checkChainKey`, so a wrong key is refused before anything is written), records `conversation.deleted` (warning if its anchor did not reach Telegram) and deletes every key in `src/lib/conversation-delete.ts`, then lists what it cannot reach (Telegram messages, local downloads, providers' logs).
-
 ## Common Pitfalls
-
 - Add a color to `src/styles/tokens.css`, never to a page stylesheet.
 - Source Serif 4 must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size, which is visually wrong at display scale.
 - The opsz axis stops at 60. Values above it are clamped by the browser, so writing `"opsz" 120` renders identically to `"opsz" 60` and just misleads the next reader. The ramp was originally built against Fraunces, which went to 144; every value was capped when the face changed.
 - `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.
 - Don't add new npm packages without first checking if the dependency already exists in `package.json`.
 - Don't commit `.env` or any secrets file. Don't push to `main` without confirming with the user.
+
+## Things Claude gets wrong
+- Testing `publish` for truthiness: `'draft'` is a truthy string; go through `isPublished()`.
+- Shipping a local-only page as a plain `index.astro`; copy the empty `getStaticPaths` shape of `/drafts`.
+- Taking conversation history or voice transcripts from the client; history comes from Redis only.
+- Editing an inline script without running `npm run security:approve` after a build, or adding a host anywhere but `src/lib/security.ts`.
+- Expecting a kill switch to change without a deploy, or reading one from Redis; switches come from env.
+- Letting a limiter or an unreachable Redis fail open or surface as a bare 500; they fail closed with 503.
+- Running `npm run sync` to get a build working: `content/` is committed and sync reads Jody's Obsidian vault.
+- Copy that hints Jody writes Verso's answers, or a vendor named in the dock note instead of a category on `/privacy`.
+
+## Where the rest lives
+- `docs/architecture.md`: the content pipeline, collections, pages, search, env vars and analytics.
+- `docs/verso.md`: Verso from the plain summary down to the route, cards, voice and the vendored bundle; `docs/verso-evaluation.md` is its test set and runbook.
+- `docs/security.md`: security headers, kill switches, the audit log and rate limits.
+- `docs/library.md`: the `/library` room.
+- `docs/release.md`: how a merge reaches production, branch protection and rollback.
+- `REVIEW.md`: the three review passes and what blocks a merge.

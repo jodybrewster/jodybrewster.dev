@@ -861,9 +861,9 @@ export class LibraryScene {
    * reach the GPU for the page in view and the one after it, and are released
    * again by #evictArt once the budget is spent.
    */
-  #ensureArt(view: ItemView): Promise<void> {
+  async #ensureArt(view: ItemView): Promise<void> {
     view.seen = this.#frameCount;
-    if (view.art !== 'none') return Promise.resolve();
+    if (view.art !== 'none') return;
     view.art = 'loading';
     const item = view.item;
 
@@ -940,10 +940,12 @@ export class LibraryScene {
       }
     })();
 
-    return run().catch(error => {
+    try {
+      await run();
+    } catch (error) {
       console.warn('[library] art failed to load', item.id, error);
       view.art = 'none';
-    });
+    }
   }
 
   /** Lets go of the art seen longest ago once more is held than the budget. */

@@ -1,14 +1,13 @@
 /**
- * Idempotent cover + catalog sync for the /library shelf.
+ * Idempotent cover + catalog sync for the /library books.
  *
- * Books: resolves each curated title against Open Library, stores the work URL
- * in content/library.json, and caches the jacket under public/media/books/.
- * Albums: caches the Spotify art referenced by content/listening.json under
- * public/media/albums/ so the scene never depends on a cross-origin texture.
+ * Resolves each curated title against Open Library, stores the work URL in
+ * content/library.json, and caches the jacket under public/media/books/ so the
+ * scene never depends on a cross-origin texture.
  *
  * Curated order is never changed. Records that already have a URL and a cover
  * file on disk are skipped, so re-running costs nothing. Pass --force to
- * re-resolve everything, or --books / --albums to run one half.
+ * re-resolve everything.
  *
  *   npx tsx scripts/sync-book-covers.ts
  */
@@ -23,14 +22,10 @@ const COVERS = 'https://covers.openlibrary.org/b/id';
 const SEARCH_GAP_MS = 250;
 
 const LIBRARY_PATH = resolve('content/library.json');
-const LISTENING_PATH = resolve('content/listening.json');
 const BOOK_DIR = resolve('public/media/books');
-const ALBUM_DIR = resolve('public/media/albums');
 
 const args = new Set(process.argv.slice(2));
 const force = args.has('--force');
-const runBooks = !args.has('--albums') || args.has('--books');
-const runAlbums = !args.has('--books') || args.has('--albums');
 
 interface BookRecord {
   title: string;
@@ -277,44 +272,9 @@ async function syncBooks(): Promise<void> {
   }
 }
 
-async function syncAlbums(): Promise<void> {
-  if (!existsSync(LISTENING_PATH)) {
-    console.log('Albums: no content/listening.json, skipping.');
-    return;
-  }
-  const listening = JSON.parse(await readFile(LISTENING_PATH, 'utf-8')) as {
-    albums?: { name?: string; artist?: string; image?: string }[];
-  };
-  const albums = listening.albums ?? [];
-  console.log(`Albums: ${albums.length} in the current snapshot`);
-
-  let cached = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  for (const album of albums) {
-    if (!album?.name || !album?.artist || !album?.image) continue;
-    const id = `album-${slugify(`${album.artist}-${album.name}`)}`;
-    const file = resolve(`public/media/albums/${id}.jpg`);
-    if (existsSync(file) && !force) {
-      skipped += 1;
-      continue;
-    }
-    if (await download(album.image, file)) cached += 1;
-    else {
-      failed += 1;
-      console.log(`  cover failed: ${album.artist} - ${album.name}`);
-    }
-  }
-
-  console.log(`Albums done: ${cached} cached, ${skipped} already current, ${failed} failed.`);
-}
-
 async function main(): Promise<void> {
   await mkdir(BOOK_DIR, { recursive: true });
-  await mkdir(ALBUM_DIR, { recursive: true });
-  if (runBooks) await syncBooks();
-  if (runAlbums) await syncAlbums();
+  await syncBooks();
 }
 
 main().catch(error => {

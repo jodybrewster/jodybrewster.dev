@@ -127,11 +127,6 @@ const CLOTH_PALETTE = [
   '#736451',
 ] as const;
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 const NOTE_MAX = 280;
 
 /** FNV-1a. Small, fast, and stable across runs and platforms. */
@@ -162,17 +157,6 @@ export function slugify(input: string): string {
 
 export function fallbackColor(seed: string): string {
   return CLOTH_PALETTE[hash(seed) % CLOTH_PALETTE.length];
-}
-
-/** `2026-07-28` -> `July 2026`. Parsed by parts so it cannot drift a month
- *  when the browser sits behind UTC. */
-export function monthLabel(iso: string | undefined | null): string {
-  if (typeof iso !== 'string') return '';
-  const match = /^(\d{4})-(\d{2})/.exec(iso.trim());
-  if (!match) return '';
-  const month = Number(match[2]);
-  if (month < 1 || month > 12) return '';
-  return `${MONTHS[month - 1]} ${match[1]}`;
 }
 
 function text(value: unknown): string {

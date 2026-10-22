@@ -25,7 +25,7 @@ const { albums, books, games, tools, films, podcasts, places } = payload;
 
 const sections = [
   { kind: 'book', label: payload.libraryLabel, items: books as ShelfItem[] },
-  { kind: 'album', label: payload.listeningLabel, items: albums },
+  { kind: 'album', label: payload.musicLabel, items: albums },
   { kind: 'film', label: 'FILMS', items: films },
   { kind: 'podcast', label: 'PODCASTS', items: podcasts },
   { kind: 'game', label: payload.gamesLabel, items: games },

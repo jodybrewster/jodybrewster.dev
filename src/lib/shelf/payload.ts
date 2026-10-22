@@ -12,7 +12,6 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import {
-  monthLabel,
   normalizeAlbums,
   normalizeBooks,
   normalizeFilms,
@@ -20,7 +19,6 @@ import {
   normalizePlaces,
   normalizePodcasts,
   normalizeTools,
-  slugify,
 } from './media';
 import type { ShelfAlbum, ShelfBook, ShelfFilm, ShelfGame, ShelfPlace, ShelfPodcast, ShelfTool } from './media';
 
@@ -32,7 +30,7 @@ export interface ShelfPayloadData {
   films: ShelfFilm[];
   podcasts: ShelfPodcast[];
   places: ShelfPlace[];
-  listeningLabel: string;
+  musicLabel: string;
   libraryLabel: string;
   gamesLabel: string;
 }
@@ -47,7 +45,7 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
 
 export async function buildShelfPayload(): Promise<ShelfPayloadData> {
   const libraryData = await readJson('content/library.json');
-  const listeningData = await readJson('content/listening.json');
+  const musicData = await readJson('content/music.json');
   const gamesData = await readJson('content/games.json');
   const toolsData = await readJson('content/tools.json');
   const filmsData = await readJson('content/films.json');
@@ -56,31 +54,23 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
 
   const books = normalizeBooks((libraryData.books as unknown[]) ?? []);
 
-  // Prefer the locally cached art so the scene never reaches across origins for
-  // a texture. Falls back to the Spotify CDN URL when the cache is cold.
-  const rawAlbums = ((listeningData.albums as Record<string, unknown>[]) ?? []).map(album => {
-    const id = `album-${slugify(`${album.artist ?? ''}-${album.name ?? ''}`)}`;
-    const cached = `/media/albums/${id}.jpg`;
-    return { ...album, cover: existsSync(resolve(`public${cached}`)) ? cached : album.image };
-  });
-  const albums = normalizeAlbums(rawAlbums);
-
-  // Box art is only ever local. A cover path whose file never got cached is
-  // dropped here, so the scene draws a case of its own instead of a 404.
-  const rawGames = (Array.isArray(gamesData.games) ? gamesData.games : []).map(game => {
-    const cover = (game as { cover?: unknown } | null)?.cover;
-    const cached = typeof cover === 'string' && cover.startsWith('/') && existsSync(resolve(`public${cover}`));
-    return cached ? game : { ...(game as object), cover: undefined };
-  });
-  const games = normalizeGames(rawGames);
+  // Box art and album art are only ever local. A cover path whose file never
+  // got cached is dropped here, so the scene draws a case of its own instead
+  // of a 404.
+  const cachedOnly = (rows: unknown) =>
+    (Array.isArray(rows) ? rows : []).map(row => {
+      const cover = (row as { cover?: unknown } | null)?.cover;
+      const cached = typeof cover === 'string' && cover.startsWith('/') && existsSync(resolve(`public${cover}`));
+      return cached ? row : { ...(row as object), cover: undefined };
+    });
+  const albums = normalizeAlbums(cachedOnly(musicData.albums));
+  const games = normalizeGames(cachedOnly(gamesData.games));
 
   const list = (value: unknown) => (Array.isArray(value) ? value : []);
   const tools = normalizeTools(list(toolsData.tools));
   const films = normalizeFilms(list(filmsData.films));
   const podcasts = normalizePodcasts(list(podcastsData.podcasts));
   const places = normalizePlaces(list(placesData.places));
-
-  const month = monthLabel(listeningData.updated as string | undefined);
 
   return {
     albums,
@@ -90,7 +80,8 @@ export async function buildShelfPayload(): Promise<ShelfPayloadData> {
     films,
     podcasts,
     places,
-    listeningLabel: month ? `LISTENING · ${month.toUpperCase()}` : 'LISTENING',
+    // Favourite bands kept by hand, one album each, not a month's listening.
+    musicLabel: `MUSIC · ${albums.length}`,
     libraryLabel: `LIBRARY · ${books.length} BOOKS`,
     // The games are favourites kept by hand, not a month's play, so no date.
     gamesLabel: `GAMES · ${games.length}`,

@@ -1,0 +1,208 @@
+{
+  "albums": [
+    {
+      "artist": "Kendrick Lamar",
+      "title": "To Pimp a Butterfly",
+      "url": "https://open.spotify.com/album/7ycBtnsMtyVbbwTfJwRjSP",
+      "cover": "/media/albums/album-kendrick-lamar-to-pimp-a-butterfly.jpg"
+    },
+    {
+      "artist": "The Velvet Underground",
+      "title": "The Velvet Underground & Nico",
+      "url": "https://open.spotify.com/album/4xwx0x7k6c5VuThz5qVqmV",
+      "cover": "/media/albums/album-the-velvet-underground-the-velvet-underground-nico.jpg"
+    },
+    {
+      "artist": "clipping.",
+      "title": "Splendor & Misery",
+      "url": "https://open.spotify.com/album/1pxYPYg5ozVYMxiFMfD1tn",
+      "cover": "/media/albums/album-clipping-splendor-misery.jpg"
+    },
+    {
+      "artist": "Blockhead",
+      "title": "Music by Cavelight",
+      "url": "https://open.spotify.com/album/5kEQ9AhNjGvjvplVU3dEkj",
+      "cover": "/media/albums/album-blockhead-music-by-cavelight.jpg"
+    },
+    {
+      "artist": "MF DOOM",
+      "title": "MM..FOOD",
+      "url": "https://open.spotify.com/album/1UcS2nqUhxrZjrBZ3tHk2N",
+      "cover": "/media/albums/album-mf-doom-mm-food.jpg"
+    },
+    {
+      "artist": "Death Cab for Cutie",
+      "title": "Transatlanticism",
+      "url": "https://open.spotify.com/album/7jwLAtPHF7TW7dtELtayOd",
+      "cover": "/media/albums/album-death-cab-for-cutie-transatlanticism.jpg"
+    },
+    {
+      "artist": "The Cure",
+      "title": "Disintegration",
+      "url": "https://open.spotify.com/album/6vQB3ZBxnQPP3jQcGV2qzg",
+      "cover": "/media/albums/album-the-cure-disintegration.jpg"
+    },
+    {
+      "artist": "Nine Inch Nails",
+      "title": "The Downward Spiral",
+      "url": "https://open.spotify.com/album/7a7arAXDE0BiaMgHLhdjGF",
+      "cover": "/media/albums/album-nine-inch-nails-the-downward-spiral.jpg"
+    },
+    {
+      "artist": "Gorillaz",
+      "title": "Demon Days",
+      "url": "https://open.spotify.com/album/0bUTHlWbkSQysoM3VsWldT",
+      "cover": "/media/albums/album-gorillaz-demon-days.jpg"
+    },
+    {
+      "artist": "Beach House",
+      "title": "Teen Dream",
+      "url": "https://open.spotify.com/album/51AxfjN2gEt5qeJqPY5w0e",
+      "cover": "/media/albums/album-beach-house-teen-dream.jpg"
+    },
+    {
+      "artist": "The Smile",
+      "title": "A Light for Attracting Attention",
+      "url": "https://open.spotify.com/album/009EjjwUjtdjvH7UP0wHzi",
+      "cover": "/media/albums/album-the-smile-a-light-for-attracting-attention.jpg"
+    },
+    {
+      "artist": "Radiohead",
+      "title": "OK Computer",
+      "url": "https://open.spotify.com/album/6dVIqQ8qmQ5GBnJ9shOYGE",
+      "cover": "/media/albums/album-radiohead-ok-computer.jpg"
+    },
+    {
+      "artist": "Cul de Sac",
+      "title": "ECIM",
+      "url": "https://open.spotify.com/album/2jWZyCqzKdEXJurMjvzNm3",
+      "cover": "/media/albums/album-cul-de-sac-ecim.jpg"
+    },
+    {
+      "artist": "Sonic Youth",
+      "title": "Daydream Nation",
+      "url": "https://open.spotify.com/album/23O4F21GDWiGd33tFN3ZgI",
+      "cover": "/media/albums/album-sonic-youth-daydream-nation.jpg"
+    },
+    {
+      "artist": "Frank Zappa",
+      "title": "Hot Rats",
+      "url": "https://open.spotify.com/album/0WYYrC9My9rYWigac003hw",
+      "cover": "/media/albums/album-frank-zappa-hot-rats.jpg"
+    },
+    {
+      "artist": "The Beatles",
+      "title": "Abbey Road",
+      "url": "https://open.spotify.com/album/0ETFjACtuP2ADo6LFhL6HN",
+      "cover": "/media/albums/album-the-beatles-abbey-road.jpg"
+    },
+    {
+      "artist": "Black Sabbath",
+      "title": "Paranoid",
+      "url": "https://open.spotify.com/album/6r7LZXAVueS5DqdrvXJJK7",
+      "cover": "/media/albums/album-black-sabbath-paranoid.jpg"
+    },
+    {
+      "artist": "Nirvana",
+      "title": "Nevermind",
+      "url": "https://open.spotify.com/album/2guirTSEqLizK7j9i1MTTZ",
+      "cover": "/media/albums/album-nirvana-nevermind.jpg"
+    },
+    {
+      "artist": "Alice In Chains",
+      "title": "Dirt",
+      "url": "https://open.spotify.com/album/58NXIEYqmq5dQHg9nV9duM",
+      "cover": "/media/albums/album-alice-in-chains-dirt.jpg"
+    },
+    {
+      "artist": "Faith No More",
+      "title": "Angel Dust",
+      "url": "https://open.spotify.com/album/59GwovfBk0Kp2HJw1G7E5Q",
+      "cover": "/media/albums/album-faith-no-more-angel-dust.jpg"
+    },
+    {
+      "artist": "Red Hot Chili Peppers",
+      "title": "Blood Sugar Sex Magik",
+      "url": "https://open.spotify.com/album/1DCI2yWmV4UI7Aga71yx9B",
+      "cover": "/media/albums/album-red-hot-chili-peppers-blood-sugar-sex-magik.jpg"
+    },
+    {
+      "artist": "Deftones",
+      "title": "White Pony",
+      "url": "https://open.spotify.com/album/5LEXck3kfixFaA3CqVE7bC",
+      "cover": "/media/albums/album-deftones-white-pony.jpg"
+    },
+    {
+      "artist": "Björk",
+      "title": "Homogenic",
+      "url": "https://open.spotify.com/album/0HMsmYvoT1h2x1C4di5faf",
+      "cover": "/media/albums/album-bjork-homogenic.jpg"
+    },
+    {
+      "artist": "N.W.A.",
+      "title": "Straight Outta Compton",
+      "url": "https://open.spotify.com/album/0Y7qkJVZ06tS2GUCDptzyW",
+      "cover": "/media/albums/album-n-w-a-straight-outta-compton.jpg"
+    },
+    {
+      "artist": "Public Enemy",
+      "title": "It Takes a Nation of Millions to Hold Us Back",
+      "url": "https://open.spotify.com/album/1Rj1daFzMlYzLv7lJl14hz",
+      "cover": "/media/albums/album-public-enemy-it-takes-a-nation-of-millions-to-hold-us-back.jpg"
+    },
+    {
+      "artist": "A Tribe Called Quest",
+      "title": "The Low End Theory",
+      "url": "https://open.spotify.com/album/1p12OAWwudgMqfMzjMvl2a",
+      "cover": "/media/albums/album-a-tribe-called-quest-the-low-end-theory.jpg"
+    },
+    {
+      "artist": "The Roots",
+      "title": "Things Fall Apart",
+      "url": "https://open.spotify.com/album/0qbl8aNaCUOvX8HGsZYLfh",
+      "cover": "/media/albums/album-the-roots-things-fall-apart.jpg"
+    },
+    {
+      "artist": "Mogwai",
+      "title": "Young Team",
+      "url": "https://open.spotify.com/album/5ti3kMHpKAF98D6PWPFFyn",
+      "cover": "/media/albums/album-mogwai-young-team.jpg"
+    },
+    {
+      "artist": "Mr. Bungle",
+      "title": "California",
+      "url": "https://open.spotify.com/album/6QAKD1wqCrmkBYw1AsZfEy",
+      "cover": "/media/albums/album-mr-bungle-california.jpg"
+    },
+    {
+      "artist": "De La Soul",
+      "title": "3 Feet High and Rising",
+      "url": "https://open.spotify.com/album/4ORoATQVXNVVYIT6x03pXL",
+      "cover": "/media/albums/album-de-la-soul-3-feet-high-and-rising.jpg"
+    },
+    {
+      "artist": "Talking Heads",
+      "title": "Remain in Light",
+      "url": "https://open.spotify.com/album/1JvXxLsm0PxlGH4LXzqMGq",
+      "cover": "/media/albums/album-talking-heads-remain-in-light.jpg"
+    },
+    {
+      "artist": "J Dilla",
+      "title": "Donuts",
+      "url": "https://open.spotify.com/album/5fMlysqhFE0itGn4KezMBW",
+      "cover": "/media/albums/album-j-dilla-donuts.jpg"
+    },
+    {
+      "artist": "Daft Punk",
+      "title": "Discovery",
+      "url": "https://open.spotify.com/album/2noRn2Aes5aoNVsU6iWThc",
+      "cover": "/media/albums/album-daft-punk-discovery.jpg"
+    },
+    {
+      "artist": "The Avalanches",
+      "title": "Since I Left You",
+      "url": "https://open.spotify.com/album/0YtYaaO0aipyeQl0xhAWTO",
+      "cover": "/media/albums/album-the-avalanches-since-i-left-you.jpg"
+    }
+  ]
+}

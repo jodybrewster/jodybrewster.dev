@@ -38,8 +38,9 @@ npm run dev        # start dev server (http://localhost:4321)
 npm run build      # production build (runs pagefind after)
 npm run preview    # preview production build
 npm run sync       # sync content from Obsidian vault → content/
-npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
+npm run spotify    # refresh Spotify listening cache for /now → content/listening.json (also runs on prebuild)
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
+npm run music      # find each album named in content/music.json on Spotify, cache its art → public/media/albums/
 npm run games      # cache box art named in content/games.json → public/media/games/
 npm run films      # cache posters named in content/films.json → public/media/films/ (same Wikipedia sync as games)
 npm run postcards  # paint a vintage postcard front for each place in content/places.json with no photo → public/media/places/ (OpenAI gpt-image-2, needs OPENAI_API_KEY; `-- Tokyo` redoes one)
@@ -126,7 +127,7 @@ A Three.js room at `/library`, linked from the main menu, where Jody's experienc
 | Filter | Object | Source |
 |---|---|---|
 | Books (`book`) | book | `content/library.json`, `npm run books` |
-| Music (`album`) | jewel case | `content/listening.json`, `npm run spotify` |
+| Music (`album`) | jewel case | `content/music.json`, by hand: one album per band (`artist`, `title`), then `npm run music`, which writes the Spotify `url` and cached `cover` back (paste a different album page into `url` and drop `cover` to correct a match) |
 | Films (`film`) | video store box with the poster | `content/films.json`, by hand: `title`, `year`, `coverSource` (the Wikipedia file page of the poster), then `npm run films` |
 | Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
 | Games (`game`) | game case | `content/games.json`, `npm run games` |

@@ -30,8 +30,9 @@ npm run dev        # start dev server (http://localhost:4321)
 npm run build      # production build (runs pagefind after)
 npm run preview    # preview production build
 npm run sync       # sync content from Obsidian vault → content/
-npm run spotify    # refresh Spotify listening cache → content/listening.json (also runs on prebuild)
+npm run spotify    # refresh Spotify listening cache for /now → content/listening.json (also runs on prebuild)
 npm run books      # resolve book catalog links + cache covers → content/library.json, public/media/
+npm run music      # find each album named in content/music.json on Spotify, cache its art → public/media/albums/
 npm run games      # cache box art named in content/games.json → public/media/games/
 npm run films      # cache posters named in content/films.json → public/media/films/ (same Wikipedia sync as games)
 npm run postcards  # paint a vintage postcard front for each place in content/places.json with no photo → public/media/places/ (OpenAI gpt-image-2, needs OPENAI_API_KEY; `-- Tokyo` redoes one)

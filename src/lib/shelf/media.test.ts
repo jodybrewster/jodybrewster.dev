@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   fallbackColor,
   gameSystem,
-  monthLabel,
   normalizeAlbums,
   normalizeBooks,
   normalizeGames,
@@ -181,23 +180,6 @@ describe('gameSystem', () => {
     expect(gameSystem('PlayStation 5')).toBe('ps5');
     expect(gameSystem('PS5')).toBe('ps5');
     expect(gameSystem('Steam Deck')).toBe('other');
-  });
-});
-
-describe('monthLabel', () => {
-  it('formats the snapshot month', () => {
-    expect(monthLabel('2026-07-28')).toBe('July 2026');
-  });
-
-  it('does not drift across timezones on the first of the month', () => {
-    expect(monthLabel('2026-01-01')).toBe('January 2026');
-    expect(monthLabel('2026-12-01')).toBe('December 2026');
-  });
-
-  it('returns an empty label for unusable input', () => {
-    expect(monthLabel('')).toBe('');
-    expect(monthLabel('not-a-date')).toBe('');
-    expect(monthLabel(undefined)).toBe('');
   });
 });
 

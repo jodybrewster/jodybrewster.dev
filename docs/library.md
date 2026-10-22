@@ -8,7 +8,7 @@ The site's own writing and case studies are deliberately not here: they live und
 | Filter | Object | Source |
 |---|---|---|
 | Books (`book`) | book | `content/library.json`, `npm run books` |
-| Music (`album`) | jewel case | `content/listening.json`, `npm run spotify` |
+| Music (`album`) | jewel case | `content/music.json`, by hand: one album per band (`artist`, `title`), then `npm run music`, which writes the Spotify `url` and cached `cover` back (paste a different album page into `url` and drop `cover` to correct a match) |
 | Films (`film`) | video store box with the poster | `content/films.json`, by hand: `title`, `year`, `coverSource` (the Wikipedia file page of the poster), then `npm run films` |
 | Podcasts (`podcast`) | cassette | `content/podcasts.json`, by hand |
 | Games (`game`) | game case | `content/games.json`, `npm run games` |

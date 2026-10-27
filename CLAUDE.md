@@ -1,6 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 This is an **Astro 5 static site** deployed to Vercel. It's a personal site for Jody Brewster (jodybrewster.dev) with writing, digital garden notes, work briefs, and an AI chat interface.
 
 ## What this site is for
@@ -47,9 +46,7 @@ Unit tests live under `src/lib/**/*.test.ts` (`vitest.config.ts` keeps vitest ou
 Type-check with `npx astro check`.
 
 ```text
-$ npm test              # vitest, about 3 seconds; green ends with:
- Test Files  41 passed (41)
-      Tests  461 passed (461)
+$ npm test              # vitest, about 3 seconds; green ends with every test file passed
 $ npx astro check       # 0 errors, 0 warnings, 0 hints
 $ npm run build         # the site, then pagefind and the security headers
 $ npm run test:headers  # after a build: the CSP in Chromium, WebKit and Firefox
@@ -74,7 +71,6 @@ Jody merges; agents stop at the PR.
 - Add a color to `src/styles/tokens.css`, never to a page stylesheet.
 - Source Serif 4 must always carry `font-variation-settings: "opsz" <value>`. Omitting `opsz` silently renders at opsz 14 regardless of size, which is visually wrong at display scale.
 - The opsz axis stops at 60. Values above it are clamped by the browser, so writing `"opsz" 120` renders identically to `"opsz" 60` and just misleads the next reader. The ramp was originally built against Fraunces, which went to 144; every value was capped when the face changed.
-- `npm run sync` is required before `npm run build` to pull content from the Obsidian vault. Without it, content changes won't appear.
 - Don't add new npm packages without first checking if the dependency already exists in `package.json`.
 - Don't commit `.env` or any secrets file. Don't push to `main` without confirming with the user.
 
